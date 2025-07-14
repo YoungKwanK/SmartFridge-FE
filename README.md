@@ -1,1 +1,1 @@
-# be16-2nd-5team-ShareFridge-FE
+# be16-2nd-5team-SmartFridge-FE
