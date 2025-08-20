@@ -2,8 +2,8 @@
   <v-container>
     <v-row justify="center">
       <v-col cols="12" md="8">
-        <v-card>
-          <v-card-title class="text-center text-h5">
+        <v-card class="chat-container">
+          <v-card-title class="text-center text-h5 chat-header">
             채팅
           </v-card-title>
           <v-card-text>
@@ -11,41 +11,66 @@
               <div
                 v-for="(msg, index) in messages"
                 :key="index"
-                :class="['chat-message', msg.senderEmail=== this.senderEmail ? 'sent' : 'received']"
+                :class="['message-wrapper', msg.senderEmail === this.senderEmail ? 'sent' : 'received']"
               >
-                <!-- <div v-if="msg.imageUrls && msg.imageUrls.length > 0">
-                  <img
-                    v-for="(image, index) in msg.imageUrls"
-                    :key="index"
-                    :class="['chat-image']"
-                    :src="image"
-                    alt="이미지"
-                    style="max-width: 100px; max-height: 100px; margin-right: 10px;"
-                  />
-                </div> -->
-                {{ msg.imageUrls[0] }}
-                <strong>{{msg.senderEmail}}</strong>: {{msg.message}} 
-                {{ msg.timestamp }}
+                <div class="message-bubble">
+                  <div class="sender-name">{{msg.senderEmail}}</div>
+                  <div v-if="msg.imageUrls && msg.imageUrls.length > 0" class="image-container">
+                    <img
+                      v-for="(url, imgIndex) in msg.imageUrls"
+                      :key="imgIndex"
+                      :src="url"
+                      alt="이미지"
+                      class="chat-image"
+                    />
+                  </div>
+                  <div class="message-text">{{msg.message}}</div>
+                  <div class="message-time">{{ msg.timestamp }}</div>
+                </div>
               </div>
             </div>
-            <v-file-input
-              v-model="newImages"
-              label="파일 선택"
-              accept="image/*"
-              multiple
-            />
-            <v-text-field
-              v-model="newMessage"
-              label="메시지 입력"
-              @keyup.enter="sendMessage"
-            />
-            <v-btn color="primary" black @click="sendMessage">전송</v-btn>
+            <div class="input-area">
+              <v-text-field
+                v-model="newMessage"
+                label="메시지 입력"
+                @keyup.enter="sendMessage"
+                dense
+                hide-details
+                outlined
+                class="message-input"
+              >
+                <template v-slot:append>
+                  <v-file-input
+                    v-model="newImages"
+                    class="file-input"
+                    hide-details
+                    dense
+                    accept="image/*"
+                    multiple
+                    prepend-icon=""
+                  >
+                    <template v-slot:append-outer>
+                      <v-icon color="primary">mdi-image-plus</v-icon>
+                    </template>
+                  </v-file-input>
+                  <v-btn
+                    color="primary"
+                    @click="sendMessage"
+                    class="send-button"
+                    icon
+                  >
+                    <v-icon>mdi-send</v-icon>
+                  </v-btn>
+                </template>
+              </v-text-field>
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
   </v-container>
 </template>
+
 <script>
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
@@ -103,12 +128,12 @@ import axios from 'axios';
         )
     },
     
-    sendMessage(){
+    async sendMessage(){
       if(this.newMessage.trim()==="" && this.newImages.length===0) return;
 
       if(this.newImages.length > 0){
         // 이미지가 있다면 먼저 업로드를 진행
-        this.changeImage(this.newImages);
+        await this.changeImage(this.newImages);
       }
       const message={
         senderEmail: this.senderEmail,
@@ -149,23 +174,127 @@ import axios from 'axios';
   },
 }
 </script>
-<style>
-.chat-box{
-  height: 300px;
+
+<style scoped>
+.chat-container {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+.chat-header {
+  background: #1976D2;
+  color: white;
+  padding: 16px;
+}
+
+.chat-box {
+  height: calc(100vh - 250px);
   overflow-y: auto;
-  border: 1px solid #ddd;
-  margin-bottom: 10px;
-}
-.chat-message{
-  margin-bottom:10px
+  padding: 20px;
+  background: #f8f9fa;
 }
 
-.sent{
-  text-align: right;
-}
-.received{
-  text-align: left;
+.message-wrapper {
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
 }
 
+.message-bubble {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  position: relative;
+  word-break: break-word;
+}
 
+.sent {
+  align-items: flex-end;
+}
+
+.sent .message-bubble {
+  background: #1976D2;
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.received {
+  align-items: flex-start;
+}
+
+.received .message-bubble {
+  background: white;
+  color: #333;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.sender-name {
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.message-text {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.message-time {
+  font-size: 0.7rem;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+.chat-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  margin: 4px 0;
+}
+
+.input-area {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #eee;
+}
+
+.message-input {
+  margin: 0 !important;
+}
+
+.file-input {
+  max-width: 36px !important;
+  margin: 0 4px !important;
+}
+
+.file-input :deep(.v-input__slot) {
+  margin: 0 !important;
+}
+
+.file-input :deep(.v-file-input__text) {
+  display: none;
+}
+
+.send-button {
+  margin: 0 0 0 4px !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ccc;
+}
 </style>
