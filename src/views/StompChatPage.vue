@@ -163,8 +163,7 @@ import axios from 'axios';
       try {
         let imageUrls = [];
         if (currentImages.length > 0) {
-          const response = await this.changeImage(currentImages);
-          imageUrls = response;
+          imageUrls = await this.changeImage(currentImages);
         }
 
         const message = {
@@ -409,11 +408,18 @@ import axios from 'axios';
   min-width: 20px !important;
   padding: 0 !important;
   background-color: rgba(255, 255, 255, 0.9) !important;
+  background-color: #ff4444 !important; /* 빨간색 배경으로 변경 */
   box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
   z-index: 2;
 }
 
 .remove-image-btn .v-icon {
   font-size: 16px !important;
+  color: white !important; /* 아이콘 색상을 흰색으로 변경 */
+}
+
+/* hover 효과 추가 */
+.remove-image-btn:hover {
+  background-color: #ff0000 !important; /* 호버시 더 진한 빨간색 */
 }
 </style>
