@@ -45,7 +45,7 @@ import axios from 'axios'
       }
     },
     async created(){
-      const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms`);
+      const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/1`);
       this.chatList = response.data.result;
     },
     methods: {

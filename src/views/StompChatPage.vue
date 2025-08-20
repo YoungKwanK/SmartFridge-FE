@@ -30,6 +30,21 @@
               </div>
             </div>
             <div class="input-area">
+              <!-- 선택된 이미지 미리보기 영역 추가 -->
+              <div v-if="imagePreview.length > 0" class="image-preview-container">
+                <div v-for="(image, index) in imagePreview" :key="index" class="image-preview-item">
+                  <img :src="image.preview" class="preview-image" />
+                  <v-btn
+                    icon
+                    x-small
+                    color="error"
+                    class="remove-image-btn"
+                    @click="removeImage(index)"
+                  >
+                    <v-icon small>mdi-close</v-icon>
+                  </v-btn>
+                </div>
+              </div>
               <v-text-field
                 v-model="newMessage"
                 label="메시지 입력"
@@ -40,19 +55,15 @@
                 class="message-input"
               >
                 <template v-slot:append>
-                  <v-file-input
-                    v-model="newImages"
-                    class="file-input"
-                    hide-details
-                    dense
-                    accept="image/*"
-                    multiple
-                    prepend-icon=""
+                  <v-btn
+                    icon
+                    small
+                    @click="$refs.fileInput.click()"
+                    class="file-button"
+                    color="grey darken-1"
                   >
-                    <template v-slot:append-outer>
-                      <v-icon color="primary">mdi-image-plus</v-icon>
-                    </template>
-                  </v-file-input>
+                    <v-icon>mdi-image-plus</v-icon>
+                  </v-btn>
                   <v-btn
                     color="primary"
                     @click="sendMessage"
@@ -63,6 +74,14 @@
                   </v-btn>
                 </template>
               </v-text-field>
+              <input
+                ref="fileInput"
+                type="file"
+                multiple
+                accept="image/*"
+                style="display: none"
+                @change="onFileChange"
+              >
             </div>
           </v-card-text>
         </v-card>
@@ -88,14 +107,15 @@ import axios from 'axios';
         roomId: null,
         images: [],
         newImages: [], // 파일 업로드를 위한 변수
+        imagePreview: [], // 이미지 미리보기를 위한 배열
         sendImages: [], // 전송할 이미지 URL을 저장하기 위한 변수
       }
     },
     async created(){
       this.senderEmail=localStorage.getItem("email");
       this.roomId = this.$route.params.roomId;
-      const reponse = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/history/manager/${this.roomId}`)
-      await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat/manager/room/${this.roomId}/read`)
+      const reponse = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/manager/chat/history/${this.roomId}`)
+      await axios.post(`${process.env.VUE_APP_API_BASE_URL}/manager/chat/${this.roomId}/read`)
       this.messages = reponse.data.result;
       this.connectWebsocket();
     },
@@ -128,49 +148,103 @@ import axios from 'axios';
         )
     },
     
-    async sendMessage(){
-      if(this.newMessage.trim()==="" && this.newImages.length===0) return;
+    async sendMessage() {
+      if (this.newMessage.trim() === "" && this.newImages.length === 0) return;
 
-      if(this.newImages.length > 0){
-        // 이미지가 있다면 먼저 업로드를 진행
-        await this.changeImage(this.newImages);
+      // 현재 메시지와 이미지 상태를 저장
+      const currentMessage = this.newMessage;
+      const currentImages = [...this.newImages];
+      
+      // 즉시 상태 초기화
+      this.newMessage = "";
+      this.newImages = [];
+      this.imagePreview = [];
+      
+      try {
+        let imageUrls = [];
+        if (currentImages.length > 0) {
+          const response = await this.changeImage(currentImages);
+          imageUrls = response;
+        }
+
+        const message = {
+          senderEmail: this.senderEmail,
+          message: currentMessage,
+          imageUrls: imageUrls
+        }
+
+        this.stompClient.send(`/publish/chat/MANAGER/${this.roomId}`, JSON.stringify(message));
+      } catch (error) {
+        console.error('메시지 전송 실패:', error);
+        // 전송 실패 시 상태 복구
+        this.newMessage = currentMessage;
+        this.newImages = currentImages;
+        // 이미지 미리보기 복구
+        this.imagePreview = currentImages.map(file => ({
+          file: file,
+          preview: URL.createObjectURL(file)
+        }));
       }
-      const message={
-        senderEmail: this.senderEmail,
-        message: this.newMessage,
-        imageUrls: this.sendImages
-      }
-      this.stompClient.send(`/publish/chat/MANAGER/${this.roomId}`, JSON.stringify(message));
-      this.newMessage = ""
-      this.sendImages = [];
     },
+
+    onFileChange(event) {
+      const files = Array.from(event.target.files);
+      
+      // 현재 선택된 이미지 수 + 새로 선택한 이미지 수가 10장을 초과하는지 확인
+      if (this.newImages.length + files.length > 10) {
+        alert('이미지는 최대 10장까지만 선택할 수 있습니다.');
+        event.target.value = '';
+        return;
+      }
+      
+      // 기존 이미지에 새 이미지 추가
+      this.newImages = [...this.newImages, ...files];
+      
+      // 새로운 이미지 미리보기 추가
+      const newPreviews = files.map(file => ({
+        file: file,
+        preview: URL.createObjectURL(file)
+      }));
+      
+      this.imagePreview = [...this.imagePreview, ...newPreviews];
+      event.target.value = '';
+    },
+
+    removeImage(index) {
+      URL.revokeObjectURL(this.imagePreview[index].preview);
+      this.imagePreview.splice(index, 1);
+      this.newImages.splice(index, 1);
+    },
+
     scrollToBottom(){
       this.$nextTick(()=>{
         const chatBox = this.$el.querySelector(".chat-box");
         chatBox.scrollTop = chatBox.scrollHeight;
       })
     },
-    async changeImage(files){
+    async changeImage(files) {
       const formData = new FormData();
-      for(let i=0; i<files.length; i++){
-        const file = files[i];
-        formData.append("images", file);
+      for (let i = 0; i < files.length; i++) {
+        formData.append("images", files[i]);
       }
-      const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat/manager/room/${this.roomId}/images`, formData,{
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+      const response = await axios.post(
+        `${process.env.VUE_APP_API_BASE_URL}/manager/chat/room/${this.roomId}/images`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
         }
-      });
-      this.newImages = [];
-      this.sendImages = (response.data.result);
+      );
+      return response.data.result;
     },
     async disconnectWebSocket(){
       if(this.stompClient && this.stompClient.connected){
         this.stompClient.unsubscribe(`/topic/chat/MANAGER/${this.roomId}`);
         this.stompClient.disconnect();
       }
-    }
+    },
   },
 }
 </script>
@@ -258,27 +332,23 @@ import axios from 'axios';
   padding: 16px;
   background: white;
   border-top: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
 }
 
 .message-input {
   margin: 0 !important;
 }
 
-.file-input {
-  max-width: 36px !important;
-  margin: 0 4px !important;
+.file-button {
+  margin: 0 8px !important;
 }
 
-.file-input :deep(.v-input__slot) {
-  margin: 0 !important;
-}
-
+/* v-file-input 관련 스타일 제거 */
+.file-input,
+.file-input :deep(.v-input__slot),
 .file-input :deep(.v-file-input__text) {
   display: none;
-}
-
-.send-button {
-  margin: 0 0 0 4px !important;
 }
 
 ::-webkit-scrollbar {
@@ -296,5 +366,54 @@ import axios from 'axios';
 
 ::-webkit-scrollbar-thumb:hover {
   background: #ccc;
+}
+
+.image-preview-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 0;
+  min-height: 50px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.image-preview-item {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  transition: all 0.2s ease;
+}
+
+.image-preview-item:hover .preview-image {
+  filter: brightness(0.8);
+}
+
+.remove-image-btn {
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  padding: 0 !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+  z-index: 2;
+}
+
+.remove-image-btn .v-icon {
+  font-size: 16px !important;
 }
 </style>
