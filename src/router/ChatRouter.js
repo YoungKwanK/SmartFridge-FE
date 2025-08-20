@@ -1,10 +1,10 @@
-import GroupChattingList from "@/views/GroupChattingList.vue";
+import GroupChat from "@/views/GroupChatList.vue";
 import MyChatPage from "@/views/MyChatPage.vue";
 import SimpleWebSocket from "@/views/SimpleWebSocket.vue";
 import StompChatPage from "@/views/StompChatPage.vue";
 
 
-export const chattingRouter = [
+export const ChatRouter = [
   {
     path:'/simple/chat',
     name: 'SimpleWebSocket',
@@ -16,9 +16,9 @@ export const chattingRouter = [
     component: StompChatPage
   },
   {
-    path:'/groupchatting/list',
-    name: 'GroupChattingList',
-    component: GroupChattingList
+    path:'/groupchat/list',
+    name: 'GroupChatList',
+    component: GroupChat
   },
   {
     path:'/my/chat/page',
