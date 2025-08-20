@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { createRouter, createWebHashHistory} from "vue-router"
 import MemberCreate from "@/views/MemberCreate.vue"
 import LoginPage from "@/views/LoginPage.vue";
@@ -50,11 +51,22 @@ const routes = [
     name: 'MyNotificationPage',
     component: MyNotificationPage
   }
+=======
+import { createRouter , createWebHistory} from "vue-router"
+import { chattingRouter } from "./chattingRouter";
+import { MemberRouter } from "./MemberRouter";
+
+const routes = [
+  ...MemberRouter,
+  ...chattingRouter,
+>>>>>>> develop
 ]
 
-const router = createRouter({
-  history: createWebHashHistory(),
-  routes
-});
+const router = createRouter(
+    {
+        history: createWebHistory(),
+        routes
+    }
+)
 
 export default router;
