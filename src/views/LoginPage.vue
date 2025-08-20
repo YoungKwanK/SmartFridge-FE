@@ -78,14 +78,36 @@ export default{
         email:this.email,
         password:this.password
       };
-      const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/doLogin`, loginData);
-      const token = response.data.result.accessToken;
-      const role = jwtDecode(token).role;
-      const email = jwtDecode(token).sub;
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("email", email);
-      window.location.href="/";
+      try{
+        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/doLogin`, loginData);
+        console.log('response:', response);
+        console.log('response.data:', response.data);
+        // response에서 데이터 꺼낼 때 계층구조 제대로 확인 부탁드리겠습니다!
+        const token = response.data.result.accessToken;
+        const role = jwtDecode(token).role;
+        const email = jwtDecode(token).sub;
+        localStorage.setItem("token", token);
+        localStorage.setItem("role", role);
+        localStorage.setItem("email", email);
+        window.location.href="/";
+      }catch(e){
+        console.log(e);
+      }
+    },
+    
+    googleLogin(){
+      const auth_uri= `${this.googleUrl}?client_id=${this.googleClientId}&redirect_uri=${this.googleRedirectUrl}&response_type=code&scope=${this.googleScope}`;
+      window.location.href = auth_uri;
+    },
+
+    kakaoLogin(){
+      const auth_uri= `${this.kakaoUrl}?client_id=${this.kakaoClientId}&redirect_uri=${this.kakaoRedirectUrl}&response_type=code`;
+      window.location.href = auth_uri;
+    },
+
+    naverLogin(){
+      const auth_uri= `${this.naverUrl}?client_id=${this.naverClientId}&redirect_uri=${this.naverRedirectUrl}&response_type=code`;
+      window.location.href = auth_uri;
     }
   }
 }
