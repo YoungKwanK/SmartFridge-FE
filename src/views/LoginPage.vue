@@ -78,16 +78,6 @@ export default{
         email:this.email,
         password:this.password
       };
-<<<<<<< HEAD
-      const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/doLogin`, loginData);
-      const token = response.data.result.accessToken;
-      const role = jwtDecode(token).role;
-      const email = jwtDecode(token).sub;
-      localStorage.setItem("token", token);
-      localStorage.setItem("role", role);
-      localStorage.setItem("email", email);
-      window.location.href="/";
-=======
       try{
         const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/doLogin`, loginData);
         console.log('response:', response);
@@ -118,7 +108,6 @@ export default{
     naverLogin(){
       const auth_uri= `${this.naverUrl}?client_id=${this.naverClientId}&redirect_uri=${this.naverRedirectUrl}&response_type=code`;
       window.location.href = auth_uri;
->>>>>>> develop
     }
   }
 }
