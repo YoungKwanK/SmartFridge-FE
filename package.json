@@ -8,9 +8,14 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+<<<<<<< HEAD
+=======
+    "@mdi/font": "^7.4.47",
+>>>>>>> develop
     "@mdi/js": "^7.4.47",
     "axios": "^1.11.0",
     "core-js": "^3.8.3",
+    "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "sockjs-client": "^1.6.1",
     "vue": "^3.2.13",

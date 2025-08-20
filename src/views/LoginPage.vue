@@ -22,6 +22,30 @@
             </v-text-field>
             <v-btn type = "submit" color="primary" block>로그인</v-btn>
           </v-form>
+          <br>
+          <v-row>
+            <v-col cols="4" class="d-flex justify-center">
+              <img 
+                src="@/assets/google_login.png"
+                style="max-height: 40px; width: auto;"
+                @click="googleLogin()"
+              />
+            </v-col>
+            <v-col cols="4" class="d-flex justify-center">
+              <img 
+                src="@/assets/kakao_login.png"
+                style="max-height: 40px; width: auto;"
+                @click="kakaoLogin()"
+              />
+            </v-col>
+            <v-col cols="4" class="d-flex justify-center">
+              <img 
+                src="@/assets/naver_login.png"
+                style="max-height: 40px; width: auto;"
+                @click="naverLogin()"
+              />
+            </v-col>
+          </v-row>
         </v-card-text>
         </v-card>
       </v-col>
@@ -35,7 +59,17 @@ export default{
   data(){
     return{
       email: "",
-      password: ""
+      password: "",
+      googleUrl: "https://accounts.google.com/o/oauth2/auth",
+      googleClientId:"374485739574-jumcdbdoujbiibr15dhncieme5t1n3vb.apps.googleusercontent.com",
+      googleRedirectUrl: "http://localhost:3000/oauth/google/redirect",
+      googleScope: "openid email profile",
+      kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
+      kakaoClientId:"1db026f5c4d2e11d7e597cdd4488d193",
+      kakaoRedirectUrl: "http://localhost:3000/oauth/kakao/redirect",
+      naverUrl: "https://nid.naver.com/oauth2.0/authorize",
+      naverClientId:"GbQ_01jKVCMgOVze1pio",
+      naverRedirectUrl: "http://localhost:3000/oauth/naver/redirect",
     }
   },
   methods:{
