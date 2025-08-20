@@ -13,9 +13,27 @@
                 :key="index"
                 :class="['chat-message', msg.senderEmail=== this.senderEmail ? 'sent' : 'received']"
               >
+                <!-- <div v-if="msg.imageUrls && msg.imageUrls.length > 0">
+                  <img
+                    v-for="(image, index) in msg.imageUrls"
+                    :key="index"
+                    :class="['chat-image']"
+                    :src="image"
+                    alt="이미지"
+                    style="max-width: 100px; max-height: 100px; margin-right: 10px;"
+                  />
+                </div> -->
+                {{ msg.imageUrls[0] }}
                 <strong>{{msg.senderEmail}}</strong>: {{msg.message}} 
+                {{ msg.timestamp }}
               </div>
             </div>
+            <v-file-input
+              v-model="newImages"
+              label="파일 선택"
+              accept="image/*"
+              multiple
+            />
             <v-text-field
               v-model="newMessage"
               label="메시지 입력"
@@ -43,13 +61,17 @@ import axios from 'axios';
         token: "",
         senderEmail: "",
         roomId: null,
+        images: [],
+        newImages: [], // 파일 업로드를 위한 변수
+        sendImages: [], // 전송할 이미지 URL을 저장하기 위한 변수
       }
     },
     async created(){
       this.senderEmail=localStorage.getItem("email");
       this.roomId = this.$route.params.roomId;
-      const reponse = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/history/${this.roomId}`)
-      this.messages = reponse.data;
+      const reponse = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/history/manager/${this.roomId}`)
+      await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat/manager/room/${this.roomId}/read`)
+      this.messages = reponse.data.result;
       this.connectWebsocket();
     },
     // 사용자가 현재 라우트에서 다른 라우트로 이동하려고 할 때 호출되는 훅 함수
@@ -65,14 +87,14 @@ import axios from 'axios';
       connectWebsocket(){
         if(this.stompClient && this.stompClient.connected) return;
         // sockjs는 websocket을 내장한 향상된 js 라이브러리. http엔드포인트 사용.
-        const sockJs = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/connect`)
+        const sockJs = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/connect/chat`)
         this.stompClient = Stomp.over(sockJs);
         this.token = localStorage.getItem("token");
         this.stompClient.connect({
           Authorization: `Bearer ${this.token}`
         },
           ()=>{
-            this.stompClient.subscribe(`/topic/${this.roomId}`, (message)=>{
+              this.stompClient.subscribe(`/topic/chat/MANAGER/${this.roomId}`, (message)=>{
               const parseMessage = JSON.parse(message.body);
               this.messages.push(parseMessage);
               this.scrollToBottom();
@@ -80,14 +102,22 @@ import axios from 'axios';
           }
         )
     },
+    
     sendMessage(){
-      if(this.newMessage.trim()==="") return;
+      if(this.newMessage.trim()==="" && this.newImages.length===0) return;
+
+      if(this.newImages.length > 0){
+        // 이미지가 있다면 먼저 업로드를 진행
+        this.changeImage(this.newImages);
+      }
       const message={
         senderEmail: this.senderEmail,
-        message: this.newMessage
+        message: this.newMessage,
+        imageUrls: this.sendImages
       }
-      this.stompClient.send(`/publish/${this.roomId}`, JSON.stringify(message));
+      this.stompClient.send(`/publish/chat/MANAGER/${this.roomId}`, JSON.stringify(message));
       this.newMessage = ""
+      this.sendImages = [];
     },
     scrollToBottom(){
       this.$nextTick(()=>{
@@ -95,10 +125,24 @@ import axios from 'axios';
         chatBox.scrollTop = chatBox.scrollHeight;
       })
     },
+    async changeImage(files){
+      const formData = new FormData();
+      for(let i=0; i<files.length; i++){
+        const file = files[i];
+        formData.append("images", file);
+      }
+      const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat/manager/room/${this.roomId}/images`, formData,{
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      this.newImages = [];
+      this.sendImages = (response.data.result);
+    },
     async disconnectWebSocket(){
-      await axios.post(`${process.env.VUE_APP_API_BASE_URL}/chat/room/${this.roomId}/read`)
       if(this.stompClient && this.stompClient.connected){
-        this.stompClient.unsubscribe(`/topic/${this.roomId}`);
+        this.stompClient.unsubscribe(`/topic/chat/MANAGER/${this.roomId}`);
         this.stompClient.disconnect();
       }
     }

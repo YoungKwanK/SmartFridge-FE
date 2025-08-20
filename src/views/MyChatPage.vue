@@ -12,6 +12,7 @@
             <v-table>
               <thead>
                 <tr>
+                  <th>채팅룸ID</th>
                   <th>채팅방 이름</th>
                   <th>읽지 않은 메시지</th>
                   <th>액션</th>
@@ -19,6 +20,7 @@
               </thead>
               <tbody>
                 <tr v-for="chat in chatList" :key="chat.roomId">
+                  <td>{{ chat.roomId }}</td>
                   <td>{{ chat.roomName }}</td>
                   <td>{{ chat.unReadCount }}</td>
                   <td>
@@ -44,7 +46,7 @@ import axios from 'axios'
     },
     async created(){
       const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms`);
-      this.chatList = response.data;
+      this.chatList = response.data.result;
     },
     methods: {
       enterChatRoom(roomId){
