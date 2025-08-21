@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <HeaderComponent/>
+    <SidebarComponent/>
     <v-main>
       <router-view/>
     </v-main>
@@ -8,12 +8,12 @@
 </template>
 
 <script>
-import HeaderComponent from './components/HeaderComponent.vue'
+import SidebarComponent from './components/SidebarComponent.vue'
 
 export default {
   name: 'App',
   components: {
-    HeaderComponent
+    SidebarComponent
   }
 }
 </script>
