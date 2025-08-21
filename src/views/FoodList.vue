@@ -57,7 +57,7 @@
 
 <script>
 import axios from 'axios';
-import FoodFormModal from './FoodFormModal.vue'; 
+import FoodFormModal from '../components/Food/FoodFormModal.vue'; 
 
 export default {
   components: {
@@ -75,7 +75,6 @@ export default {
   },
   methods: {
     async fetchFoodList() {
-      // 이 부분은 실제 API 주소 및 인증 로직에 맞게 수정해야 합니다.
       const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/1/food/list`);
       this.foodList = response.data.result.content;
     },
