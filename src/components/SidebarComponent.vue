@@ -5,7 +5,7 @@
     app
     permanent
     class="custom-drawer"
-  >
+  > 
     <div class="header-container">
       <v-list-item class="pa-0">
         <template v-slot:prepend>
@@ -33,7 +33,7 @@
           variant="tonal"
           size="small"
           label
-          link
+          :to="refrigeratorItem.to"
           class="mt-3"
         >
           {{ refrigeratorItem.title }}
@@ -97,7 +97,7 @@ const fridgeName = ref('홍길동의 냉장고임');
 
 const selectedItem = ref(['dashboard']);
 
-const refrigeratorItem = ref({ title: '냉장고목록', icon: 'mdi-fridge-outline', color: 'cyan-darken-2', to: "/#" });
+const refrigeratorItem = ref({ title: '냉장고목록', icon: 'mdi-fridge-outline', color: 'cyan-darken-2', to: "/fridge/list" });
 const inquiryItem = ref({ title: '문의하기', icon: 'mdi-comment-question-outline', color: 'pink-darken-1', to: "/#" });
 
 const doLogout = () => {

@@ -3,6 +3,7 @@ import { ChatRouter } from "./ChatRouter";
 import { MemberRouter } from "./MemberRouter";
 import { NotificationRouter } from "./NotificationRouter";
 import MainDashboard from "@/views/MainDashboard.vue";
+import { FoodRouter } from "./FoodRouter";
 
 const routes = [
   {
@@ -13,6 +14,7 @@ const routes = [
   ...MemberRouter,
   ...ChatRouter,
   ...NotificationRouter,
+  ...FoodRouter
 ]
 
 const router = createRouter(

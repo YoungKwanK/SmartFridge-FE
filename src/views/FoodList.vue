@@ -75,7 +75,7 @@ export default {
   },
   methods: {
     async fetchFoodList() {
-      const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/1/food/list`);
+      const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/5/food/list`);
       this.foodList = response.data.result.content;
     },
     openCreateModal() {

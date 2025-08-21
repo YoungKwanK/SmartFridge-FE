@@ -1,5 +1,6 @@
 import FoodList from "@/views/FoodList.vue";
 import FridgeList from "@/views/FridgeList.vue";
+import FridgeDashboard from "@/views/FridgeDashBoard.vue";
 
 export const FoodRouter = [
     {
@@ -11,5 +12,10 @@ export const FoodRouter = [
         path:'/fridge/list',
         name: 'FridgeList',
         component: FridgeList
+      },
+      {
+        path:'/fridge/:id/dashboard',
+        name: 'FridgeDashboard',
+        component: FridgeDashboard
       }
 ]
