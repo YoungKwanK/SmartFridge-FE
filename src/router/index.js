@@ -6,6 +6,8 @@ import SimpleWebSocket from "@/views/SimpleWebSocket.vue"
 import StompChatPage from "@/views/StompChatPage.vue"
 import GroupChattingList from "@/views/GroupChattingList.vue";
 import MyChatPage from "@/views/MyChatPage.vue";
+import FoodList from "@/views/FoodList.vue";
+import FridgeList from "@/views/FridgeList.vue";
 
 const routes = [
   {
@@ -42,6 +44,16 @@ const routes = [
     path:'/my/chat/page',
     name: 'MyChatPage',
     component: MyChatPage
+  },
+  {
+    path:'/food/list',
+    name: 'FoodList',
+    component: FoodList
+  },
+  {
+    path:'/fridge/list',
+    name: 'FridgeList',
+    component: FridgeList
   }
 ]
 
