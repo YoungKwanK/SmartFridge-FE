@@ -5,7 +5,7 @@ import { NotificationRouter } from "./NotificationRouter";
 
 const routes = [
   ...MemberRouter,
-  ...chattingRouter,
+  ...ChatRouter,
   ...NotificationRouter,
 ]
 
