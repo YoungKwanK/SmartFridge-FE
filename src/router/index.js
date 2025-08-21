@@ -1,6 +1,7 @@
 import { createRouter , createWebHistory} from "vue-router"
 import { ChatRouter } from "./ChatRouter";
 import { MemberRouter } from "./MemberRouter";
+import { NotificationRouter } from "./NotificationRouter";
 import MainDashboard from "@/views/MainDashboard.vue";
 
 const routes = [
@@ -11,6 +12,7 @@ const routes = [
   },
   ...MemberRouter,
   ...ChatRouter,
+  ...NotificationRouter,
 ]
 
 const router = createRouter(
