@@ -28,7 +28,7 @@
         <v-tab value="comment">댓글알림</v-tab>
         <v-tab value="qa">Q&A</v-tab>
         <v-tab 
-          v-if="userType !== 'common'" 
+          v-if="userType === 'manager'" 
           value="member"
         >
           멤버 참여
@@ -53,8 +53,8 @@
           'other-border': getNotificationType(notification) === 'other'
         }"
         @click="goToDetail(notification)"
-        @mouseenter="hoveredId = notification.id"
-        @mouseleave="hoveredId = null"
+        @mouseenter="handleMouseEnter(notification.id)"
+        @mouseleave="handleMouseLeave()"
       >
         <!-- 알림 타입별 아이콘 -->
         <div class="notification-icon">
@@ -133,7 +133,6 @@
 
         <!-- 삭제 버튼 (읽은 알림에만 표시, 호버 시에만 보임) -->
         <div 
-          v-if="notification.read" 
           class="delete-btn"
           @click.stop="confirmDelete(notification)"
         >
@@ -144,9 +143,30 @@
           >
             mdi-close
           </v-icon>
-        </div>
-      </div>
-    </div>
+                 </div>
+       </div>
+       
+       <!-- 로딩 인디케이터 및 더 보기 버튼 -->
+       <div v-if="isLoading" class="loading-indicator">
+         <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
+         <span class="loading-text">알림을 불러오는 중...</span>
+       </div>
+       
+       <div v-else-if="hasMoreData" class="load-more-section">
+         <v-btn 
+           @click="loadMoreData" 
+           variant="outlined" 
+           color="primary"
+           class="load-more-btn"
+         >
+           더 보기
+         </v-btn>
+       </div>
+       
+       <div v-else-if="notificationList.length > 0" class="no-more-data">
+         <span class="no-more-text">모든 알림을 불러왔습니다</span>
+       </div>
+     </div>
 
     <!-- 삭제 확인 모달 -->
     <v-dialog v-model="deleteDialog" max-width="400">
@@ -176,20 +196,34 @@ export default {
       fridgeId: 1, // 동적 할당할 것임
       hoveredId: null,
       deleteDialog: false,
-      deleteTarget: null
+      deleteTarget: null,
+      // 페이징 관련 데이터
+      currentPage: 0,
+      pageSize: 20,
+      hasMoreData: true,
+      isLoading: false
     };
   },
   
   async created() {
     await this.fetchNotifications();
+    // 스크롤 이벤트 리스너 등록
+    window.addEventListener('scroll', this.handleScroll);
+  },
+  
+  beforeUnmount() {
+    // 스크롤 이벤트 리스너 해제
+    window.removeEventListener('scroll', this.handleScroll);
   },
   
   computed: {
-    // 사용자 타입 (알림 데이터에서 가져옴)
+    // 사용자 타입 (백엔드 NotificationResDto의 fridgeMemberType 사용)
     userType() {
       if (this.notificationList.length > 0) {
         // 첫 번째 알림의 fridgeMemberType을 사용
-        return this.notificationList[0].fridgeMemberType || 'common';
+        const memberType = this.notificationList[0].fridgeMemberType;
+        // MANAGER인 경우에만 멤버 참여 탭 표시
+        return memberType === 'MANAGER' ? 'manager' : 'common';
       }
       return 'common'; // 기본값
     },
@@ -220,17 +254,55 @@ export default {
   },
   
   methods: {
-    // 알림 목록 조회
-    async fetchNotifications() {
+    // 알림 목록 조회 (페이징 지원)
+    async fetchNotifications(isLoadMore = false) {
+      if (this.isLoading) return;
+      
       try {
+        this.isLoading = true;
+        
         let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/list`;
+        const params = new URLSearchParams();
+        
         if (this.selectedCategory !== "ALL") {
-          url += `?notificationType=${this.selectedCategory}`;
+          params.append('notificationType', this.selectedCategory);
         }
+        
+        params.append('page', this.currentPage.toString());
+        params.append('size', this.pageSize.toString());
+        
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
+        
         const response = await axios.get(url);
-        this.notificationList = response.data.result.content;
+        const newNotifications = response.data.result.content;
+        
+        if (isLoadMore) {
+          // 추가 로드인 경우 기존 목록에 추가
+          this.notificationList = [...this.notificationList, ...newNotifications];
+        } else {
+          // 새로 로드인 경우 기존 목록 교체
+          this.notificationList = newNotifications;
+        }
+        
+        // 더 로드할 데이터가 있는지 확인
+        this.hasMoreData = newNotifications.length === this.pageSize;
+        
+        // 디버깅: 사용자 타입 확인 및 알림 데이터 확인
+        if (this.notificationList.length > 0) {
+          console.log('첫 번째 알림의 fridgeMemberType:', this.notificationList[0].fridgeMemberType);
+          console.log('계산된 userType:', this.userType);
+          console.log('알림 목록:', this.notificationList);
+          console.log('읽은 알림 개수:', this.notificationList.filter(n => n.read).length);
+          console.log('안읽은 알림 개수:', this.notificationList.filter(n => !n.read).length);
+          console.log('현재 페이지:', this.currentPage);
+          console.log('더 로드할 데이터:', this.hasMoreData);
+        }
       } catch (error) {
         console.error('알림 조회 실패:', error);
+      } finally {
+        this.isLoading = false;
       }
     },
 
@@ -238,8 +310,8 @@ export default {
     filterByTab(tab) {
       this.selectedTab = tab;
       
-      // 사용자가 'common' 타입이고 멤버 참여 탭을 선택하려는 경우 처리
-      if (tab === "member" && this.userType === "common") {
+      // 사용자가 'manager'가 아니고 멤버 참여 탭을 선택하려는 경우 처리
+      if (tab === "member" && this.userType !== "manager") {
         this.selectedTab = "all";
         this.selectedCategory = "ALL";
         return;
@@ -250,13 +322,13 @@ export default {
       if (tab === "food-register") {
         category = "NEW_FOOD";
       } else if (tab === "expiration") {
-        category = "EXPIRATION";
+        category = "EXPIRATION_IMMINENT";
       } else if (tab === "post") {
-        category = "ANNOUNCE";
+        category = "NEW_ANNOUNCEMENT";
       } else if (tab === "comment") {
-        category = "COMMENT";
+        category = "NEW_COMMENT";
       } else if (tab === "qa") {
-        category = "INQUIRY";
+        category = "NEW_INQUIRY";
       } else if (tab === "member") {
         category = "NEW_MEMBER";
       }
@@ -264,17 +336,18 @@ export default {
       // 카테고리 즉시 업데이트하여 computed 속성이 즉시 반응하도록
       this.selectedCategory = category;
       
-      // API 호출은 필요에 따라 수행 (선택사항)
-      // this.fetchNotifications();
+      // 페이징 초기화 및 새로운 데이터 로드
+      this.resetPagination();
+      this.fetchNotifications();
     },
 
     // 알림 타입 판단
     getNotificationType(notification) {
       if (notification.type === "NEW_FOOD") return "food-register";
-      if (notification.type === "EXPIRATION") return "expiration";
-      if (notification.type === "ANNOUNCE") return "post";
-      if (notification.type === "COMMENT") return "comment";
-      if (notification.type === "INQUIRY") return "qa";
+      if (notification.type === "EXPIRATION_IMMINENT") return "expiration";
+      if (notification.type === "NEW_ANNOUNCEMENT") return "post";
+      if (notification.type === "NEW_COMMENT") return "comment";
+      if (notification.type === "NEW_INQUIRY") return "qa";
       if (notification.type === "NEW_MEMBER") return "member";
       return "other";
     },
@@ -354,6 +427,7 @@ export default {
 
     // 삭제 확인
     confirmDelete(notification) {
+      console.log('삭제 확인 호출됨:', notification);
       this.deleteTarget = notification;
       this.deleteDialog = true;
     },
@@ -376,6 +450,49 @@ export default {
       }
     },
 
+    // 마우스 진입 처리
+    handleMouseEnter(notificationId) {
+      console.log('마우스 진입:', notificationId);
+      console.log('이전 hoveredId:', this.hoveredId);
+      this.hoveredId = notificationId;
+      console.log('새로운 hoveredId:', this.hoveredId);
+    },
+
+    // 마우스 이탈 처리
+    handleMouseLeave() {
+      console.log('마우스 이탈');
+      console.log('이전 hoveredId:', this.hoveredId);
+      this.hoveredId = null;
+      console.log('새로운 hoveredId:', this.hoveredId);
+    },
+
+    // 페이징 초기화
+    resetPagination() {
+      this.currentPage = 0;
+      this.hasMoreData = true;
+      this.notificationList = [];
+    },
+    
+    // 추가 데이터 로드
+    async loadMoreData() {
+      if (!this.hasMoreData || this.isLoading) return;
+      
+      this.currentPage += 1;
+      await this.fetchNotifications(true);
+    },
+    
+    // 스크롤 이벤트 처리
+    handleScroll() {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // 스크롤이 페이지 하단 근처에 도달했을 때 추가 데이터 로드
+      if (scrollTop + windowHeight >= documentHeight - 100) {
+        this.loadMoreData();
+      }
+    },
+    
     // 모든 알림 읽음 처리
     async readAll() {
       try {
@@ -400,51 +517,61 @@ export default {
 
 <style scoped>
 .notification-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   background: linear-gradient(135deg, #f8f9ff 0%, #e8f4ff 100%);
   min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .header-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
+  padding: 40px 50px 20px 50px;
 }
 
 .page-title {
-  font-size: 2.5rem;
-  font-weight: 700;
+  font-size: 1.8rem;
+  font-weight: 600;
   color: #2c3e50;
   margin: 0;
 }
 
 .read-all-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #667eea;
   color: white;
   border-radius: 8px;
-  padding: 12px 24px;
-  font-weight: 600;
+  padding: 12px 20px;
+  font-weight: 500;
   text-transform: none;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  border: none;
+  transition: background-color 0.2s ease;
+}
+
+.read-all-btn:hover {
+  background: #5a6fd8;
 }
 
 .tab-navigation {
   margin-bottom: 30px;
+  padding: 0 50px;
 }
 
 .custom-tabs {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .notification-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 0 50px 30px 50px;
 }
 
 .notification-item {
@@ -535,37 +662,11 @@ export default {
 }
 
 .food-register-icon {
-  /* background: #8B4513; */
   border-radius: 50%;
 }
 
-.expiration-icon {
-  /* background: #dc3545; */
-}
-
 .expiration-icon.urgent {
-  /* background: #ffc107; */
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-}
-
-.post-icon {
-  /* background: #28a745; */
-}
-
-.comment-icon {
-  /* background: #17a2b8; */
-}
-
-.qa-icon {
-  /* background: #6f42c1; */
-}
-
-.member-icon {
-  /* background: #fd7e14; */
-}
-
-.other-icon {
-  /* background: #6c757d; */
 }
 
 .notification-content {
@@ -584,21 +685,13 @@ export default {
   color: #6c757d;
 }
 
-.delete-btn {
-  padding: 8px;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-}
-
-.delete-btn:hover {
-  background-color: #e9ecef;
-}
-
 /* Vuetify 탭 스타일 오버라이드 */
 :deep(.v-tab) {
   text-transform: none;
   font-weight: 500;
   color: #6c757d;
+  flex: 1;
+  min-width: 0;
 }
 
 :deep(.v-tab--selected) {
@@ -608,5 +701,50 @@ export default {
 
 :deep(.v-tab__slider) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+:deep(.v-tabs__wrapper) {
+  width: 100%;
+}
+
+:deep(.v-tabs__bar) {
+  width: 100%;
+}
+
+/* 로딩 및 더 보기 관련 스타일 */
+.loading-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.loading-text {
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.load-more-section {
+  display: flex;
+  justify-content: center;
+  padding: 30px 20px;
+}
+
+.load-more-btn {
+  min-width: 120px;
+}
+
+.no-more-data {
+  display: flex;
+  justify-content: center;
+  padding: 30px 20px;
+}
+
+.no-more-text {
+  color: #6c757d;
+  font-size: 0.875rem;
+  font-style: italic;
 }
 </style>
