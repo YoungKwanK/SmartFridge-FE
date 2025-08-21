@@ -91,7 +91,7 @@
 <script setup>
 import { ref } from 'vue';
 
-const logoUrl = new URL('../assets/smartFridge_logo.png', import.meta.url).href;
+const logoUrl = new URL('../../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
 
 const fridgeName = ref('홍길동의 냉장고임');
 
