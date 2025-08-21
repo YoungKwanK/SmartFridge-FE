@@ -26,21 +26,21 @@
           <v-row>
             <v-col cols="4" class="d-flex justify-center">
               <img 
-                src="@/assets/google_login.png"
+                src="@/assets/images/login/google_login.png"
                 style="max-height: 40px; width: auto;"
                 @click="googleLogin()"
               />
             </v-col>
             <v-col cols="4" class="d-flex justify-center">
               <img 
-                src="@/assets/kakao_login.png"
+                src="@/assets/images/login/kakao_login.png"
                 style="max-height: 40px; width: auto;"
                 @click="kakaoLogin()"
               />
             </v-col>
             <v-col cols="4" class="d-flex justify-center">
               <img 
-                src="@/assets/naver_login.png"
+                src="@/assets/images/login/naver_login.png"
                 style="max-height: 40px; width: auto;"
                 @click="naverLogin()"
               />
