@@ -26,6 +26,13 @@
               required
             >
             </v-text-field>
+            <v-text-field
+              label="비밀번호확인"
+              v-model="passwordConfirm"
+              type="password"
+              required
+            >
+            </v-text-field>
             <v-btn type = "submit" color="primary" block>등록</v-btn>
           </v-form>
         </v-card-text>
@@ -41,7 +48,8 @@ export default{
     return{
       name: "",
       email: "",
-      password: ""
+      password: "",
+      passwordConfirm: ""
     }
   },
   methods:{
@@ -49,7 +57,13 @@ export default{
       const data = {
         name: this.name,
         email: this.email,
-        password: this.password
+        password: this.password,
+        passwordConfirm: this.passwordConfirm
+      }
+      if(this.password!=this.passwordConfirm){
+          alert("비밀번호가 일치하지 않습니다.");
+          window.location.reload;
+          return;
       }
       await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/create`, data);
       this.$router.push("/");
