@@ -1,90 +1,91 @@
 <template>
-  <v-card height="100vh" class="mx-auto custom-font-family responsive-card">
-    <v-navigation-drawer
-      class="custom-drawer"
-      permanent
-    >
-      <div class="header-container">
-        <v-list-item class="pa-0">
-          <template v-slot:prepend>
-            <v-container class="d-flex flex-column align-center pa-0">
-              <router-link to="/#" class="logo-link">
-                <v-img
-                  :width="100"
-                  :height="100"
-                  :src="logoUrl"
-                  alt="SmartFridge Logo"
-                  class="mb-2"
-                />
-              </router-link>
-            </v-container>
-          </template>
+  <!-- v-card를 제거하고 v-navigation-drawer를 최상위 요소로 사용합니다. -->
+  <!-- `app` 속성을 추가하여 Vuetify 레이아웃 시스템에 통합합니다. -->
+  <v-navigation-drawer
+    app
+    permanent
+    class="custom-drawer"
+  >
+    <div class="header-container">
+      <v-list-item class="pa-0">
+        <template v-slot:prepend>
+          <v-container class="d-flex flex-column align-center pa-0">
+            <router-link to="/#" class="logo-link">
+              <v-img
+                :width="100"
+                :height="100"
+                :src="logoUrl"
+                alt="SmartFridge Logo"
+                class="mb-2"
+              />
+            </router-link>
+          </v-container>
+        </template>
 
-          <v-list-item-title class="smartfridge-title gradient-text">SmartFridge</v-list-item-title>
-          <v-list-item-subtitle class="mt-1 truncate-text"
-            :title="fridgeName"  
-          >{{ fridgeName }}</v-list-item-subtitle>
-          
-          <v-chip
-            :prepend-icon="refrigeratorItem.icon"
-            :color="refrigeratorItem.color"
-            variant="tonal"
-            size="small"
-            label
-            link
-            class="mt-3"
-          >
-            {{ refrigeratorItem.title }}
-          </v-chip>
-        </v-list-item>
-      </div>
-
-      <v-divider></v-divider>
-
-      <v-list v-model:selected="selectedItem" density="compact" nav>
-        <v-list-item
-          v-for="item in menuItems"
-          :key="item.value"
-          :title="item.title"
-          :value="item.value"
-          :to="item.to"
-          class="nav-link"
-          rounded="lg"
+        <v-list-item-title class="smartfridge-title gradient-text">SmartFridge</v-list-item-title>
+        <v-list-item-subtitle class="mt-1 truncate-text"
+          :title="fridgeName"  
+        >{{ fridgeName }}</v-list-item-subtitle>
+        
+        <v-chip
+          :prepend-icon="refrigeratorItem.icon"
+          :color="refrigeratorItem.color"
+          variant="tonal"
+          size="small"
+          label
+          link
+          class="mt-3"
         >
-          <template v-slot:prepend>
-            <v-icon :icon="item.icon" :color="item.color"></v-icon>
-          </template>
-        </v-list-item>
-      </v-list>
-      
-      <template v-slot:append>
-        <div class="user-info-wrapper">
-          <div class="user-info-frame">
-            <router-link to="/#" class="avatar-link">
-              <div class="user-avatar-bg">
-                <span class="user-avatar-initial">홍</span>
-              </div>
-            </router-link>  
-            <div class="user-details">
-              <div class="user-name">홍길동님</div>
-              <v-btn
-                  :color="inquiryItem.color"
-                  variant="text"
-                  size="x-small"
-                  class="inquiry-text-button"
-              >
-                {{ inquiryItem.title }}
-              </v-btn>
+          {{ refrigeratorItem.title }}
+        </v-chip>
+      </v-list-item>
+    </div>
+
+    <v-divider></v-divider>
+
+    <v-list v-model:selected="selectedItem" density="compact" nav>
+      <v-list-item
+        v-for="item in menuItems"
+        :key="item.value"
+        :title="item.title"
+        :value="item.value"
+        :to="item.to"
+        class="nav-link"
+        rounded="lg"
+      >
+        <template v-slot:prepend>
+          <v-icon :icon="item.icon" :color="item.color"></v-icon>
+        </template>
+      </v-list-item>
+    </v-list>
+    
+    <template v-slot:append>
+      <div class="user-info-wrapper">
+        <div class="user-info-frame">
+          <router-link to="/#" class="avatar-link">
+            <div class="user-avatar-bg">
+              <span class="user-avatar-initial">홍</span>
             </div>
-            <v-spacer></v-spacer>
-            <v-btn class="logout-button" @click="doLogout" to="/#" variant="outlined" rounded="xl" size="x-small, y-small">
-              로그아웃
+          </router-link>  
+          <div class="user-details">
+            <div class="user-name">홍길동님</div>
+            <v-btn
+                :color="inquiryItem.color"
+                variant="text"
+                size="x-small"
+                class="inquiry-text-button"
+            >
+              {{ inquiryItem.title }}
             </v-btn>
           </div>
+          <v-spacer></v-spacer>
+          <v-btn class="logout-button" @click="doLogout" to="/#" variant="outlined" rounded="xl" size="x-small, y-small">
+            로그아웃
+          </v-btn>
         </div>
-      </template>
-    </v-navigation-drawer>
-  </v-card>
+      </div>
+    </template>
+  </v-navigation-drawer>
 </template>
 
 <script setup>
