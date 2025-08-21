@@ -45,7 +45,7 @@ import axios from 'axios'
     },
     async created(){
       const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/member/list`);
-      this.memberList = response.data;
+      this.memberList = response.data.result;
     },
     methods: {
       async startChat(otherMemberId){
