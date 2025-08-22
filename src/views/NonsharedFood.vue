@@ -75,22 +75,39 @@ export default {
   },
   methods: {
     async fetchFoodList() {
-      const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/5/food/list`);
+      const fridgeId = this.$route.params.fridgeId;
+      if (!fridgeId) return;
+      const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=false`);
       this.foodList = response.data.result.content;
     },
     openCreateModal() {
-      this.selectedFood = {};
+      this.selectedFood = { name: '', quantity: 0, storageStartDate: '', expirationDateTime: '', storageType: '', category: '', shareable: false };
       this.isModalOpen = true;
     },
     openEditModal(food) {
-      this.selectedFood = food;
+      this.selectedFood = { ...food };
       this.isModalOpen = true;
     },
+    
     async handleSave(foodData) {
-      // 저장 로직 (이전 답변 참고)
-      console.log('저장할 데이터:', foodData);
-      // await axios.post(...) 또는 await axios.put(...)
-      // await this.fetchFoodList(); // 목록 새로고침
+      try {
+        const fridgeId = this.$route.params.fridgeId;
+        if (!fridgeId) { console.error('냉장고 ID가 없습니다.'); return; }
+        let response;
+        if (foodData.id) { // 수정 모드
+          response = await axios.put(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/update/${foodData.id}`, foodData);
+          console.log('식품 수정 성공:', response.data);
+        } else { // 등록 모드
+          response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
+          console.log('식품 등록 성공:', response.data);
+        }
+        await this.fetchFoodList();
+        alert(foodData.id ? '식품이 수정되었습니다.' : '식품이 등록되었습니다.');
+      } catch (error) {
+        console.error('식품 저장 실패:', error);
+        console.error('에러 상세:', error.response?.data);
+        alert('식품 저장에 실패했습니다: ' + (error.response?.data?.message || error.message));
+      }
     }
   }
 }

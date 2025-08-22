@@ -1,21 +1,28 @@
-import FoodList from "@/views/FoodList.vue";
+import NonsharedFood from "@/views/NonsharedFood.vue";
 import FridgeList from "@/views/FridgeList.vue";
 import FridgeDashboard from "@/views/FridgeDashBoard.vue";
+import SharedFood from "@/views/SharedFood.vue";
 
 export const FoodRouter = [
-    {
-        path:'/food/list',
-        name: 'FoodList',
-        component: FoodList
-      },
-      {
-        path:'/fridge/list',
-        name: 'FridgeList',
-        component: FridgeList
-      },
-      {
-        path:'/fridge/:id/dashboard',
-        name: 'FridgeDashboard',
-        component: FridgeDashboard
-      }
+  {
+    path: '/fridge/:fridgeId/food/nonshared',
+    name: 'NonsharedFood',
+    component: NonsharedFood
+  },
+  {
+    path: '/fridge/list',
+    name: 'FridgeList',
+    component: FridgeList
+  },
+  {
+    path: '/fridge/:fridgeId/dashboard',
+    name: 'FridgeDashboard',
+    component: FridgeDashboard
+  },
+  {
+    path: '/fridge/:fridgeId/food/shared',
+    name: 'SharedFood',
+    component: SharedFood
+  },
+  
 ]
