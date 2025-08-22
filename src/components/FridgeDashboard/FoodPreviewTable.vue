@@ -10,7 +10,7 @@
               <v-btn color="success" prepend-icon="mdi-plus" size="small">
                 식품 등록
               </v-btn>
-              <v-btn color="purple" size="small" class="ml-2">
+              <v-btn color="purple" size="small" class="ml-2" @click="goToNonsharedFoodList">
                 전체 보기
               </v-btn>
             </div>
@@ -21,7 +21,7 @@
                 <tr>
                   <th>식품명</th>
                   <th>등록자</th>
-                  <th>등록일</th>
+                  <th>수량</th>
                   <th>유통기한</th>
                   <th>위치</th>
                 </tr>
@@ -29,10 +29,10 @@
               <tbody>
                 <tr v-for="food in recentFoods" :key="food.id">
                   <td>{{ food.name }}</td>
-                  <td>{{ food.registrant }}</td>
-                  <td>{{ food.registrationDate }}</td>
-                  <td>{{ food.expirationDate }}</td>
-                  <td>{{ food.location }}</td>
+                  <td>{{ food.registeredName }}</td>
+                  <td>{{ food.quantity }}</td>
+                  <td>{{ food.expirationDateTime }}</td>
+                  <td>{{ food.storageType }}</td>
                 </tr>
               </tbody>
             </v-table>
@@ -49,7 +49,7 @@
               <v-btn color="success" prepend-icon="mdi-plus" size="small">
                 식품 등록
               </v-btn>
-              <v-btn color="purple" size="small" class="ml-2">
+              <v-btn color="purple" size="small" class="ml-2" @click="goToSharedFoodList">
                 전체 보기
               </v-btn>
             </div>
@@ -60,7 +60,7 @@
                 <tr>
                   <th>식품명</th>
                   <th>등록자</th>
-                  <th>등록일</th>
+                  <th>수량</th>
                   <th>유통기한</th>
                   <th>위치</th>
                 </tr>
@@ -68,10 +68,10 @@
               <tbody>
                 <tr v-for="food in recentSharedFoods" :key="food.id">
                   <td>{{ food.name }}</td>
-                  <td>{{ food.registrant }}</td>
-                  <td>{{ food.registrationDate }}</td>
-                  <td>{{ food.expirationDate }}</td>
-                  <td>{{ food.location }}</td>
+                  <td>{{ food.registeredName }}</td>
+                  <td>{{ food.quantity }}</td>
+                  <td>{{ food.expirationDateTime }}</td>
+                  <td>{{ food.storageType }}</td>
                 </tr>
               </tbody>
             </v-table>
@@ -83,54 +83,48 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import axios from 'axios';
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import router from '@/router';
 
-// 최근 등록한 식품 데이터
-const recentFoods = ref([
-  {
-    id: 1,
-    name: '우유 1층',
-    registrant: '홍길동',
-    registrationDate: '2025-07-10',
-    expirationDate: '2025-07-16',
-    location: '냉장실'
-  },
-  {
-    id: 2,
-    name: '두부 2층 왼쪽',
-    registrant: '김영희',
-    registrationDate: '2025-07-12',
-    expirationDate: '2025-07-15',
-    location: '냉장실'
-  },
-  {
-    id: 3,
-    name: '계란 문쪽',
-    registrant: '박철수',
-    registrationDate: '2025-07-08',
-    expirationDate: '2025-07-25',
-    location: '냉장실'
-  },
-  {
-    id: 4,
-    name: '김치 3층',
-    registrant: '이미영',
-    registrationDate: '2025-07-05',
-    expirationDate: '2025-08-05',
-    location: '냉장실'
-  },
-  {
-    id: 5,
-    name: '냉동만두 상단',
-    registrant: '정민수',
-    registrationDate: '2025-07-01',
-    expirationDate: '2025-07-14',
-    location: '냉동실'
+const route = useRoute();
+const recentFoods = ref([])
+const recentSharedFoods = ref([])
+
+const fetchRecentFoods = async () => {
+  try {
+    const fridgeId = route.params.fridgeId;
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=false`);
+    recentFoods.value = response.data.result.content.slice(0, 5);
+  } catch (error) {
+    console.error("최근 등록한 식품을 불러오는데 실패했습니다:", error);
   }
-])
+};
 
-// 최근 등록한 공유식품 데이터 (동일한 데이터 사용)
-const recentSharedFoods = ref([...recentFoods.value])
+const fetchRecentSharedFoods = async () => {
+  try {
+    const fridgeId = route.params.fridgeId;
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=true`);
+    recentSharedFoods.value = response.data.result.content.slice(0, 5);
+  } catch (error) {
+    console.error("최근 등록한 공유식품을 불러오는데 실패했습니다:", error);
+  }
+};
+
+onMounted(() => {
+  fetchRecentFoods();
+  fetchRecentSharedFoods();
+});
+
+const goToSharedFoodList = () => {
+  router.push(`/fridge/${route.params.fridgeId}/food/shared`);
+}
+
+const goToNonsharedFoodList = () => {
+  router.push(`/fridge/${route.params.fridgeId}/food/nonshared`);
+}
+
 </script>
 
 <style scoped>

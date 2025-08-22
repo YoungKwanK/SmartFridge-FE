@@ -5,7 +5,7 @@
         <v-card class="stat-card total-food">
           <v-card-text class="text-center">
             <v-icon color="brown" size="36">mdi-package-variant</v-icon>
-            <div class="stat-number">15</div>
+            <div class="stat-number">{{ foodStats.totalCount }}</div>
             <div class="stat-label">총 식품 수</div>
           </v-card-text>
         </v-card>
@@ -14,7 +14,7 @@
         <v-card class="stat-card fresh-food">
           <v-card-text class="text-center">
             <v-icon color="green" size="36">mdi-check-circle</v-icon>
-            <div class="stat-number">9</div>
+            <div class="stat-number">{{ foodStats.freshCount }}</div>
             <div class="stat-label">신선한 식품</div>
           </v-card-text>
         </v-card>
@@ -23,7 +23,7 @@
         <v-card class="stat-card expiring-soon">
           <v-card-text class="text-center">
             <v-icon color="amber" size="36">mdi-alert</v-icon>
-            <div class="stat-number">4</div>
+            <div class="stat-number">{{ foodStats.expiringSoonCount }}</div>
             <div class="stat-label">유통기한 임박</div>
           </v-card-text>
         </v-card>
@@ -32,7 +32,7 @@
         <v-card class="stat-card expired-food">
           <v-card-text class="text-center">
             <v-icon color="red" size="36">mdi-close-circle</v-icon>
-            <div class="stat-number">2</div>
+            <div class="stat-number">{{ foodStats.expiredCount }}</div>
             <div class="stat-label">유통기한 초과</div>
           </v-card-text>
         </v-card>
@@ -42,7 +42,26 @@
 </template>
 
 <script setup>
-// 필요한 경우 props나 emit 추가
+import axios from 'axios';
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+const foodStats = ref({});
+
+const fetchFoodStats = async () => {
+  try {
+    const fridgeId = route.params.fridgeId;
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/stats`);
+    foodStats.value = response.data.result;
+  } catch (error) {
+    console.error("식품통계를 불러오는데 실패했습니다:", error);
+  }
+};
+
+onMounted(() => {
+  fetchFoodStats();
+});
 </script>
 
 <style scoped>

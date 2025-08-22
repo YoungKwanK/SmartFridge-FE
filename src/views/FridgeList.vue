@@ -27,32 +27,22 @@
         <h3 class="empty-title">참여중인 냉장고가 없습니다</h3>
         <p class="empty-description">'냉장고 만들기' 또는 '참여하기'를 통해 새 냉장고를 추가해보세요.</p>
       </div>
-      
+
       <div v-else class="fridge-grid">
         <div v-for="fridge in fridgeList" :key="fridge.fridgeId" class="fridge-card">
           <div class="card-header">
             <div class="fridge-info">
               <h3 class="fridge-name">{{ fridge.fridgeName }}</h3>
               <div class="fridge-type">
-                <v-chip 
-                  :color="fridge.type === 'MANAGER' ? 'success' : 'info'" 
-                  size="small" 
-                  variant="tonal"
-                >
+                <v-chip :color="fridge.type === 'MANAGER' ? 'success' : 'info'" size="small" variant="tonal">
                   {{ fridge.type === 'MANAGER' ? '관리자' : '일반' }}
                 </v-chip>
               </div>
             </div>
             <div v-if="fridge.type === 'MANAGER'" class="invite-section">
               <span class="invite-label">초대코드</span>
-              <v-btn 
-                icon="mdi-content-copy" 
-                variant="text" 
-                size="small"
-                class="copy-btn"
-                @click="copyInviteCode(fridge.inviteLink)" 
-                title="초대코드 복사"
-              ></v-btn>
+              <v-btn icon="mdi-content-copy" variant="text" size="small" class="copy-btn"
+                @click="copyInviteCode(fridge.inviteLink)" title="초대코드 복사"></v-btn>
             </div>
           </div>
 
@@ -62,44 +52,22 @@
 
           <div class="card-actions">
             <div class="left-actions">
-              <v-btn 
-                v-if="fridge.type === 'COMMON'" 
-                color="error" 
-                variant="text"
-                size="small"
-                class="action-btn"
-                @click="openLeaveConfirmDialog(fridge)"
-              >
+              <v-btn v-if="fridge.type === 'COMMON'" color="error" variant="text" size="small" class="action-btn"
+                @click="openLeaveConfirmDialog(fridge)">
                 나가기
               </v-btn>
-              <v-btn 
-                v-else-if="fridge.type === 'MANAGER'" 
-                color="error" 
-                variant="text"
-                size="small"
-                class="action-btn"
-                @click="openDeleteConfirmDialog(fridge)"
-              >
+              <v-btn v-else-if="fridge.type === 'MANAGER'" color="error" variant="text" size="small" class="action-btn"
+                @click="openDeleteConfirmDialog(fridge)">
                 삭제
               </v-btn>
             </div>
-            
+
             <div class="right-actions">
-              <v-btn 
-                v-if="fridge.type === 'MANAGER'" 
-                variant="text" 
-                color="primary"
-                size="small"
-                class="action-btn"
-                @click="openEditModal(fridge)"
-              >
+              <v-btn v-if="fridge.type === 'MANAGER'" variant="text" color="primary" size="small" class="action-btn"
+                @click="openEditModal(fridge)">
                 수정
               </v-btn>
-              <v-btn 
-                color="primary" 
-                class="enter-btn"
-                @click="enterFridge(fridge.fridgeId)"
-              >
+              <v-btn color="primary" class="enter-btn" @click="enterFridge(fridge.fridgeId)">
                 들어가기
               </v-btn>
             </div>
@@ -108,23 +76,23 @@
       </div>
     </div>
 
-         <FridgeFormModal v-model="isFormModalOpen" :editing-fridge="selectedFridge" @save="handleSaveFridge" />
-     <FridgeInviteModal v-model="isJoinModalOpen" @join="handleJoinFridge" />
+    <FridgeFormModal v-model="isFormModalOpen" :editing-fridge="selectedFridge" @save="handleSaveFridge" />
+    <FridgeInviteModal v-model="isJoinModalOpen" @join="handleJoinFridge" />
 
-     <v-snackbar v-model="snackbar.show" :timeout="2500" :color="snackbar.color">
-       {{ snackbar.message }}
-       <template v-slot:actions>
-         <v-btn color="white" variant="text" @click="snackbar.show = false">닫기</v-btn>
-       </template>
-     </v-snackbar>
+    <v-snackbar v-model="snackbar.show" :timeout="2500" :color="snackbar.color">
+      {{ snackbar.message }}
+      <template v-slot:actions>
+        <v-btn color="white" variant="text" @click="snackbar.show = false">닫기</v-btn>
+      </template>
+    </v-snackbar>
 
-   </div>
+  </div>
 </template>
 
 <style scoped>
 .fridge-list-container {
   padding: 32px;
-  margin-left: 16px;
+  padding-left: 48px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   position: relative;
@@ -313,7 +281,8 @@
   gap: 16px;
 }
 
-.left-actions, .right-actions {
+.left-actions,
+.right-actions {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -340,11 +309,11 @@
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .header-actions {
     align-self: flex-end;
   }
-  
+
   .fridge-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 16px;
@@ -356,37 +325,39 @@
     padding: 16px;
     margin-left: 8px;
   }
-  
+
   .page-title {
     font-size: 24px;
   }
-  
+
   .header-actions {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .action-btn {
     width: 100%;
   }
-  
+
   .fridge-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
+
   .card-actions {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
-  .left-actions, .right-actions {
+
+  .left-actions,
+  .right-actions {
     justify-content: center;
     gap: 12px;
   }
-  
-  .action-btn, .enter-btn {
+
+  .action-btn,
+  .enter-btn {
     width: 100%;
     justify-content: center;
   }
@@ -429,7 +400,9 @@ export default {
       }
     },
     enterFridge(fridgeId) {
-      this.$router.push(`/fridge/${fridgeId}/dashboard`);
+      // URL에 냉장고 ID 포함하여 이동
+      this.$router.push(`/fridge/${fridgeId}/dashboard/`);
+      // 들어가기 누를시 바로 냉장고 화면이 아니라 새로고침 되면서 들어가기
     },
     openCreateModal() {
       this.selectedFridge = { fridgeName: '', description: '' };
@@ -487,7 +460,7 @@ export default {
       try {
         await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/leave`);
         this.showSnackbar('냉장고에서 나갔습니다.', 'success');
-        await this.fetchFridgeList(); 
+        await this.fetchFridgeList();
       } catch (error) {
         console.error("냉장고 나가기에 실패했습니다:", error);
         this.showSnackbar(error.response?.data?.status_message || "나가기 처리 중 오류 발생", 'error');
@@ -498,7 +471,7 @@ export default {
       try {
         await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}`);
         this.showSnackbar('냉장고가 삭제되었습니다.', 'success');
-        await this.fetchFridgeList(); 
+        await this.fetchFridgeList();
       } catch (error) {
         console.error("냉장고 삭제에 실패했습니다:", error);
         this.showSnackbar(error.response?.data?.status_message || "삭제 처리 중 오류 발생", 'error');
