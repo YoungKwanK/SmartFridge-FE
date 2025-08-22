@@ -1,0 +1,523 @@
+<template>
+  <div class="fridge-list-container">
+    <div class="fridge-list-header">
+      <div class="header-content">
+        <div class="header-info">
+          <h1 class="page-title">내 냉장고 목록</h1>
+          <p class="page-subtitle">참여중인 냉장고를 관리하고 새로운 냉장고를 만들어보세요</p>
+        </div>
+        <div class="header-actions">
+          <v-btn class="action-btn join-btn" variant="outlined" @click="openJoinModal">
+            <v-icon start>mdi-account-plus</v-icon>
+            참여하기
+          </v-btn>
+          <v-btn class="action-btn create-btn" color="primary" @click="openCreateModal">
+            <v-icon start>mdi-plus</v-icon>
+            냉장고 만들기
+          </v-btn>
+        </div>
+      </div>
+    </div>
+
+    <div class="fridge-content">
+      <div v-if="!fridgeList.length" class="empty-state">
+        <div class="empty-icon">
+          <v-icon size="80" color="grey-lighten-1">mdi-fridge-outline</v-icon>
+        </div>
+        <h3 class="empty-title">참여중인 냉장고가 없습니다</h3>
+        <p class="empty-description">'냉장고 만들기' 또는 '참여하기'를 통해 새 냉장고를 추가해보세요.</p>
+      </div>
+      
+      <div v-else class="fridge-grid">
+        <div v-for="fridge in fridgeList" :key="fridge.fridgeId" class="fridge-card">
+          <div class="card-header">
+            <div class="fridge-info">
+              <h3 class="fridge-name">{{ fridge.fridgeName }}</h3>
+              <div class="fridge-type">
+                <v-chip 
+                  :color="fridge.type === 'MANAGER' ? 'success' : 'info'" 
+                  size="small" 
+                  variant="tonal"
+                >
+                  {{ fridge.type === 'MANAGER' ? '관리자' : '일반' }}
+                </v-chip>
+              </div>
+            </div>
+            <div v-if="fridge.type === 'MANAGER'" class="invite-section">
+              <span class="invite-label">초대코드</span>
+              <v-btn 
+                icon="mdi-content-copy" 
+                variant="text" 
+                size="small"
+                class="copy-btn"
+                @click="copyInviteCode(fridge.inviteLink)" 
+                title="초대코드 복사"
+              ></v-btn>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <p class="fridge-description">{{ fridge.description || '냉장고 설명이 없습니다.' }}</p>
+          </div>
+
+          <div class="card-actions">
+            <div class="left-actions">
+              <v-btn 
+                v-if="fridge.type === 'COMMON'" 
+                color="error" 
+                variant="text"
+                size="small"
+                class="action-btn"
+                @click="openLeaveConfirmDialog(fridge)"
+              >
+                나가기
+              </v-btn>
+              <v-btn 
+                v-else-if="fridge.type === 'MANAGER'" 
+                color="error" 
+                variant="text"
+                size="small"
+                class="action-btn"
+                @click="openDeleteConfirmDialog(fridge)"
+              >
+                삭제
+              </v-btn>
+            </div>
+            
+            <div class="right-actions">
+              <v-btn 
+                v-if="fridge.type === 'MANAGER'" 
+                variant="text" 
+                color="primary"
+                size="small"
+                class="action-btn"
+                @click="openEditModal(fridge)"
+              >
+                수정
+              </v-btn>
+              <v-btn 
+                color="primary" 
+                class="enter-btn"
+                @click="enterFridge(fridge.fridgeId)"
+              >
+                들어가기
+              </v-btn>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+         <FridgeFormModal v-model="isFormModalOpen" :editing-fridge="selectedFridge" @save="handleSaveFridge" />
+     <FridgeInviteModal v-model="isJoinModalOpen" @join="handleJoinFridge" />
+
+     <v-snackbar v-model="snackbar.show" :timeout="2500" :color="snackbar.color">
+       {{ snackbar.message }}
+       <template v-slot:actions>
+         <v-btn color="white" variant="text" @click="snackbar.show = false">닫기</v-btn>
+       </template>
+     </v-snackbar>
+
+   </div>
+</template>
+
+<style scoped>
+.fridge-list-container {
+  padding: 32px;
+  margin-left: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+.fridge-list-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.fridge-list-header {
+  margin-bottom: 32px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.action-btn {
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: none;
+  padding: 12px 24px;
+  height: auto;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.join-btn {
+  border: 2px solid #667eea;
+  color: #667eea;
+}
+
+.create-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+}
+
+.fridge-content {
+  margin-bottom: 32px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.empty-icon {
+  margin-bottom: 24px;
+}
+
+.empty-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+}
+
+.empty-description {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.fridge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.fridge-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.fridge-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.fridge-info {
+  flex: 1;
+}
+
+.fridge-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.fridge-type {
+  margin-bottom: 8px;
+}
+
+.invite-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.invite-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.copy-btn {
+  color: #667eea;
+}
+
+.card-body {
+  margin-bottom: 24px;
+}
+
+.fridge-description {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.left-actions, .right-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.enter-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: none;
+  padding: 12px 24px;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  height: auto;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 960px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .header-actions {
+    align-self: flex-end;
+  }
+  
+  .fridge-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .fridge-list-container {
+    padding: 16px;
+    margin-left: 8px;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .action-btn {
+    width: 100%;
+  }
+  
+  .fridge-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .card-actions {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .left-actions, .right-actions {
+    justify-content: center;
+    gap: 12px;
+  }
+  
+  .action-btn, .enter-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+<script>
+import axios from 'axios';
+import FridgeFormModal from '@/components/Fridge/FridgeFormModal.vue';
+import FridgeInviteModal from '@/components/Fridge/FridgeInviteModal.vue';
+
+export default {
+  components: {
+    FridgeFormModal,
+    FridgeInviteModal,
+  },
+  data() {
+    return {
+      fridgeList: [],
+      isFormModalOpen: false,
+      isJoinModalOpen: false,
+      selectedFridge: {},
+      snackbar: {
+        show: false,
+        message: '',
+        color: 'success',
+      },
+    }
+  },
+  created() {
+    this.fetchFridgeList();
+  },
+  methods: {
+    async fetchFridgeList() {
+      try {
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/list`);
+        this.fridgeList = response.data.result;
+      } catch (error) {
+        console.error("냉장고 목록을 불러오는 데 실패했습니다:", error);
+      }
+    },
+    enterFridge(fridgeId) {
+      this.$router.push(`/fridge/${fridgeId}/dashboard`);
+    },
+    openCreateModal() {
+      this.selectedFridge = { fridgeName: '', description: '' };
+      this.isFormModalOpen = true;
+    },
+    openEditModal(fridge) {
+      this.selectedFridge = { ...fridge };
+      this.isFormModalOpen = true;
+    },
+    openJoinModal() {
+      this.isJoinModalOpen = true;
+    },
+    async handleSaveFridge(formData) {
+      try {
+        if (formData.fridgeId) {
+          await axios.put(`${process.env.VUE_APP_API_BASE_URL}/fridge/${formData.fridgeId}/update`, formData);
+          this.showSnackbar('냉장고 정보가 수정되었습니다.', 'success');
+        } else {
+          await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/create`, formData);
+          this.showSnackbar('새로운 냉장고가 생성되었습니다!', 'success');
+        }
+        await this.fetchFridgeList();
+      } catch (error) {
+        console.error("냉장고 처리 중 오류:", error);
+        const message = error.response?.data?.status_message || "오류가 발생했습니다.";
+        this.showSnackbar(message, 'error');
+      }
+    },
+    async handleJoinFridge(inviteCode) {
+      try {
+        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/join`, null, {
+          params: { code: inviteCode }
+        });
+        this.showSnackbar('냉장고에 성공적으로 참여했습니다!', 'success');
+        await this.fetchFridgeList();
+      } catch (error) {
+        console.error("냉장고 참여에 실패했습니다:", error);
+        const message = error.response?.data?.status_message || "냉장고 참여 중 오류가 발생했습니다.";
+        this.showSnackbar(message, 'error');
+      }
+    },
+    openLeaveConfirmDialog(fridge) {
+      if (confirm(`'${fridge.fridgeName}' 냉장고에서 나가시겠습니까? 작성한 모든 데이터가 삭제됩니다.`)) {
+        this.leaveFridge(fridge.fridgeId);
+      }
+    },
+
+    openDeleteConfirmDialog(fridge) {
+      if (confirm(`'${fridge.fridgeName}' 냉장고를 정말 삭제하시겠습니까? 모든 멤버와 데이터가 영구적으로 삭제됩니다.`)) {
+        this.deleteFridge(fridge.fridgeId);
+      }
+    },
+
+    async leaveFridge(fridgeId) {
+      try {
+        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/leave`);
+        this.showSnackbar('냉장고에서 나갔습니다.', 'success');
+        await this.fetchFridgeList(); 
+      } catch (error) {
+        console.error("냉장고 나가기에 실패했습니다:", error);
+        this.showSnackbar(error.response?.data?.status_message || "나가기 처리 중 오류 발생", 'error');
+      }
+    },
+
+    async deleteFridge(fridgeId) {
+      try {
+        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}`);
+        this.showSnackbar('냉장고가 삭제되었습니다.', 'success');
+        await this.fetchFridgeList(); 
+      } catch (error) {
+        console.error("냉장고 삭제에 실패했습니다:", error);
+        this.showSnackbar(error.response?.data?.status_message || "삭제 처리 중 오류 발생", 'error');
+      }
+    },
+    copyInviteCode(inviteCode) {
+      if (!inviteCode) return;
+      navigator.clipboard.writeText(inviteCode).then(() => {
+        this.showSnackbar('초대 코드가 복사되었습니다!', 'info');
+      }).catch(err => {
+        console.error('코드 복사 실패:', err);
+        this.showSnackbar('복사에 실패했습니다.', 'error');
+      });
+    },
+    showSnackbar(message, color) {
+      this.snackbar.message = message;
+      this.snackbar.color = color;
+      this.snackbar.show = true;
+    }
+  }
+}
+</script>
