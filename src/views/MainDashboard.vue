@@ -2,6 +2,14 @@
   <v-container>
     <h1>메인페이지입니다</h1>
     <v-btn :to="{path:'/login'}">로그인</v-btn>
+    <div class="mt-5">
+      <v-badge color="red" :content="notificationCount">
+        <v-btn>알림</v-btn>
+      </v-badge>
+    </div>
+    <div class="mt-5">
+      <v-btn :to="{path:'/inquiry'}">문의하기</v-btn>
+    </div>
   </v-container>
 </template>
 
