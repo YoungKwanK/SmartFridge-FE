@@ -46,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { EventSourcePolyfill } from 'event-source-polyfill';
 
 const notifications = ref([]);
@@ -60,7 +60,9 @@ onMounted(() => {
     eventSource = new EventSourcePolyfill(
       `${process.env.VUE_APP_API_BASE_URL}/sse/connect/notification`,
       {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        reconnectInterval: 3000, // 재연결 간격(옵션)
+        maxReconnectAttempts: 10 // 최대 재연결 시도 횟수(옵션)
       }
     );
 
@@ -75,7 +77,7 @@ onMounted(() => {
         const data = JSON.parse(event.data);
         console.log('SSE 메시지 수신:', data);
 
-        // 모든 알림 타입 처리 (ADMIN_REPLY만이 아닌)
+        // 모든 알림 타입 처리
         if (data && data.type) {
           console.log(`${data.type} 알림 수신:`, data);
           notifications.value.push(data);
@@ -109,13 +111,7 @@ onMounted(() => {
   } else {
     console.warn('토큰이 없어서 SSE 연결을 시도하지 않습니다.');
   }
-});
 
-onUnmounted(() => {
-  if (eventSource) {
-    console.log('SSE 연결 종료');
-    eventSource.close();
-  }
 });
 
 // 알림 타입에 따른 아이콘 반환
