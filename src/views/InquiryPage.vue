@@ -132,7 +132,7 @@ export default {
         // 백엔드 API 호출
         const response = await this.sendInquiryToBackend()
         
-        if (response.success) {
+        if (response.status_code === 201) {
           this.showMessage('문의가 성공적으로 전송되었습니다.', 'success')
           this.resetForm()
         } else {
@@ -148,7 +148,7 @@ export default {
 
     async sendInquiryToBackend() {
         try{
-            const response = await axios.post(`${process.env.VUE_APP_API_URL}/inquiry/create/1`, this.inquiryData)
+            const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/inquiry/create/1`, this.inquiryData)
             return response.data
         }catch(error){
             console.error('문의 전송 오류:', error)
