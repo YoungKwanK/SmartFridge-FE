@@ -153,12 +153,13 @@ const menuItems = computed(() => {
   font-family: 'Arial', sans-serif; 
 }
 .responsive-card, .custom-drawer {
-  width: clamp(240px, 18vw, 280px) !important;
+  width: clamp(256px) !important;
 }
 .custom-drawer {
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 2px 0px 20px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 2px 0px 20px rgba(0, 0, 0, 0.1); */
   backdrop-filter: blur(5px);
+  /* border-right: none !important; */
 }
 .header-container {
   padding: 19px 20px;
