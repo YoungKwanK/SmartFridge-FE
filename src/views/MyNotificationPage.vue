@@ -223,9 +223,9 @@ export default {
         // 첫 번째 알림의 fridgeMemberType을 사용
         const memberType = this.notificationList[0].fridgeMemberType;
         // MANAGER인 경우에만 멤버 참여 탭 표시
-        return memberType === 'MANAGER' ? 'manager' : 'common';
+        return memberType === 'MANAGER' ? 'MANAGER' : 'COMMON';
       }
-      return 'common'; // 기본값
+      return 'COMMON'; // 기본값
     },
     
     sortedNotifications() {
@@ -452,18 +452,12 @@ export default {
 
     // 마우스 진입 처리
     handleMouseEnter(notificationId) {
-      console.log('마우스 진입:', notificationId);
-      console.log('이전 hoveredId:', this.hoveredId);
       this.hoveredId = notificationId;
-      console.log('새로운 hoveredId:', this.hoveredId);
     },
 
     // 마우스 이탈 처리
     handleMouseLeave() {
-      console.log('마우스 이탈');
-      console.log('이전 hoveredId:', this.hoveredId);
       this.hoveredId = null;
-      console.log('새로운 hoveredId:', this.hoveredId);
     },
 
     // 페이징 초기화
