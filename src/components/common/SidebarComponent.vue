@@ -110,7 +110,7 @@ const menuItems = ref([
   { title: '전체식품목록', icon: 'mdi-format-list-bulleted-square', value: 'foodlist', color: 'green-darken-1', to: "/#" },
   { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list' },
   { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: "/#" },
-  { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: "my/chat/page" },
+  { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: "/chatpage" },
   { title: '프로필설정', icon: 'mdi-account-outline', value: 'profile', color: 'indigo-darken-1', to: "/#" },
   { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/#"},
 ]);
@@ -145,12 +145,13 @@ const menuItems = ref([
   font-family: 'Arial', sans-serif; 
 }
 .responsive-card, .custom-drawer {
-  width: clamp(240px, 18vw, 280px) !important;
+  width: clamp(256px) !important;
 }
 .custom-drawer {
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 2px 0px 20px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 2px 0px 20px rgba(0, 0, 0, 0.1); */
   backdrop-filter: blur(5px);
+  /* border-right: none !important; */
 }
 .header-container {
   padding: 19px 20px;

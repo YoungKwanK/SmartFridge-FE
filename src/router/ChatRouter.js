@@ -1,9 +1,15 @@
-import GroupChat from "@/views/GroupChatList.vue";
-import MyChatPage from "@/views/MyChatPage.vue";
-import StompChatPage from "@/views/StompChatPage.vue";
+import GroupChat from "@/components/chat/GroupChatList.vue";
+import MyChatPage from "@/components/chat/MyChatPage.vue";
+import StompChatPage from "@/components/chat/StompChatPage.vue";
+import ChatPage from "@/views/ChatPage.vue";
 
 
 export const ChatRouter = [
+  {
+    path:'/chatpage',
+    name: 'ChatPage',
+    component: ChatPage,
+  },
   {
     path:'/chatpage/:roomId',
     name: 'StompChatPage',
