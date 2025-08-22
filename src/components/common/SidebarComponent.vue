@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const logoUrl = new URL('../../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
 
@@ -105,15 +105,23 @@ const doLogout = () => {
   window.location.reload();
 };
 
-const menuItems = ref([
-  { title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', color: 'blue-darken-1', to: "/#" },
-  { title: '전체식품목록', icon: 'mdi-format-list-bulleted-square', value: 'foodlist', color: 'green-darken-1', to: "/#" },
-  { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list' },
-  { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: "/#" },
-  { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: "/chatpage" },
-  { title: '프로필설정', icon: 'mdi-account-outline', value: 'profile', color: 'indigo-darken-1', to: "/#" },
-  { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/#"},
-]);
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+
+const menuItems = computed(() => {
+  const fridgeId = route.params.fridgeId;
+  return [
+    { title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', color: 'blue-darken-1', to: fridgeId ? `/fridge/${fridgeId}/dashboard` : "/#" },
+    { title: '공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'sharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#" },
+    { title: '비공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'nonsharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#" },
+    { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list' },
+    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: "/#" },
+    { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: "my/chat/page" },
+    { title: '프로필설정', icon: 'mdi-account-outline', value: 'profile', color: 'indigo-darken-1', to: "/#" },
+    { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/#"},
+  ];
+});
 </script>
 
 <style scoped>

@@ -12,12 +12,14 @@
     "@mdi/js": "^7.4.47",
     "axios": "^1.11.0",
     "core-js": "^3.8.3",
+    "event-source-polyfill": "^1.0.31",
     "js-cookie": "^3.0.5",
     "jwt-decode": "^4.0.0",
     "sockjs-client": "^1.6.1",
     "vue": "^3.2.13",
     "vue-router": "^4.5.1",
     "vuetify": "^3.9.3",
+    "vuex": "^4.1.0",
     "webstomp-client": "^1.2.6"
   },
   "devDependencies": {

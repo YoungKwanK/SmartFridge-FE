@@ -1,24 +1,79 @@
 <template>
   <div class="dashboard-header">
     <div class="header-info">
-      <h1 class="fridge-title">행복기숙사 1층 냉장고</h1>
-      <p class="fridge-subtitle">공용 냉장고 • 최근 활동: 7월 14일 21:40</p>
+      <div class="fridge-title-section">
+        <h1 class="fridge-title">{{ fridge.fridgeName }}</h1>
+        <div class="fridge-type-badge">
+          <v-chip 
+            :color="getTypeColor(fridge.type)" 
+            size="small" 
+            variant="elevated"
+            class="type-chip"
+          >
+            <v-icon start size="16">{{ getTypeIcon(fridge.type) }}</v-icon>
+            {{ getTypeText(fridge.type) }}
+          </v-chip>
+        </div>
+      </div>
+      <p class="fridge-subtitle">{{ fridge.description }}</p>
     </div>
     <div class="header-actions">
       <div class="notification-icon">
-        <v-icon color="amber" size="24">mdi-bell</v-icon>
-        <span class="notification-badge">3</span>
-      </div>
-      <div class="item-icon">
-        <v-icon color="brown" size="24">mdi-package-variant</v-icon>
-        <span class="notification-badge">5</span>
+        <div class="icon-container">
+          <v-icon color="amber" size="28">mdi-bell-ring</v-icon>
+          <div class="notification-badge">3</div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-// 필요한 경우 props나 emit 추가
+import axios from 'axios';
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+const fridge = ref({});
+
+const fetchFridgeInfo = async () => {
+  try {
+    const fridgeId = route.params.fridgeId;
+    if (!fridgeId) return;
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/detail`);
+    fridge.value = response.data.result;
+  } catch (error) {
+    console.error("냉장고 정보를 불러오는 데 실패했습니다:", error);
+  }
+};
+
+const getTypeColor = (type) => {
+  switch (type) {
+    case 'MANAGER': return 'success';
+    case 'COMMON': return 'info';
+    default: return 'grey';
+  }
+};
+
+const getTypeIcon = (type) => {
+  switch (type) {
+    case 'MANAGER': return 'mdi-crown';
+    case 'COMMON': return 'mdi-account';
+    default: return 'mdi-help';
+  }
+};
+
+const getTypeText = (type) => {
+  switch (type) {
+    case 'MANAGER': return '관리자';
+    case 'COMMON': return '일반';
+    default: return '알 수 없음';
+  }
+};
+
+onMounted(() => {
+  fetchFridgeInfo();
+});
 </script>
 
 <style scoped>
@@ -39,11 +94,26 @@
   flex: 1;
 }
 
+.fridge-title-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
 .fridge-title {
   font-size: 28px;
   font-weight: 700;
   color: #333;
-  margin: 0 0 8px 0;
+  margin: 0;
+}
+
+.fridge-type-badge {
+  flex-shrink: 0;
+}
+
+.type-chip {
+  font-weight: 600;
 }
 
 .fridge-subtitle {
@@ -58,26 +128,54 @@
   align-items: center;
 }
 
-.notification-icon,
-.item-icon {
-  position: relative;
+.notification-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
+  padding: 12px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.notification-icon:hover {
+  background: rgba(255, 193, 7, 0.2);
+  transform: translateY(-2px);
+}
+
+.icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .notification-badge {
   position: absolute;
   top: -8px;
   right: -8px;
-  background-color: #f44336;
+  background: linear-gradient(135deg, #ff4757, #ff3742);
   color: white;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+  border: 2px solid white;
+}
+
+.notification-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* 반응형 디자인 */
@@ -89,6 +187,12 @@
   
   .header-actions {
     align-self: flex-end;
+  }
+  
+  .fridge-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 
