@@ -4,6 +4,7 @@ import { MemberRouter } from "./MemberRouter";
 import { NotificationRouter } from "./NotificationRouter";
 import MainDashboard from "@/views/MainDashboard.vue";
 import { InquiryRouter } from "./InquiryRouter";
+import { FoodRouter } from "./FoodRouter";
 
 const routes = [
   {
@@ -15,6 +16,7 @@ const routes = [
   ...ChatRouter,
   ...NotificationRouter,
   ...InquiryRouter,
+  ...FoodRouter
 ]
 
 const router = createRouter(

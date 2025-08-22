@@ -5,7 +5,7 @@
     app
     permanent
     class="custom-drawer"
-  >
+  > 
     <div class="header-container">
       <v-list-item class="pa-0">
         <template v-slot:prepend>
