@@ -28,7 +28,7 @@
         <v-tab value="comment">댓글알림</v-tab>
         <v-tab value="qa">Q&A</v-tab>
         <v-tab 
-          v-if="userType === 'manager'" 
+          v-if="userType === 'MANAGER'" 
           value="member"
         >
           멤버 참여
@@ -50,123 +50,154 @@
           'comment-border': getNotificationType(notification) === 'comment',
           'qa-border': getNotificationType(notification) === 'qa',
           'member-border': getNotificationType(notification) === 'member',
+          'admin-reply-border': getNotificationType(notification) === 'admin-reply',
           'other-border': getNotificationType(notification) === 'other'
         }"
         @click="goToDetail(notification)"
         @mouseenter="handleMouseEnter(notification.id)"
         @mouseleave="handleMouseLeave()"
       >
-        <!-- 알림 타입별 아이콘 -->
-        <div class="notification-icon">
-          <div 
-            v-if="!notification.read" 
-            class="unread-dot"
-          ></div>
-          
-          <!-- 식품등록 알림 -->
-          <div 
-            v-if="getNotificationType(notification) === 'food-register'"
-            class="icon food-register-icon"
-          >
-            🍽️
+        <!-- 좌측: 알림 내용 -->
+        <div class="notification-content">
+          <!-- 아이콘을 가장 상단에 배치 -->
+          <div class="notification-tags">
+            <div v-if="getNotificationType(notification) === 'expiration'" class="expiration-info">
+              <v-chip 
+                :color="isUrgentExpiration(notification) ? 'red' : 'orange'"
+                size="small"
+                variant="outlined"
+                class="expiration-chip"
+              >
+                <v-icon size="16" class="mr-1">
+                  {{ isUrgentExpiration(notification) ? 'mdi-alert' : 'mdi-clock-outline' }}
+                </v-icon>
+                {{ getExpirationDays(notification) }}일 남음
+              </v-chip>
+            </div>
+            
+            <div v-if="getNotificationType(notification) === 'food-register'" class="food-info">
+              <v-chip 
+                color="green"
+                size="small"
+                variant="outlined"
+                class="food-chip"
+              >
+                <v-icon size="16" class="mr-1">mdi-food</v-icon>
+                새로운 음식 등록
+              </v-chip>
+            </div>
+            
+            <div v-if="getNotificationType(notification) === 'comment'" class="comment-info">
+              <v-chip 
+                color="blue"
+                size="small"
+                variant="outlined"
+                class="comment-chip"
+              >
+                <v-icon size="16" class="mr-1">mdi-comment</v-icon>
+                새로운 댓글
+              </v-chip>
+            </div>
+            
+            <div v-if="getNotificationType(notification) === 'post'" class="post-info">
+              <v-chip 
+                color="purple"
+                size="small"
+                variant="outlined"
+                class="post-chip"
+              >
+                <v-icon size="16" class="mr-1">mdi-bullhorn</v-icon>
+                새로운 공지
+              </v-chip>
+            </div>
+            
+            <div v-if="getNotificationType(notification) === 'qa'" class="qa-info">
+              <v-chip 
+                color="indigo"
+                size="small"
+                variant="outlined"
+                class="qa-chip"
+              >
+                <v-icon size="16" class="mr-1">mdi-help-circle</v-icon>
+                새로운 문의
+              </v-chip>
+            </div>
+            
+            <div v-if="getNotificationType(notification) === 'member'" class="member-info">
+              <v-chip 
+                color="teal"
+                size="small"
+                variant="outlined"
+                class="member-chip"
+              >
+                <v-icon size="16" class="mr-1">mdi-account-plus</v-icon>
+                새로운 멤버
+              </v-chip>
+            </div>
+            
+            <div v-if="getNotificationType(notification) === 'admin-reply'" class="admin-reply-info">
+              <v-chip 
+                color="blue"
+                size="small"
+                variant="outlined"
+                class="admin-reply-chip"
+              >
+                <v-icon size="16" class="mr-1">mdi-account-cog</v-icon>
+                관리자 답변
+              </v-chip>
+            </div>
           </div>
           
-          <!-- 유통기한 알림 -->
-          <div 
-            v-else-if="getNotificationType(notification) === 'expiration'"
-            class="icon expiration-icon"
-            :class="{ 'urgent': isUrgentExpiration(notification) }"
-          >
-            ⏰
-          </div>
-          
-          <!-- 게시글 알림 -->
-          <div 
-            v-else-if="getNotificationType(notification) === 'post'"
-            class="icon post-icon"
-          >
-            📄
-          </div>
-          
-          <!-- 댓글 알림 -->
-          <div 
-            v-else-if="getNotificationType(notification) === 'comment'"
-            class="icon comment-icon"
-          >
-            💬
-          </div>
-          
-          <!-- Q&A 알림 -->
-          <div 
-            v-else-if="getNotificationType(notification) === 'qa'"
-            class="icon qa-icon"
-          >
-            ❓
-          </div>
-          
-          <!-- 새로운 멤버 참여 -->
-          <div 
-            v-else-if="getNotificationType(notification) === 'member'"
-            class="icon member-icon"
-          >
-            👤
-          </div>
-          
-          <!-- 기타 알림 -->
-          <div 
-            v-else
-            class="icon other-icon"
-          >
-            🔔
+          <div class="notification-body">
+            <div class="notification-message">
+              {{ getNotificationText(notification) }}
+            </div>
           </div>
         </div>
 
-        <!-- 알림 내용 -->
-        <div class="notification-content">
-          <div class="notification-text">
-            {{ getNotificationText(notification) }}
+        <!-- 우측: 삭제 버튼과 시간 -->
+        <div class="notification-right">
+          <!-- 삭제 버튼 (호버 시 표시) -->
+          <div 
+            class="delete-btn"
+            @click.stop="confirmDelete(notification)"
+          >
+            <v-icon 
+              size="small" 
+              color="grey"
+              v-show="hoveredId === notification.id"
+            >
+              mdi-close
+            </v-icon>
           </div>
+          
           <div class="notification-time">
             {{ formatTimeAgo(notification.createdAt) }}
           </div>
         </div>
-
-        <!-- 삭제 버튼 (읽은 알림에만 표시, 호버 시에만 보임) -->
-        <div 
-          class="delete-btn"
-          @click.stop="confirmDelete(notification)"
+      </div>
+      
+      <!-- 로딩 인디케이터 및 더 보기 버튼 -->
+      <div v-if="isLoading" class="loading-indicator">
+        <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
+        <span class="loading-text">알림을 불러오는 중...</span>
+      </div>
+      
+      <div v-else-if="hasMoreData" class="load-more-section">
+        <v-btn 
+          @click="loadMoreData" 
+          variant="outlined" 
+          color="primary"
+          class="load-more-btn"
         >
-          <v-icon 
-            size="small" 
-            color="black"
-            v-show="hoveredId === notification.id"
-          >
-            mdi-close
-          </v-icon>
-                 </div>
-       </div>
-       
-       <!-- 로딩 인디케이터 및 더 보기 버튼 -->
-       <div v-if="isLoading" class="loading-indicator">
-         <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
-         <span class="loading-text">알림을 불러오는 중...</span>
-       </div>
-       
-       <div v-else-if="hasMoreData" class="load-more-section">
-         <v-btn 
-           @click="loadMoreData" 
-           variant="outlined" 
-           color="primary"
-           class="load-more-btn"
-         >
-           더 보기
-         </v-btn>
-       </div>
-       
-       <div v-else-if="notificationList.length > 0" class="no-more-data">
-         <span class="no-more-text">모든 알림을 불러왔습니다</span>
-       </div>
-     </div>
+          더 보기
+        </v-btn>
+      </div>
+      
+      <div v-else-if="notificationList.length > 0" class="no-more-data">
+        <span class="no-more-text">모든 알림을 불러왔습니다</span>
+      </div>
+    </div>
 
     <!-- 삭제 확인 모달 -->
     <v-dialog v-model="deleteDialog" max-width="400">
@@ -197,6 +228,7 @@ export default {
       hoveredId: null,
       deleteDialog: false,
       deleteTarget: null,
+      userType: 'COMMON', // 사용자 타입을 data 속성으로 변경
       // 페이징 관련 데이터
       currentPage: 0,
       pageSize: 20,
@@ -217,23 +249,22 @@ export default {
   },
   
   computed: {
-    // 사용자 타입 (백엔드 NotificationResDto의 fridgeMemberType 사용)
-    userType() {
-      if (this.notificationList.length > 0) {
-        // 첫 번째 알림의 fridgeMemberType을 사용
-        const memberType = this.notificationList[0].fridgeMemberType;
-        // MANAGER인 경우에만 멤버 참여 탭 표시
-        return memberType === 'MANAGER' ? 'MANAGER' : 'COMMON';
-      }
-      return 'COMMON'; // 기본값
-    },
-    
     sortedNotifications() {
-      // 선택된 카테고리에 따라 알림 필터링
+      // 사용자 타입에 따라 알림 필터링
       let filteredNotifications = this.notificationList;
       
+      // ADMIN인 경우 NEW_INQUIRY만 보여주기
+      if (this.userType === 'ADMIN') {
+        filteredNotifications = this.notificationList.filter(n => n.type === 'NEW_INQUIRY');
+      }
+      // MANAGER와 COMMON인 경우 ADMIN_REPLY만 보여주기
+      else if (this.userType === 'MANAGER' || this.userType === 'COMMON') {
+        filteredNotifications = this.notificationList.filter(n => n.type === 'ADMIN_REPLY');
+      }
+      
+      // 선택된 카테고리에 따라 추가 필터링
       if (this.selectedCategory !== "ALL") {
-        filteredNotifications = this.notificationList.filter(n => n.type === this.selectedCategory);
+        filteredNotifications = filteredNotifications.filter(n => n.type === this.selectedCategory);
       }
       
       // 읽음/안읽음 상태별로 그룹화
@@ -254,6 +285,21 @@ export default {
   },
   
   methods: {
+    // 사용자 타입 설정 (초기 로드 시에만 호출)
+    setUserType() {
+      if (this.notificationList.length > 0) {
+        const memberType = this.notificationList[0].fridgeMemberType;
+        
+        // fridgeMemberType이 없는 경우는 ADMIN
+        if (!memberType || memberType === '' || memberType === null || memberType === undefined) {
+          this.userType = 'ADMIN';
+        } else {
+          // MANAGER인 경우에만 멤버 참여 탭 표시
+          this.userType = memberType === 'MANAGER' ? 'MANAGER' : 'COMMON';
+        }
+      }
+    },
+
     // 알림 목록 조회 (페이징 지원)
     async fetchNotifications(isLoadMore = false) {
       if (this.isLoading) return;
@@ -284,6 +330,8 @@ export default {
         } else {
           // 새로 로드인 경우 기존 목록 교체
           this.notificationList = newNotifications;
+          // 초기 로드 시에만 사용자 타입 설정
+          this.setUserType();
         }
         
         // 더 로드할 데이터가 있는지 확인
@@ -291,13 +339,23 @@ export default {
         
         // 디버깅: 사용자 타입 확인 및 알림 데이터 확인
         if (this.notificationList.length > 0) {
+          console.log('=== 알림 데이터 디버깅 ===');
           console.log('첫 번째 알림의 fridgeMemberType:', this.notificationList[0].fridgeMemberType);
-          console.log('계산된 userType:', this.userType);
-          console.log('알림 목록:', this.notificationList);
+          console.log('첫 번째 알림의 type:', this.notificationList[0].type);
+          console.log('설정된 userType:', this.userType);
+          console.log('전체 알림 목록:', this.notificationList);
+          console.log('선택된 카테고리:', this.selectedCategory);
+          console.log('사용자 타입별 필터링 후:', this.userType === 'ADMIN' ? 
+            this.notificationList.filter(n => n.type === 'NEW_INQUIRY') : 
+            this.notificationList.filter(n => n.type === 'ADMIN_REPLY'));
+          console.log('최종 필터링된 알림 목록:', this.sortedNotifications);
           console.log('읽은 알림 개수:', this.notificationList.filter(n => n.read).length);
           console.log('안읽은 알림 개수:', this.notificationList.filter(n => !n.read).length);
           console.log('현재 페이지:', this.currentPage);
           console.log('더 로드할 데이터:', this.hasMoreData);
+          console.log('========================');
+        } else {
+          console.log('알림 목록이 비어있습니다.');
         }
       } catch (error) {
         console.error('알림 조회 실패:', error);
@@ -310,8 +368,8 @@ export default {
     filterByTab(tab) {
       this.selectedTab = tab;
       
-      // 사용자가 'manager'가 아니고 멤버 참여 탭을 선택하려는 경우 처리
-      if (tab === "member" && this.userType !== "manager") {
+      // 사용자가 'MANAGER'가 아니고 멤버 참여 탭을 선택하려는 경우 처리
+      if (tab === "member" && this.userType !== "MANAGER") {
         this.selectedTab = "all";
         this.selectedCategory = "ALL";
         return;
@@ -349,23 +407,61 @@ export default {
       if (notification.type === "NEW_COMMENT") return "comment";
       if (notification.type === "NEW_INQUIRY") return "qa";
       if (notification.type === "NEW_MEMBER") return "member";
+      if (notification.type === "ADMIN_REPLY") return "admin-reply";
       return "other";
+    },
+
+    // 알림 제목 생성
+    getNotificationTitle(notification) {
+      switch (notification.type) {
+        case 'NEW_FOOD':
+          return '새로운 음식이 등록되었습니다';
+        case 'EXPIRATION_IMMINENT':
+          return '유통기한이 임박했습니다';
+        case 'NEW_ANNOUNCEMENT':
+          return '새로운 공지사항이 있습니다';
+        case 'NEW_COMMENT':
+          return '새로운 댓글이 달렸습니다';
+        case 'NEW_INQUIRY':
+          return '새로운 문의가 등록되었습니다';
+        case 'NEW_MEMBER':
+          return '새로운 멤버가 참여했습니다';
+        case 'ADMIN_REPLY':
+          return '관리자 답변이 등록되었습니다';
+        default:
+          return '새로운 알림이 있습니다';
+      }
     },
 
     // 알림 내용 텍스트 생성
     getNotificationText(notification) {
-      if (notification.type === "EXPIRATION") {
-        return `${notification.content} 유통기한 ${this.getExpirationDays(notification)}일 전`;
+      if (notification.type === "EXPIRATION_IMMINENT") {
+        return `${notification.content || '음식'}의 유통기한이 곧 만료됩니다`;
       }
       if (notification.type === "NEW_FOOD") {
-        return "새 식품 등록";
+        return `${notification.content || '새로운 음식'}이 냉장고에 등록되었습니다`;
       }
-      return notification.content;
+      if (notification.type === "NEW_ANNOUNCEMENT") {
+        return `${notification.content || '새로운 공지사항'}이 게시되었습니다`;
+      }
+      if (notification.type === "NEW_COMMENT") {
+        return `${notification.content || '새로운 댓글'}이 등록되었습니다`;
+      }
+      if (notification.type === "NEW_INQUIRY") {
+        return `${notification.content || '새로운 문의'}가 등록되었습니다`;
+      }
+      if (notification.type === "NEW_MEMBER") {
+        return `${notification.content || '새로운 멤버'}가 냉장고에 참여했습니다`;
+      }
+      if (notification.type === "ADMIN_REPLY") {
+        return `${notification.content || '관리자 답변'}이 등록되었습니다`;
+      }
+      return notification.content || '새로운 알림이 있습니다';
     },
 
     // 유통기한까지 남은 일수 계산
     getExpirationDays(notification) {
-      if (notification.type === "EXPIRATION") {
+      if (notification.type === "EXPIRATION_IMMINENT") {
         const today = new Date();
         const expirationDate = new Date(notification.expirationDate || notification.createdAt);
         const diffTime = expirationDate - today;
@@ -377,7 +473,7 @@ export default {
 
     // 긴급 유통기한 알림 판단 (3일 이하)
     isUrgentExpiration(notification) {
-      if (notification.type === "EXPIRATION") {
+      if (notification.type === "EXPIRATION_IMMINENT") {
         const days = this.getExpirationDays(notification);
         return days <= 3;
       }
@@ -606,12 +702,16 @@ export default {
   border-left-color: #fd7e14;
 }
 
+.notification-item.admin-reply-border {
+  border-left-color: #007bff;
+}
+
 .notification-item.other-border {
   border-left-color: #6c757d;
 }
 
 .notification-item:nth-child(even) {
-  background: #f8f9fa;
+  background: #fff;
 }
 
 .notification-item:hover {
@@ -621,62 +721,154 @@ export default {
 
 .notification-item.read {
   background: #f8f9fa;
+  opacity: 0.8;
 }
 
-.notification-item.read .notification-text {
+.notification-item.read .notification-title {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.notification-item.read .notification-message {
   color: #6c757d;
   font-weight: 400;
 }
 
-.notification-icon {
-  position: relative;
-  margin-right: 20px;
-  flex-shrink: 0;
+.notification-item.read .notification-time {
+  background-color: #e9ecef;
+  color: #6c757d;
 }
 
-.unread-dot {
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  width: 8px;
-  height: 8px;
-  background: white;
-  border-radius: 50%;
-  z-index: 2;
-} 
-
-.icon {
+.delete-btn {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-}
-
-.food-register-icon {
+  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.expiration-icon.urgent {
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+.delete-btn:hover {
+  background-color: #ffebee;
+  transform: scale(1.1);
+}
+
+.delete-btn .v-icon {
+  transition: color 0.2s ease;
+}
+
+.delete-btn:hover .v-icon {
+  color: #d32f2f !important;
 }
 
 .notification-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-right: 16px;
+  margin-left: 16px;
 }
 
-.notification-text {
+.notification-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 32px;
+  flex-shrink: 0;
+}
+
+.notification-title {
   font-size: 1rem;
   font-weight: 600;
   color: #2c3e50;
-  margin-bottom: 4px;
+  line-height: 1.4;
+  flex: 1;
 }
 
 .notification-time {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #6c757d;
+  white-space: nowrap;
+  padding: 2px 8px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.notification-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0;
+}
+
+.notification-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-message {
+  font-size: 0.875rem;
+  color: #495057;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.expiration-info,
+.food-info,
+.comment-info {
+  display: flex;
+  align-items: center;
+}
+
+.expiration-chip,
+.food-chip,
+.comment-chip {
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 16px;
+  height: 24px;
+}
+
+.expiration-chip {
+  border-color: #ff9800;
+  color: #e65100;
+}
+
+.food-chip {
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.comment-chip {
+  border-color: #2196f3;
+  color: #1565c0;
+}
+
+.post-chip {
+  border-color: #9c27b0;
+  color: #6a1b9a;
+}
+
+.qa-chip {
+  border-color: #3f51b5;
+  color: #283593;
+}
+
+.member-chip {
+  border-color: #009688;
+  color: #00695c;
+}
+
+.admin-reply-chip {
+  border-color: #2196f3;
+  color: #1565c0;
 }
 
 /* Vuetify 탭 스타일 오버라이드 */
