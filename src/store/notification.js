@@ -1,35 +1,63 @@
-import { defineStore } from 'pinia'
-
-export const useNotificationStore = defineStore('notification', {
-  state: () => ({
-    notificationCount: parseInt(localStorage.getItem('notificationCount')) || 0
-  }),
-  getters: {
-    getNotificationCount: (state) => state.notificationCount
+export default {
+  namespaced: true,
+  state: {
+    notifications: [],
+    notificationCount: 0,
+    typeCounts: {
+      ADMIN_REPLY: 0,
+      NEW_FOOD: 0,
+      EXPIRATION_IMMINENT: 0,
+      NEW_ANNOUNCEMENT: 0,
+      NEW_COMMENT: 0,
+      NEW_INQUIRY: 0,
+      NEW_MEMBER: 0
+    }
+  },
+  mutations: {
+    addNotification(state, notification) {
+      state.notifications.unshift(notification); // 최신 알림을 맨 앞에 추가
+      state.notificationCount++;
+      
+      // 타입별 카운트 증가
+      if (notification.type && notification.type in state.typeCounts) {
+        state.typeCounts[notification.type]++;
+      }
+      
+      // 알림 개수 제한 (최대 5개)
+      if (state.notifications.length > 5) {
+        state.notifications = state.notifications.slice(0, 5);
+      }
+    },
+    clearNotifications(state) {
+      state.notifications = [];
+      state.notificationCount = 0;
+      // 타입별 카운트 초기화
+      Object.keys(state.typeCounts).forEach(key => {
+        state.typeCounts[key] = 0;
+      });
+    },
+    markAsRead(state, notificationId) {
+      const notification = state.notifications.find(n => n.id === notificationId);
+      if (notification) {
+        notification.isRead = true;
+      }
+    }
   },
   actions: {
-    // 새로운 알림 도착 시
-    increment() {
-      this.notificationCount++
-      localStorage.setItem('notificationCount', this.notificationCount)
+    addNotification({ commit }, notification) {
+      commit('addNotification', notification);
     },
-
-    // 특정 개수만큼 더하기 (SSE에서 데이터에 따라)
-    addCount(count) {
-      this.notificationCount += count
-      localStorage.setItem('notificationCount', this.notificationCount)
+    clearNotifications({ commit }) {
+      commit('clearNotifications');
     },
-
-    // 읽은 후 초기화
-    clear() {
-      this.notificationCount = 0
-      localStorage.setItem('notificationCount', this.notificationCount)
-    },
-
-    // 서버에서 초기값 가져오기 (선택)
-    setCount(count) {
-      this.notificationCount = count
-      localStorage.setItem('notificationCount', this.notificationCount)
+    markAsRead({ commit }, notificationId) {
+      commit('markAsRead', notificationId);
     }
+  },
+  getters: {
+    allNotifications: (state) => state.notifications,
+    notificationCount: (state) => state.notificationCount,
+    typeCounts: (state) => state.typeCounts,
+    unreadCount: (state) => state.notifications.filter(n => !n.isRead).length
   }
-})
+};
