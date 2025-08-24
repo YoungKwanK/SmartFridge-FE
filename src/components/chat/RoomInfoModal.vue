@@ -77,10 +77,15 @@
 
       <v-divider></v-divider>
 
-      <v-card-actions class="pa-4">
-        <v-spacer></v-spacer>
-        <v-btn color="primary" variant="flat" @click="closeModal" min-width="100">
+      <v-card-actions class="pa-4 justify-center">
+        <v-btn v-if="isParticipant" color="primary"  variant="flat" @click="closeModal" min-width="100">
           확인
+        </v-btn>
+        <v-btn v-if="!isParticipant" color="primary"  variant="flat" @click="joinRoom(roomId)" min-width="100">
+          참여
+        </v-btn>
+        <v-btn v-if="!isParticipant" color="secondary"  variant="flat" @click="closeModal" min-width="100">
+          취소
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -96,6 +101,7 @@ import { getResultData } from '@/utils/commonDataHandler';
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
   roomId: { type: [String, Number], default: null },
+  isParticipant: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -104,6 +110,22 @@ const emit = defineEmits(['update:modelValue']);
 const roomDetails = ref(null); // API로 받아온 상세 데이터를 저장
 const isLoading = ref(false);  // 로딩 상태
 const error = ref(null);       // 에러 메시지
+
+const joinRoom = async(roomId) => {
+  console.log('채팅방 참여:', roomId);
+  try {
+    closeModal();
+    // roomId를 사용해 상세 정보 API 호출
+    await axios.post(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${roomId}/join`);
+    alert("채팅방에 성공적으로 참여했습니다.");
+    window.location.reload();
+
+  } catch (err) {
+    console.error("채팅방 참여 실패:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 // API 호출 함수
 const fetchRoomDetails = async () => {
