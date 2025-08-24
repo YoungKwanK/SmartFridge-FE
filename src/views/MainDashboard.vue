@@ -68,7 +68,7 @@
     </div>
 
     <div class="mt-5">
-      <v-btn :to="'/inquiry'">문의하기</v-btn>
+      <v-btn :to="'/#'">문의하기</v-btn>
     </div>
   </v-container>
 </template>

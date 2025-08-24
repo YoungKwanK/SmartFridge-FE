@@ -20,8 +20,15 @@
     <div class="header-actions">
       <div class="notification-icon" @click="showNotificationModal = true">
         <div class="icon-container">
-          <v-icon color="amber" size="28">mdi-bell-ring</v-icon>
-          <div class="notification-badge">{{ notificationCount }}</div>
+          <v-icon color="amber" size="28">
+            mdi-bell-ring
+          </v-icon>
+          <div 
+            v-if="notificationCount > 0" 
+            class="notification-badge"
+          >
+            {{ notificationCount }}
+          </div>
         </div>
       </div>
     </div>
@@ -53,7 +60,8 @@
               v-for="(notification, index) in recentNotifications" 
               :key="notification.id"
               class="notification-item"
-              :class="{ 'last-item': index === recentNotifications.length - 1 }"
+              :class="{ 'last-item': index === recentNotifications.length - 1, 'unread': !notification.isRead }"
+              @click="handleNotificationClick(notification)"
             >
               <div class="notification-icon-wrapper">
                 <v-icon 
@@ -67,11 +75,15 @@
               <div class="notification-details">
                 <div class="notification-header">
                   <span class="notification-type">{{ getNotificationTypeText(notification.type) }}</span>
-                  <span class="notification-time">{{ formatTimeAgo(notification.createdAt) }}</span>
+                  <span class="notification-time">{{ formatTimeAgo(notification.createdAt || notification.timestamp) }}</span>
                 </div>
                 <div class="notification-content">
-                  {{ notification.content || notification.contents || '알림 내용' }}
+                  {{ notification.content || notification.contents || notification.message || '알림 내용' }}
                 </div>
+              </div>
+              <!-- 읽지 않은 알림 표시 -->
+              <div v-if="!notification.isRead" class="unread-indicator">
+                <v-icon size="12" color="red">mdi-circle</v-icon>
               </div>
             </div>
           </div>
@@ -103,163 +115,143 @@
 </template>
 
 <script setup>
-import axios from 'axios';
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { onMounted, computed, ref } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 
-const route = useRoute();
+// Props 정의
+defineProps({
+  fridge: {
+    type: Object,
+    default: () => ({
+      fridgeName: '냉장고',
+      type: 'PERSONAL',
+      description: '냉장고 설명'
+    })
+  }
+});
+
+const store = useStore();
 const router = useRouter();
-const fridge = ref({});
+
+// 반응형 변수들
 const showNotificationModal = ref(false);
-const recentNotifications = ref([]);
-const notificationCount = ref(0);
 
-const fetchFridgeInfo = async () => {
-  try {
-    const fridgeId = route.params.fridgeId;
-    if (!fridgeId) return;
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/detail`);
-    fridge.value = response.data.result;
-  } catch (error) {
-    console.error("냉장고 정보를 불러오는 데 실패했습니다:", error);
-  }
-};
+// Vuex store에서 상태 가져오기
+const fridgeId = computed(() => localStorage.getItem('fridgeId') || '1');
+const notificationCount = computed(() => store.getters['notification/getFridgeNotificationCount'](fridgeId.value));
+const recentNotifications = computed(() => store.getters['notification/getFridgeNotifications'](fridgeId.value));
 
-const fetchRecentNotifications = async () => {
-  try {
-    const fridgeId = route.params.fridgeId;
-    if (!fridgeId) return;
-    
-    const response = await axios.get(
-      `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/notification/list?page=0&size=4`
-    );
-    
-    const notifications = response.data.result.content;
-    recentNotifications.value = notifications;
-    notificationCount.value = notifications.length;
-  } catch (error) {
-    console.error("최근 알림을 불러오는 데 실패했습니다:", error);
-  }
-};
+onMounted(() => {
+  // 전역 SSE 연결이 이미 App.vue에서 관리되므로 여기서는 별도 연결하지 않음
+  console.log('DashboardHeader 마운트됨 - 전역 SSE 연결 사용');
+});
 
-const goToNotificationList = () => {
-  showNotificationModal.value = false;
-  router.push('/notification/list');
-};
+// 전역 SSE 연결이 App.vue에서 관리되므로 별도 연결 코드 제거
 
+// 냉장고 타입 관련 함수들
 const getTypeColor = (type) => {
   switch (type) {
-    case 'MANAGER': return 'success';
-    case 'COMMON': return 'info';
+    case 'PERSONAL': return 'blue';
+    case 'SHARED': return 'green';
+    case 'COMMERCIAL': return 'purple';
     default: return 'grey';
   }
 };
 
 const getTypeIcon = (type) => {
   switch (type) {
-    case 'MANAGER': return 'mdi-crown';
-    case 'COMMON': return 'mdi-account';
-    default: return 'mdi-help';
+    case 'PERSONAL': return 'mdi-home';
+    case 'SHARED': return 'mdi-account-group';
+    case 'COMMERCIAL': return 'mdi-store';
+    default: return 'mdi-fridge';
   }
 };
 
 const getTypeText = (type) => {
   switch (type) {
-    case 'MANAGER': return '관리자';
-    case 'COMMON': return '일반';
-    default: return '알 수 없음';
+    case 'PERSONAL': return '개인용';
+    case 'SHARED': return '공유용';
+    case 'COMMERCIAL': return '상업용';
+    default: return '냉장고';
   }
 };
 
-// 알림 타입에 따른 아이콘 반환
-const getNotificationIcon = (type) => {
-  switch (type) {
-    case 'ADMIN_REPLY':
-      return 'mdi-account-cog';
-    case 'NEW_FOOD':
-      return 'mdi-food';
-    case 'EXPIRATION_IMMINENT':
-      return 'mdi-clock-alert';
-    case 'NEW_ANNOUNCEMENT':
-      return 'mdi-bullhorn';
-    case 'NEW_COMMENT':
-      return 'mdi-comment';
-    case 'NEW_INQUIRY':
-      return 'mdi-help-circle';
-    case 'NEW_MEMBER':
-      return 'mdi-account-plus';
-    default:
-      return 'mdi-bell';
+// 알림 관련 함수들
+
+const handleNotificationClick = (notification) => {
+  // 알림 클릭 시 읽음 처리
+  if (!notification.isRead) {
+    store.commit('notification/markFridgeNotificationAsRead', {
+      fridgeId: fridgeId.value,
+      notificationId: notification.id
+    });
   }
 };
 
-// 알림 타입에 따른 색상 반환
-const getNotificationColor = (type) => {
-  switch (type) {
-    case 'ADMIN_REPLY':
-      return 'blue';
-    case 'NEW_FOOD':
-      return 'green';
-    case 'EXPIRATION_IMMINENT':
-      return 'red';
-    case 'NEW_ANNOUNCEMENT':
-      return 'purple';
-    case 'NEW_COMMENT':
-      return 'orange';
-    case 'NEW_INQUIRY':
-      return 'indigo';
-    case 'NEW_MEMBER':
-      return 'teal';
-    default:
-      return 'grey';
-  }
+const goToNotificationList = () => {
+  // 알림 목록 페이지로 이동
+  router.push('/notification/list');
 };
 
-// 알림 타입에 따른 텍스트 반환
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return '방금 전';
+  
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffMs = now - time;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return '방금 전';
+  if (diffMins < 60) return `${diffMins}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  
+  return time.toLocaleDateString();
+};
+
 const getNotificationTypeText = (type) => {
   switch (type) {
-    case 'ADMIN_REPLY':
-      return '관리자 답변';
-    case 'NEW_FOOD':
-      return '식품 등록';
-    case 'EXPIRATION_IMMINENT':
-      return '유통기한';
-    case 'NEW_ANNOUNCEMENT':
-      return '공지사항';
-    case 'NEW_COMMENT':
-      return '댓글';
-    case 'NEW_INQUIRY':
-      return '문의';
-    case 'NEW_MEMBER':
-      return '멤버 참여';
-    default:
-      return '알림';
+    case 'ADMIN_REPLY': return '관리자 답변';
+    case 'NEW_FOOD': return '새로운 음식';
+    case 'EXPIRATION_IMMINENT': return '유통기한 임박';
+    case 'NEW_ANNOUNCEMENT': return '새로운 공지';
+    case 'NEW_COMMENT': return '새로운 댓글';
+    case 'NEW_INQUIRY': return '새로운 문의';
+    case 'NEW_MEMBER': return '새로운 멤버';
+    default: return '알림';
   }
 };
 
-// 상대적 시간 표시
-const formatTimeAgo = (dateStr) => {
-  if (!dateStr) return '';
-  
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays > 0) {
-    return `${diffDays}일 전`;
-  } else if (diffHours > 0) {
-    return `${diffHours}시간 전`;
-  } else {
-    return "방금 전";
+// 알림 타입별 아이콘
+const getNotificationIcon = (type) => {
+  switch (type) {
+    case 'ADMIN_REPLY': return 'mdi-account-cog';
+    case 'NEW_FOOD': return 'mdi-food';
+    case 'EXPIRATION_IMMINENT': return 'mdi-clock-alert';
+    case 'NEW_ANNOUNCEMENT': return 'mdi-bullhorn';
+    case 'NEW_COMMENT': return 'mdi-comment';
+    case 'NEW_INQUIRY': return 'mdi-help-circle';
+    case 'NEW_MEMBER': return 'mdi-account-plus';
+    default: return 'mdi-bell';
   }
 };
 
-onMounted(() => {
-  fetchFridgeInfo();
-  fetchRecentNotifications();
-});
+// 알림 타입별 색상
+const getNotificationColor = (type) => {
+  switch (type) {
+    case 'ADMIN_REPLY': return 'blue';
+    case 'NEW_FOOD': return 'green';
+    case 'EXPIRATION_IMMINENT': return 'red';
+    case 'NEW_ANNOUNCEMENT': return 'purple';
+    case 'NEW_COMMENT': return 'orange';
+    case 'NEW_INQUIRY': return 'indigo';
+    case 'NEW_MEMBER': return 'teal';
+    default: return 'grey';
+  }
+};
 </script>
 
 <style scoped>
@@ -429,10 +421,29 @@ onMounted(() => {
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid #e9ecef;
+  cursor: pointer; /* 클릭 가능하도록 커서 변경 */
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin: 4px 0;
+  padding: 12px;
+}
+
+.notification-item:hover {
+  background-color: #f8f9fa;
+  transform: translateX(4px);
 }
 
 .notification-item:last-child {
   border-bottom: none;
+}
+
+.notification-item.unread {
+  background-color: #f0f9eb; /* 읽지 않은 알림 배경색 */
+  border-left: 4px solid #4caf50; /* 읽지 않은 알림 테두리 */
+}
+
+.notification-item.unread:hover {
+  background-color: #e8f5e8;
 }
 
 .notification-icon-wrapper {
@@ -472,6 +483,11 @@ onMounted(() => {
   line-height: 1.4;
 }
 
+.unread-indicator {
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
 .no-notifications {
   text-align: center;
   padding: 40px 20px;
@@ -493,4 +509,228 @@ onMounted(() => {
   text-transform: none;
   letter-spacing: normal;
 }
+.modal-header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  padding: 16px 24px;
+
+  background-color: #f8f9fa;
+
+  border-bottom: 1px solid #e9ecef;
+
+}
+
+
+
+.modal-title {
+
+  display: flex;
+
+  align-items: center;
+
+  font-size: 18px;
+
+  font-weight: 600;
+
+  color: #333;
+
+}
+
+
+
+.close-btn {
+
+  color: #6c757d;
+
+}
+
+
+
+.modal-content {
+
+  padding: 24px;
+
+}
+
+
+
+.notifications-list {
+
+  max-height: 300px; /* 스크롤 가능한 최대 높이 */
+
+  overflow-y: auto;
+
+  -webkit-overflow-scrolling: touch; /* 스크롤 부드럽게 */
+
+}
+
+
+
+.notification-item {
+
+  display: flex;
+
+  align-items: center;
+
+  padding: 12px 0;
+
+  border-bottom: 1px solid #e9ecef;
+
+  cursor: pointer; /* 클릭 가능하도록 커서 변경 */
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin: 4px 0;
+  padding: 12px;
+}
+
+.notification-item:hover {
+  background-color: #f8f9fa;
+  transform: translateX(4px);
+}
+
+
+
+.notification-item:last-child {
+
+  border-bottom: none;
+
+}
+
+
+.notification-item.unread {
+  background-color: #f0f9eb; /* 읽지 않은 알림 배경색 */
+  border-left: 4px solid #4caf50; /* 읽지 않은 알림 테두리 */
+}
+
+.notification-item.unread:hover {
+  background-color: #e8f5e8;
+}
+
+
+.notification-icon-wrapper {
+
+  flex-shrink: 0;
+
+  margin-right: 12px;
+
+}
+
+
+
+.notification-type-icon {
+
+  font-weight: 600;
+
+}
+
+
+
+.notification-details {
+
+  flex: 1;
+
+}
+
+
+
+.notification-header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 4px;
+
+}
+
+
+
+.notification-type {
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  color: #495057;
+
+}
+
+
+
+.notification-time {
+
+  font-size: 12px;
+
+  color: #6c757d;
+
+}
+
+
+
+.notification-content {
+
+  font-size: 14px;
+
+  color: #212529;
+
+  line-height: 1.4;
+
+}
+
+
+.unread-indicator {
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+
+.no-notifications {
+
+  text-align: center;
+
+  padding: 40px 20px;
+
+}
+
+
+
+.no-notifications-text {
+
+  margin-top: 16px;
+
+  font-size: 16px;
+
+}
+
+
+
+.modal-actions {
+
+  padding: 16px 24px;
+
+  background-color: #f8f9fa;
+
+  border-top: 1px solid #e9ecef;
+
+}
+
+
+
+.view-all-btn {
+
+  font-weight: 600;
+
+  text-transform: none;
+
+  letter-spacing: normal;
+
+}
+
 </style>

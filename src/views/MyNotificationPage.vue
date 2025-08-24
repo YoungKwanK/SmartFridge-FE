@@ -26,7 +26,6 @@
         <v-tab value="expiration">유통기한 알림</v-tab>
         <v-tab value="post">게시글 알림</v-tab>
         <v-tab value="comment">댓글알림</v-tab>
-        <v-tab value="qa">Q&A</v-tab>
         <v-tab 
           v-if="userType === 'MANAGER'" 
           value="member"
@@ -48,9 +47,7 @@
           'expiration-border': getNotificationType(notification) === 'expiration',
           'post-border': getNotificationType(notification) === 'post',
           'comment-border': getNotificationType(notification) === 'comment',
-          'qa-border': getNotificationType(notification) === 'qa',
           'member-border': getNotificationType(notification) === 'member',
-          'admin-reply-border': getNotificationType(notification) === 'admin-reply',
           'other-border': getNotificationType(notification) === 'other'
         }"
         @click="goToDetail(notification)"
@@ -59,7 +56,6 @@
       >
         <!-- 좌측: 알림 내용 -->
         <div class="notification-content">
-          <!-- 아이콘을 가장 상단에 배치 -->
           <div class="notification-tags">
             <div v-if="getNotificationType(notification) === 'expiration'" class="expiration-info">
               <v-chip 
@@ -76,74 +72,30 @@
             </div>
             
             <div v-if="getNotificationType(notification) === 'food-register'" class="food-info">
-              <v-chip 
-                color="green"
-                size="small"
-                variant="outlined"
-                class="food-chip"
-              >
+              <v-chip color="green" size="small" variant="outlined" class="food-chip">
                 <v-icon size="16" class="mr-1">mdi-food</v-icon>
                 새로운 음식 등록
               </v-chip>
             </div>
-            
+
             <div v-if="getNotificationType(notification) === 'comment'" class="comment-info">
-              <v-chip 
-                color="blue"
-                size="small"
-                variant="outlined"
-                class="comment-chip"
-              >
+              <v-chip color="blue" size="small" variant="outlined" class="comment-chip">
                 <v-icon size="16" class="mr-1">mdi-comment</v-icon>
                 새로운 댓글
               </v-chip>
             </div>
-            
+
             <div v-if="getNotificationType(notification) === 'post'" class="post-info">
-              <v-chip 
-                color="purple"
-                size="small"
-                variant="outlined"
-                class="post-chip"
-              >
+              <v-chip color="purple" size="small" variant="outlined" class="post-chip">
                 <v-icon size="16" class="mr-1">mdi-bullhorn</v-icon>
                 새로운 공지
               </v-chip>
             </div>
-            
-            <div v-if="getNotificationType(notification) === 'qa'" class="qa-info">
-              <v-chip 
-                color="indigo"
-                size="small"
-                variant="outlined"
-                class="qa-chip"
-              >
-                <v-icon size="16" class="mr-1">mdi-help-circle</v-icon>
-                새로운 문의
-              </v-chip>
-            </div>
-            
+
             <div v-if="getNotificationType(notification) === 'member'" class="member-info">
-              <v-chip 
-                color="teal"
-                size="small"
-                variant="outlined"
-                class="member-chip"
-              >
+              <v-chip color="teal" size="small" variant="outlined" class="member-chip">
                 <v-icon size="16" class="mr-1">mdi-account-plus</v-icon>
                 새로운 멤버
-              </v-chip>
-            </div>
-            
-            <div v-if="getNotificationType(notification) === 'admin-reply'" class="admin-reply-info">
-              <v-chip 
-                color="blue"
-                size="small"
-                variant="outlined"
-                class="admin-reply-chip"
-              >
-                <v-icon size="16" class="mr-1">mdi-account-cog</v-icon>
-                관리자 답변
               </v-chip>
             </div>
           </div>
@@ -157,39 +109,24 @@
 
         <!-- 우측: 삭제 버튼과 시간 -->
         <div class="notification-right">
-          <!-- 삭제 버튼 (호버 시 표시) -->
-          <div 
-            class="delete-btn"
-            @click.stop="confirmDelete(notification)"
-          >
-            <v-icon 
-              size="small" 
-              color="grey"
-              v-show="hoveredId === notification.id"
-            >
+          <div class="delete-btn" @click.stop="confirmDelete(notification)">
+            <v-icon size="small" color="grey" v-show="hoveredId === notification.id">
               mdi-close
             </v-icon>
           </div>
-          
           <div class="notification-time">
             {{ formatTimeAgo(notification.createdAt) }}
           </div>
         </div>
       </div>
-      
-      <!-- 로딩 인디케이터 및 더 보기 버튼 -->
+
       <div v-if="isLoading" class="loading-indicator">
         <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
         <span class="loading-text">알림을 불러오는 중...</span>
       </div>
       
       <div v-else-if="hasMoreData" class="load-more-section">
-        <v-btn 
-          @click="loadMoreData" 
-          variant="outlined" 
-          color="primary"
-          class="load-more-btn"
-        >
+        <v-btn @click="loadMoreData" variant="outlined" color="primary" class="load-more-btn">
           더 보기
         </v-btn>
       </div>
@@ -224,12 +161,11 @@ export default {
       notificationList: [],
       selectedTab: "all",
       selectedCategory: "ALL",
-      fridgeId: 1, // 동적 할당할 것임
+      fridgeId: 1,
       hoveredId: null,
       deleteDialog: false,
       deleteTarget: null,
-      userType: 'COMMON', // 사용자 타입을 data 속성으로 변경
-      // 페이징 관련 데이터
+      userType: 'COMMON',
       currentPage: 0,
       pageSize: 20,
       hasMoreData: true,
@@ -239,124 +175,56 @@ export default {
   
   async created() {
     await this.fetchNotifications();
-    // 스크롤 이벤트 리스너 등록
     window.addEventListener('scroll', this.handleScroll);
   },
   
   beforeUnmount() {
-    // 스크롤 이벤트 리스너 해제
     window.removeEventListener('scroll', this.handleScroll);
   },
   
   computed: {
     sortedNotifications() {
-      // 사용자 타입에 따라 알림 필터링
       let filteredNotifications = this.notificationList;
-      
-      // ADMIN인 경우 NEW_INQUIRY만 보여주기
-      if (this.userType === 'ADMIN') {
-        filteredNotifications = this.notificationList.filter(n => n.type === 'NEW_INQUIRY');
-      }
-      // MANAGER와 COMMON인 경우 ADMIN_REPLY만 보여주기
-      else if (this.userType === 'MANAGER' || this.userType === 'COMMON') {
-        filteredNotifications = this.notificationList.filter(n => n.type === 'ADMIN_REPLY');
-      }
-      
-      // 선택된 카테고리에 따라 추가 필터링
+
       if (this.selectedCategory !== "ALL") {
         filteredNotifications = filteredNotifications.filter(n => n.type === this.selectedCategory);
       }
-      
-      // 읽음/안읽음 상태별로 그룹화
+
       const unreadNotifications = filteredNotifications.filter(n => !n.read);
       const readNotifications = filteredNotifications.filter(n => n.read);
-      
-      // 각 그룹 내에서 최신순으로 정렬 (createdAt 내림차순)
-      const sortedUnread = unreadNotifications.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      const sortedRead = readNotifications.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
-      );
-      
-      // 안읽은 알림을 먼저, 읽은 알림을 나중에 배치
+
+      const sortedUnread = unreadNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const sortedRead = readNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
       return [...sortedUnread, ...sortedRead];
     }
   },
-  
-  methods: {
-    // 사용자 타입 설정 (초기 로드 시에만 호출)
-    setUserType() {
-      if (this.notificationList.length > 0) {
-        const memberType = this.notificationList[0].fridgeMemberType;
-        
-        // fridgeMemberType이 없는 경우는 ADMIN
-        if (!memberType || memberType === '' || memberType === null || memberType === undefined) {
-          this.userType = 'ADMIN';
-        } else {
-          // MANAGER인 경우에만 멤버 참여 탭 표시
-          this.userType = memberType === 'MANAGER' ? 'MANAGER' : 'COMMON';
-        }
-      }
-    },
 
-    // 알림 목록 조회 (페이징 지원)
+  methods: {
+    // fetch 알림 목록
     async fetchNotifications(isLoadMore = false) {
       if (this.isLoading) return;
+      this.isLoading = true;
       
       try {
-        this.isLoading = true;
-        
         let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/list`;
         const params = new URLSearchParams();
-        
-        if (this.selectedCategory !== "ALL") {
-          params.append('notificationType', this.selectedCategory);
-        }
-        
+        if (this.selectedCategory !== "ALL") params.append('notificationType', this.selectedCategory);
         params.append('page', this.currentPage.toString());
         params.append('size', this.pageSize.toString());
-        
-        if (params.toString()) {
-          url += `?${params.toString()}`;
-        }
-        
+        if (params.toString()) url += `?${params.toString()}`;
+
         const response = await axios.get(url);
         const newNotifications = response.data.result.content;
-        
+
         if (isLoadMore) {
-          // 추가 로드인 경우 기존 목록에 추가
           this.notificationList = [...this.notificationList, ...newNotifications];
         } else {
-          // 새로 로드인 경우 기존 목록 교체
           this.notificationList = newNotifications;
-          // 초기 로드 시에만 사용자 타입 설정
           this.setUserType();
         }
-        
-        // 더 로드할 데이터가 있는지 확인
+
         this.hasMoreData = newNotifications.length === this.pageSize;
-        
-        // 디버깅: 사용자 타입 확인 및 알림 데이터 확인
-        if (this.notificationList.length > 0) {
-          console.log('=== 알림 데이터 디버깅 ===');
-          console.log('첫 번째 알림의 fridgeMemberType:', this.notificationList[0].fridgeMemberType);
-          console.log('첫 번째 알림의 type:', this.notificationList[0].type);
-          console.log('설정된 userType:', this.userType);
-          console.log('전체 알림 목록:', this.notificationList);
-          console.log('선택된 카테고리:', this.selectedCategory);
-          console.log('사용자 타입별 필터링 후:', this.userType === 'ADMIN' ? 
-            this.notificationList.filter(n => n.type === 'NEW_INQUIRY') : 
-            this.notificationList.filter(n => n.type === 'ADMIN_REPLY'));
-          console.log('최종 필터링된 알림 목록:', this.sortedNotifications);
-          console.log('읽은 알림 개수:', this.notificationList.filter(n => n.read).length);
-          console.log('안읽은 알림 개수:', this.notificationList.filter(n => !n.read).length);
-          console.log('현재 페이지:', this.currentPage);
-          console.log('더 로드할 데이터:', this.hasMoreData);
-          console.log('========================');
-        } else {
-          console.log('알림 목록이 비어있습니다.');
-        }
       } catch (error) {
         console.error('알림 조회 실패:', error);
       } finally {
@@ -364,180 +232,91 @@ export default {
       }
     },
 
-    // 탭에 따른 필터링
+    setUserType() {
+      if (this.notificationList.length > 0) {
+        const memberType = this.notificationList[0].fridgeMemberType;
+        if (!memberType) this.userType = 'ADMIN';
+        else this.userType = memberType === 'MANAGER' ? 'MANAGER' : 'COMMON';
+      }
+    },
+
     filterByTab(tab) {
       this.selectedTab = tab;
-      
-      // 사용자가 'MANAGER'가 아니고 멤버 참여 탭을 선택하려는 경우 처리
-      if (tab === "member" && this.userType !== "MANAGER") {
-        this.selectedTab = "all";
-        this.selectedCategory = "ALL";
+
+      if (tab === "qa") {
+        // 페이지에서는 문의 탭 클릭 시 fetch하지 않음
         return;
       }
-      
-      // 탭에 맞는 카테고리로 매핑
+
       let category = "ALL";
-      if (tab === "food-register") {
-        category = "NEW_FOOD";
-      } else if (tab === "expiration") {
-        category = "EXPIRATION_IMMINENT";
-      } else if (tab === "post") {
-        category = "NEW_ANNOUNCEMENT";
-      } else if (tab === "comment") {
-        category = "NEW_COMMENT";
-      } else if (tab === "qa") {
-        category = "NEW_INQUIRY";
-      } else if (tab === "member") {
-        category = "NEW_MEMBER";
-      }
-      
-      // 카테고리 즉시 업데이트하여 computed 속성이 즉시 반응하도록
+      if (tab === "food-register") category = "NEW_FOOD";
+      else if (tab === "expiration") category = "EXPIRATION_IMMINENT";
+      else if (tab === "post") category = "NEW_ANNOUNCEMENT";
+      else if (tab === "comment") category = "NEW_COMMENT";
+      else if (tab === "member") category = "NEW_MEMBER";
+
       this.selectedCategory = category;
-      
-      // 페이징 초기화 및 새로운 데이터 로드
       this.resetPagination();
       this.fetchNotifications();
     },
 
-    // 알림 타입 판단
     getNotificationType(notification) {
       if (notification.type === "NEW_FOOD") return "food-register";
       if (notification.type === "EXPIRATION_IMMINENT") return "expiration";
       if (notification.type === "NEW_ANNOUNCEMENT") return "post";
       if (notification.type === "NEW_COMMENT") return "comment";
-      if (notification.type === "NEW_INQUIRY") return "qa";
       if (notification.type === "NEW_MEMBER") return "member";
-      if (notification.type === "ADMIN_REPLY") return "admin-reply";
       return "other";
     },
 
-    // 알림 제목 생성
-    getNotificationTitle(notification) {
-      switch (notification.type) {
-        case 'NEW_FOOD':
-          return '새로운 음식이 등록되었습니다';
-        case 'EXPIRATION_IMMINENT':
-          return '유통기한이 임박했습니다';
-        case 'NEW_ANNOUNCEMENT':
-          return '새로운 공지사항이 있습니다';
-        case 'NEW_COMMENT':
-          return '새로운 댓글이 달렸습니다';
-        case 'NEW_INQUIRY':
-          return '새로운 문의가 등록되었습니다';
-        case 'NEW_MEMBER':
-          return '새로운 멤버가 참여했습니다';
-        case 'ADMIN_REPLY':
-          return '관리자 답변이 등록되었습니다';
-        default:
-          return '새로운 알림이 있습니다';
-      }
-    },
-
-    // 알림 내용 텍스트 생성
     getNotificationText(notification) {
-      if (notification.type === "EXPIRATION_IMMINENT") {
-        return `${notification.content || '음식'}의 유통기한이 곧 만료됩니다`;
-      }
-      if (notification.type === "NEW_FOOD") {
-        return `${notification.content || '새로운 음식'}이 냉장고에 등록되었습니다`;
-      }
-      if (notification.type === "NEW_ANNOUNCEMENT") {
-        return `${notification.content || '새로운 공지사항'}이 게시되었습니다`;
-      }
-      if (notification.type === "NEW_COMMENT") {
-        return `${notification.content || '새로운 댓글'}이 등록되었습니다`;
-      }
-      if (notification.type === "NEW_INQUIRY") {
-        return `${notification.content || '새로운 문의'}가 등록되었습니다`;
-      }
-      if (notification.type === "NEW_MEMBER") {
-        return `${notification.content || '새로운 멤버'}가 냉장고에 참여했습니다`;
-      }
-      if (notification.type === "ADMIN_REPLY") {
-        return `${notification.content || '관리자 답변'}이 등록되었습니다`;
-      }
+      if (notification.type === "EXPIRATION_IMMINENT") return `${notification.content || '음식'}의 유통기한이 곧 만료됩니다`;
+      if (notification.type === "NEW_FOOD") return `${notification.content || '새로운 음식'}이 냉장고에 등록되었습니다`;
+      if (notification.type === "NEW_ANNOUNCEMENT") return `${notification.content || '새로운 공지사항'}이 게시되었습니다`;
+      if (notification.type === "NEW_COMMENT") return `${notification.content || '새로운 댓글'}이 등록되었습니다`;
+      if (notification.type === "NEW_MEMBER") return `${notification.content || '새로운 멤버'}가 냉장고에 참여했습니다`;
       return notification.content || '새로운 알림이 있습니다';
     },
 
-    // 유통기한까지 남은 일수 계산
     getExpirationDays(notification) {
       if (notification.type === "EXPIRATION_IMMINENT") {
         const today = new Date();
         const expirationDate = new Date(notification.expirationDate || notification.createdAt);
-        const diffTime = expirationDate - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays > 0 ? diffDays : 0;
+        return Math.max(0, Math.ceil((expirationDate - today) / (1000*60*60*24)));
       }
       return 0;
     },
 
-    // 긴급 유통기한 알림 판단 (3일 이하)
     isUrgentExpiration(notification) {
-      if (notification.type === "EXPIRATION_IMMINENT") {
-        const days = this.getExpirationDays(notification);
-        return days <= 3;
-      }
+      if (notification.type === "EXPIRATION_IMMINENT") return this.getExpirationDays(notification) <= 3;
       return false;
     },
 
-    // 상대적 시간 표시
     formatTimeAgo(dateStr) {
       const date = new Date(dateStr);
       const now = new Date();
       const diffMs = now - date;
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-      if (diffDays > 0) {
-        return `${diffDays}일 전`;
-      } else if (diffHours > 0) {
-        return `${diffHours}시간 전`;
-      } else {
-        return "방금 전";
-      }
+      const diffHours = Math.floor(diffMs / (1000*60*60));
+      const diffDays = Math.floor(diffMs / (1000*60*60*24));
+      if (diffDays > 0) return `${diffDays}일 전`;
+      else if (diffHours > 0) return `${diffHours}시간 전`;
+      return "방금 전";
     },
 
-    // 알림 클릭 시 상세 페이지 이동
-    async goToDetail(notification) {
-      try {
-        // 읽음 처리
-        const readNotification = [{ notificationId: notification.id }];
-        await axios.patch(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/isRead`, 
-          readNotification
-        );
-        
-        // 알림 클릭 시 상세 페이지 이동
-        if (notification.targetType === "ANNOUNCE") {
-          this.$router.push(`/fridge/${this.fridgeId}/post/${notification.targetId}`);
-        } else if (notification.targetType === "FOOD") {
-          this.$router.push(`/food/${notification.targetId}`);
-        }
-        
-        // 읽음 처리 후 목록 갱신
-        await this.fetchNotifications();
-      } catch (error) {
-        console.error('알림 상세 이동 실패:', error);
-      }
+    goToDetail(notification) {
+      if (notification.targetType === "ANNOUNCE") this.$router.push(`/fridge/${this.fridgeId}/post/${notification.targetId}`);
+      else if (notification.targetType === "FOOD") this.$router.push(`/food/${notification.targetId}`);
     },
 
-    // 삭제 확인
     confirmDelete(notification) {
-      console.log('삭제 확인 호출됨:', notification);
       this.deleteTarget = notification;
       this.deleteDialog = true;
     },
 
-    // 알림 삭제
     async deleteNotification() {
       if (!this.deleteTarget) return;
-      
       try {
-        await axios.delete(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/delete/${this.deleteTarget.id}`
-        );
-        
-        // 삭제 후 리스트 갱신
+        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/delete/${this.deleteTarget.id}`);
         this.notificationList = this.notificationList.filter(n => n.id !== this.deleteTarget.id);
         this.deleteDialog = false;
         this.deleteTarget = null;
@@ -546,64 +325,30 @@ export default {
       }
     },
 
-    // 마우스 진입 처리
-    handleMouseEnter(notificationId) {
-      this.hoveredId = notificationId;
-    },
+    handleMouseEnter(notificationId) { this.hoveredId = notificationId; },
+    handleMouseLeave() { this.hoveredId = null; },
 
-    // 마우스 이탈 처리
-    handleMouseLeave() {
-      this.hoveredId = null;
-    },
+    resetPagination() { this.currentPage = 0; this.hasMoreData = true; this.notificationList = []; },
+    async loadMoreData() { if (!this.hasMoreData || this.isLoading) return; this.currentPage++; await this.fetchNotifications(true); },
 
-    // 페이징 초기화
-    resetPagination() {
-      this.currentPage = 0;
-      this.hasMoreData = true;
-      this.notificationList = [];
-    },
-    
-    // 추가 데이터 로드
-    async loadMoreData() {
-      if (!this.hasMoreData || this.isLoading) return;
-      
-      this.currentPage += 1;
-      await this.fetchNotifications(true);
-    },
-    
-    // 스크롤 이벤트 처리
     handleScroll() {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
       const documentHeight = document.documentElement.scrollHeight;
-      
-      // 스크롤이 페이지 하단 근처에 도달했을 때 추가 데이터 로드
-      if (scrollTop + windowHeight >= documentHeight - 100) {
-        this.loadMoreData();
-      }
+      if (scrollTop + windowHeight >= documentHeight - 100) this.loadMoreData();
     },
-    
-    // 모든 알림 읽음 처리
+
     async readAll() {
       try {
-        const readNotification = this.notificationList.map(n => ({
-          notificationId: n.id
-        }));
-        
-        await axios.patch(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/isRead`, 
-          readNotification
-        );
-        
-        // 읽음 처리 후 목록 갱신
+        const readNotification = this.notificationList.map(n => ({ notificationId: n.id }));
+        await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/isRead`, readNotification);
         await this.fetchNotifications();
-      } catch (error) {
-        console.error('모두 읽음 처리 실패:', error);
-      }
+      } catch (error) { console.error('모두 읽음 처리 실패:', error); }
     }
   }
 };
 </script>
+
 
 <style scoped>
 .notification-page {
