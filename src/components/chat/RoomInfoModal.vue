@@ -13,23 +13,65 @@
       
       <v-divider></v-divider>
       
-      <v-card-text class="py-5" v-if="room">
-        <v-list lines="two">
-          <v-list-item title="방 제목" :subtitle="room.title"></v-list-item>
-          <v-list-item title="개설자" :subtitle="room.name"></v-list-item>
+      <v-card-text class="py-5" style="min-height: 250px;">
+        <div v-if="isLoading" class="d-flex justify-center align-center fill-height">
+          <v-progress-circular indeterminate color="primary"></v-progress-circular>
+        </div>
+        
+        <div v-else-if="error" class="d-flex justify-center align-center fill-height">
+          <v-alert type="error" :text="error" variant="tonal"></v-alert>
+        </div>
+
+        <v-list v-else-if="roomDetails">
+          <v-list-item title="방 제목">
+            <template v-slot:append>
+              <span class="text-medium-emphasis">{{ roomDetails.roomName }}</span>
+            </template>
+          </v-list-item>
+
+          <v-list-item title="개설자">
+            <template v-slot:append>
+              <span class="text-medium-emphasis">{{ roomDetails.userName }}</span>
+            </template>
+          </v-list-item>
+
           <v-list-item title="참여 현황">
             <template v-slot:subtitle>
               <v-progress-linear
-                :model-value="(room.currentParticipants / room.maxParticipants) * 100"
+                :model-value="(roomDetails.currentParticipants / roomDetails.maxParticipants) * 100"
                 :color="isRoomFull ? 'red' : 'green'"
                 height="8"
                 rounded
                 class="my-1"
               ></v-progress-linear>
-              {{ room.currentParticipants }} / {{ room.maxParticipants }} 명
+              {{ roomDetails.currentParticipants }} / {{ roomDetails.maxParticipants }} 명
             </template>
           </v-list-item>
-          <v-list-item title="공동구매 링크" :subtitle="room.url"></v-list-item>
+          <v-list-item title="설명" class="description-item">
+            <template v-slot:subtitle>
+              <span style="white-space: pre-wrap;">{{ displayContents }}</span>
+              <a
+                v-if="roomDetails?.contents?.length > 100"
+                @click="isDescriptionExpanded = !isDescriptionExpanded"
+                class="toggle-button"
+              >
+                {{ isDescriptionExpanded ? '접기' : '더 보기' }}
+              </a>
+            </template>
+          </v-list-item>
+          <v-list-item title="공동구매 링크">
+            <template v-slot:subtitle>
+              <a 
+                :href="roomDetails.productUrl" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="link-style"
+              >
+                {{ roomDetails.productUrl }}
+              </a>
+            </template>
+          </v-list-item>
+          <v-list-item title="방 생성일" :subtitle="roomDetails.createdAt"></v-list-item>
         </v-list>
       </v-card-text>
 
@@ -37,12 +79,7 @@
 
       <v-card-actions class="pa-4">
         <v-spacer></v-spacer>
-        <v-btn 
-          color="primary" 
-          variant="flat" 
-          @click="closeModal" 
-          min-width="100"
-        >
+        <v-btn color="primary" variant="flat" @click="closeModal" min-width="100">
           확인
         </v-btn>
       </v-card-actions>
@@ -51,42 +88,108 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, watch, computed } from 'vue';
+import axios from 'axios';
+import { getResultData } from '@/utils/commonDataHandler';
 
-// props: 부모 컴포넌트로부터 데이터를 전달받습니다.
-// 1. modelValue: v-model을 통해 모달의 열림/닫힘 상태를 제어 (boolean)
-// 2. room: 표시할 채팅방의 정보 (object)
+// [수정] props: room 객체 대신 roomId를 받도록 변경
 const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    required: true,
-  },
-  room: {
-    type: Object,
-    default: null,
-  },
+  modelValue: { type: Boolean, required: true },
+  roomId: { type: [String, Number], default: null },
 });
 
-// emit: 자식 컴포넌트가 부모 컴포넌트로 이벤트를 보냅니다.
-// 'update:modelValue'는 v-model의 값을 변경하기 위한 표준 이벤트입니다.
 const emit = defineEmits(['update:modelValue']);
 
-// 모달을 닫을 때 'update:modelValue' 이벤트를 발생시켜 부모의 상태를 변경합니다.
+// [추가] 모달 내부에서 사용할 상태 변수들
+const roomDetails = ref(null); // API로 받아온 상세 데이터를 저장
+const isLoading = ref(false);  // 로딩 상태
+const error = ref(null);       // 에러 메시지
+
+// API 호출 함수
+const fetchRoomDetails = async () => {
+  if (!props.roomId) return; // roomId가 없으면 실행하지 않음
+
+  isLoading.value = true;
+  error.value = null;
+  roomDetails.value = null;
+
+  try {
+    // roomId를 사용해 상세 정보 API 호출
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/info/${props.roomId}`);
+    roomDetails.value = getResultData(response); // 예시 경로, 실제 API에 맞게 수정
+  } catch (err) {
+    console.error("채팅방 상세 정보 조회 실패:", err);
+    error.value = "정보를 불러오는 데 실패했습니다.";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// [추가] 설명란이 펼쳐졌는지 여부를 저장하는 상태 변수
+const isDescriptionExpanded = ref(false);
+
+// [추가] 표시될 내용을 계산하는 computed 속성
+const displayContents = computed(() => {
+  const contents = roomDetails.value?.contents;
+  const limit = 100;
+
+  // 내용이 없거나 100자 이하면 그냥 전체 내용을 반환
+  if (!contents || contents.length <= limit) {
+    return contents;
+  }
+
+  // 100자 이상일 경우, 펼침 상태에 따라 다른 내용을 반환
+  if (isDescriptionExpanded.value) {
+    return contents; // 펼쳐졌으면 전체 내용
+  } else {
+    return contents.slice(0, limit) + '...'; // 접혀있으면 100자 + ...
+  }
+});
+
+// [핵심] modelValue(모달의 열림/닫힘 상태)가 변경될 때를 감지
+watch(() => props.modelValue, (newValue) => {
+  if (!newValue) {
+    isDescriptionExpanded.value = false;
+  }
+  // 모달이 열릴 때 (newValue가 true일 때) API를 호출
+  if (newValue) {
+    fetchRoomDetails();
+  }
+}, {
+  immediate: true
+});
+
 const closeModal = () => {
   emit('update:modelValue', false);
 };
 
-// 방이 꽉 찼는지 계산하는 computed 속성
 const isRoomFull = computed(() => {
-  if (!props.room) return false;
-  return props.room.currentParticipants >= props.room.maxParticipants;
+  if (!roomDetails.value) return false;
+  return roomDetails.value.currentParticipants >= roomDetails.value.maxParticipants;
 });
 </script>
 
 <style scoped>
-.v-list-item-title {
-  font-weight: 500 !important;
-  color: #555;
-  margin-bottom: 2px;
+/* [추가] 설명(description-item) 내부의 v-list-item-subtitle 스타일을 재정의 */
+.description-item :deep(.v-list-item-subtitle) {
+  /* 텍스트가 여러 줄로 자연스럽게 줄바꿈되도록 설정 */
+  white-space: normal; 
+  
+  /* 컴포넌트 높이가 내용에 따라 자동으로 조절되도록 설정 */
+  height: auto;
+  
+  /* Vuetify의 기본 한 줄 처리를 무효화 */
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.toggle-button {
+  color: #1976D2;
+  cursor: pointer;
+  font-weight: 500;
+  margin-left: 8px;
+}
+.toggle-button:hover {
+  text-decoration: underline;
 }
 </style>

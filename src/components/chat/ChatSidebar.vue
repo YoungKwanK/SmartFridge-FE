@@ -19,20 +19,50 @@
       <v-window v-model="tab" class="flex-grow-1" style="overflow-y: auto;">
         <v-window-item value="chat">
           <v-list @mouseleave="hoveredRoomId = null">
-            <v-list-item
-              v-for="room in chatRooms"
-              :key="room.id"
-              @click="selectRoom(room)"
-              :active="selectedRoomId === room.id"
+             <v-list-item
+              v-if="managerRoom"
+              @click="selectRoom(managerRoom)"
+              :active="selectedRoomId === managerRoom.roomId"
               class="ma-2 pa-0"
               rounded="lg"
               height="68px"
-              @mouseenter="hoveredRoomId = room.id"
             >
-              <div v-if="hoveredRoomId !== room.id" class="d-flex align-center fill-height pa-3">
-                <div class="flex-grow-1" style="min-width: 0;">
-                  <v-list-item-title class="font-weight-bold text-truncate">{{ room.title }}</v-list-item-title>
-                  <v-list-item-subtitle class="text-truncate">{{ room.name }}</v-list-item-subtitle>
+              <div class="d-flex align-center fill-height pa-3">
+                <div style="color: red; font-size: medium; margin-right: 15px; back">
+                  {{ managerRoom.unReadCount }}
+                </div>
+                <div class="flex-grow-1">
+                  <v-list-item-title class="font-weight-bold text-truncate d-flex align-center">
+                    <span>{{ managerRoom.roomName }}</span>
+                  </v-list-item-title>
+                  <v-list-item-subtitle class="text-truncate">{{ managerRoom.userName }}</v-list-item-subtitle>
+                </div>
+              </div>
+            </v-list-item>
+            <v-list-item
+              v-for="room in purchaseRooms"
+              :key="room.roomId"
+              class="ma-2 pa-0"
+              rounded="lg"
+              height="68px"
+              @mouseenter="hoveredRoomId = room.roomId"
+            >
+              <div v-if="hoveredRoomId !== room.roomId" class="d-flex align-center fill-height pa-3">
+                <div style="color: red; font-size: medium; margin-right: 15px; back">
+                  {{ room.unReadCount }}
+                </div>
+                <div class="flex-grow-1">
+                  <v-list-item-title class="font-weight-bold text-truncate d-flex align-center">
+                    <span>{{ room.roomName }}</span>
+                    <v-icon
+                        v-if="room.isCreator"
+                        icon="mdi-crown"
+                        size="x-small"
+                        color="yellow"
+                        class="mr-2 flex-shrink-0"
+                      ></v-icon>
+                  </v-list-item-title>
+                  <v-list-item-subtitle v-if="!room.isCreator" class="text-truncate">{{ room.userName }}</v-list-item-subtitle>
                 </div>
                 <v-chip
                   :color="isRoomFull(room) ? 'red' : 'green'"
@@ -50,6 +80,11 @@
                   <span class="ml-2">정보 보기</span>
                 </div>
                 <v-divider vertical></v-divider>
+                <div class="action-button join" @click.stop="joinRoom(room)">
+                  <v-icon size="small">mdi-login-variant</v-icon>
+                  <span class="ml-2">참여하기</span>
+                </div>
+                <v-divider vertical></v-divider>
                 <div class="action-button leave" @click.stop="leaveRoom(room)">
                   <v-icon size="small">mdi-exit-to-app</v-icon>
                   <span class="ml-2">나가기</span>
@@ -60,12 +95,13 @@
         </v-window-item>
 
         <v-window-item value="groupbuy">
+          <v-list-item>
+            
+          </v-list-item>
           <v-list @mouseleave="hoveredRoomId = null">
             <v-list-item
-              v-for="room in chatRooms"
+              v-for="room in purchaseRooms"
               :key="room.id"
-              @click="selectRoom(room)"
-              :active="selectedRoomId === room.id"
               class="ma-2 pa-0"
               rounded="lg"
               height="68px"
@@ -104,9 +140,9 @@
       </v-window>
     </v-card>
      <RoomInfoModal
-      v-if="selectedRoomForModal"
+      v-if="selectedRoomIdForModal"
       v-model="isModalOpen"
-      :room="selectedRoomForModal"
+      :roomId="selectedRoomIdForModal"
     />
   </v-container>
 </template>
@@ -115,6 +151,8 @@
 import { onMounted, ref } from 'vue';
 import RoomInfoModal from './RoomInfoModal.vue';
 import axios from 'axios';
+import { useRoute } from 'vue-router';
+import { getErrorMessage, getResultData } from '@/utils/commonDataHandler';
 
 const tab = ref('chat');
 const selectedRoomId = ref(null);
@@ -123,17 +161,25 @@ const emit = defineEmits(['select-room']);
 
 // [추가] 모달의 상태를 관리할 ref들을 추가합니다.
 const isModalOpen = ref(false); // 모달이 열렸는지 여부
-const selectedRoomForModal = ref(null); // 모달에 표시할 방 정보
+const selectedRoomIdForModal = ref(null); // 모달에 표시할 방 정보
 
-const chatRooms = ref([]);
+const managerRoom = ref(null);    // 첫 번째 채팅방
+const purchaseRooms = ref([]);     // 나머지 모든 채팅방
 const isLoading = ref(true); // 1. 로딩 상태를 관리할 ref 추가 (초기값 true)
+const route = useRoute();
+const fridgeId = ref(route.params.fridgeId);
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/chat-rooms');
-    chatRooms.value = response.data;
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
+    const allRooms = getResultData(response); // 서버에서 받은 채팅방 배열
+
+    const [first, ...rest] = allRooms;
+    managerRoom.value = first;
+    purchaseRooms.value = rest;
   } catch (error) {
     console.error("API 호출 에러:", error);
+    alert(getErrorMessage(error));
   } finally {
     // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
     isLoading.value = false;
@@ -149,15 +195,32 @@ const selectRoom = (room) => {
   emit('select-room', room);
 };
 
+const joinRoom = (room) => {
+  console.log('채팅방 참여:', room.roomName);
+  // 여기에 채팅방에 참여하는 로직을 추가할 수 있습니다.
+  // 예: API 호출 후 채팅방 화면으로 이동 등
+  selectRoom(room); // 예시로, 참여 버튼 클릭 시 해당 채팅방을 선택하도록 함
+};
+
 // [수정] viewRoomInfo 함수가 모달을 열도록 수정합니다.
 const viewRoomInfo = (room) => {
-  console.log('정보 보기:', room.title);
-  selectedRoomForModal.value = room; // 클릭된 방의 정보를 저장
+  console.log('정보 보기:', room.roomName);
+  selectedRoomIdForModal.value = room.roomId; // 클릭된 방의 정보를 저장
   isModalOpen.value = true;           // 모달을 열도록 상태 변경
 };
 
-const leaveRoom = (room) => {
+const leaveRoom = async(room) => {
   console.log('방 나가기:', room.title);
+  try {
+    await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
+    alert('방에서 나갔습니다.');
+  } catch (error) {
+    console.error("API 호출 에러:", error);
+    alert(getErrorMessage(error));
+  } finally {
+    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
+    isLoading.value = false;
+  }
 };
 </script>
 
@@ -259,6 +322,13 @@ const leaveRoom = (room) => {
 
 .action-button:hover {
   background-color: rgba(0, 0, 0, 0.05);
+}
+
+.action-button.leave:hover {
+  color: #D32F2F;
+}
+.action-button.join:hover {
+  color: #1976D2; /* 참여 버튼은 hover 시 파란색으로 강조 */
 }
 
 .action-button.leave:hover {
