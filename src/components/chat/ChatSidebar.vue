@@ -4,10 +4,10 @@
       <v-list-item class="pa-4">
         <template v-slot:prepend>
           <v-avatar color="primary" size="48">
-            <span class="text-h6">훈</span>
+            <span class="text-h6">프로필 이미지 or 이름(성)</span>
           </v-avatar>
         </template>
-        <v-list-item-title class="font-weight-bold text-h6 ml-3">훈이</v-list-item-title>
+        <v-list-item-title class="font-weight-bold text-h6 ml-3">#</v-list-item-title>
       </v-list-item>
       <v-tabs v-model="tab" grow class="my-custom-tabs">
         <v-tab value="chat">채팅목록</v-tab>
@@ -26,7 +26,7 @@
               rounded="lg"
             >
               <v-list-item-title class="font-weight-bold">{{ room.title }}</v-list-item-title>
-              <v-list-item-subtitle>{{ room.url }}</v-list-item-subtitle>
+              <v-list-item-subtitle>{{ room.name }}</v-list-item-subtitle>
               <template v-slot:append>
                 <v-chip
                   :color="isRoomFull(room) ? 'red' : 'green'"
@@ -59,7 +59,7 @@ const emit = defineEmits(['select-room']);
 
 // 실제로는 API를 통해 받아올 채팅방 데이터 예시
 const chatRooms = ref([
-  { id: 1, title: '포카리 30개 공구!!!', url: 'https://pokari.com', currentParticipants: 10, maxParticipants: 10 },
+  { id: 1, name: 'name', title: '포카리 30개 공구!!!', url: 'https://pokari.com', currentParticipants: 10, maxParticipants: 10 },
   { id: 2, title: '닭가슴살 공구하실 분', url: 'https://dakgasumsal.com', currentParticipants: 8, maxParticipants: 10 },
   { id: 3, title: '프로틴 먹고 근손실 면하실 분.', url: 'https://proteinjoa.com', currentParticipants: 123, maxParticipants: 999 },
   { id: 4, title: '업소용 대용량 아이스크림 나눠드실분?!', url: 'https://meongadding.com', currentParticipants: 8, maxParticipants: 77 },
@@ -68,6 +68,10 @@ const chatRooms = ref([
   { id: 7, title: '커피 원두 대량 구매', url: 'https://coffee.com', currentParticipants: 45, maxParticipants: 100 },
   { id: 8, title: '과일 세트 공동구매', url: 'https://fruits.com', currentParticipants: 23, maxParticipants: 50 },
   { id: 9, title: '생수 2L 48개 공구', url: 'https://water.com', currentParticipants: 67, maxParticipants: 100 },
+  { id: 10, title: '치킨 무 20kg 공동구매', url: 'https://chicken.com', currentParticipants: 89, maxParticipants: 200 },
+  { id: 10, title: '치킨 무 20kg 공동구매', url: 'https://chicken.com', currentParticipants: 89, maxParticipants: 200 },
+  { id: 10, title: '치킨 무 20kg 공동구매', url: 'https://chicken.com', currentParticipants: 89, maxParticipants: 200 },
+  { id: 10, title: '치킨 무 20kg 공동구매', url: 'https://chicken.com', currentParticipants: 89, maxParticipants: 200 },
   { id: 10, title: '치킨 무 20kg 공동구매', url: 'https://chicken.com', currentParticipants: 89, maxParticipants: 200 },
 ]);
 
@@ -107,7 +111,7 @@ const selectRoom = (room) => {
   padding-right: 8px;
   flex: 1;
   min-height: 0;
-  max-height: 500px; /* 스크롤이 작동하도록 높이 제한 */
+  max-height: 75vh; /* 스크롤이 작동하도록 높이 제한 */
   overflow-y: auto;
   overflow-x: hidden;
 }
