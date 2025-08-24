@@ -118,7 +118,7 @@ const joinRoom = async(roomId) => {
     // roomId를 사용해 상세 정보 API 호출
     await axios.post(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${roomId}/join`);
     alert("채팅방에 성공적으로 참여했습니다.");
-    window.location.reload();
+    window.location().reload();
 
   } catch (err) {
     console.error("채팅방 참여 실패:", err);

@@ -96,7 +96,18 @@
 
         <v-window-item value="groupbuy">
           <v-list @mouseleave="hoveredRoomId = null">
-             <v-list-item
+            <v-list-item
+              class="ma-2 pa-0 creation-item"
+              rounded="lg"
+              height="68px"
+              @click="createChatRoom()"
+            >
+              <div class="d-flex align-center justify-center fill-height text-medium-emphasis">
+                <v-icon icon="mdi-plus-circle-outline" class="mr-2"></v-icon>
+                <span>공동 구매 하기</span>
+              </div>
+            </v-list-item>
+            <v-list-item
               v-for="room in purchaseRooms"
               :key="room.roomId"
               class="ma-2 pa-0"
@@ -145,7 +156,6 @@
             </v-list-item>
           </v-list>
         </v-window-item>
-
       </v-window>
     </v-card>
      <RoomInfoModal
@@ -153,6 +163,10 @@
       v-model="isModalOpen"
       :roomId="selectedRoomIdForModal"
       :isParticipant="isParticipantforModal"
+    />
+    <CreateRoomModal
+      v-model="isCreateModalOpen"
+      :fridge-id="fridgeId"
     />
   </v-container>
 </template>
@@ -163,7 +177,9 @@ import RoomInfoModal from './RoomInfoModal.vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
 import { getErrorMessage, getResultData } from '@/utils/commonDataHandler';
+import CreateRoomModal from './CreateRoomModal.vue';
 
+const isCreateModalOpen = ref(false);
 const tab = ref('chat');
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
@@ -209,6 +225,11 @@ onMounted(async () => {
   }
 });
 
+// [수정] createChatRoom 함수가 새 모달을 열도록 변경
+const createChatRoom = () => {
+  isCreateModalOpen.value = true;
+};
+
 const isRoomFull = (room) => {
   return room.currentParticipants >= room.maxParticipants;
 };
@@ -236,6 +257,7 @@ const leaveRoom = async(room) => {
   try {
     await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
     alert('방에서 나갔습니다.');
+    window.location.reload();
   } catch (error) {
     console.error("API 호출 에러:", error);
     alert(getErrorMessage(error));
