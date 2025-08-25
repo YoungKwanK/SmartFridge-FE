@@ -116,7 +116,7 @@ const menuItems = computed(() => {
     { title: '공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'sharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#" },
     { title: '비공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'nonsharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#" },
     { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list' },
-    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: "/#" },
+    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: fridgeId ? `/fridge/${fridgeId}/community` : "/#" },
     { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: "my/chat/page" },
     { title: '프로필설정', icon: 'mdi-account-outline', value: 'profile', color: 'indigo-darken-1', to: "/#" },
     { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/#"},

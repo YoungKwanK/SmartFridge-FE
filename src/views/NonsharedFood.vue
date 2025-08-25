@@ -1,58 +1,229 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col>
-        <v-card>
-          <v-card-title>
-            <v-row align="center" class="pa-2">
-              <v-col class="text-h5"> 
-                식품 목록
-              </v-col>
-              <v-col class="text-right">
-                <v-btn color="primary" @click="openCreateModal">식품 등록</v-btn>
-              </v-col>
-            </v-row>
-          </v-card-title>
-          <v-card-text>
-            <v-table>
-              <thead>
-                <tr>
-                  <th>식품명</th>
-                  <th>수량</th>
-                  <th>등록자</th>
-                  <th>등록일</th>
-                  <th>유통기한</th>
-                  <th>보관위치</th>
-                  <th>카테고리</th>
-                  <th>관리</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="food in foodList" :key="food.id">
-                  <td>{{ food.name }}</td>
-                  <td>{{ food.quantity }}</td>
-                  <td>{{ food.registeredName }}</td>
-                  <td>{{ food.storageStartDate }}</td>
-                  <td>{{ food.expirationDateTime }}</td>
-                  <td>{{ food.storageType }}</td>
-                  <td>{{ food.category }}</td>
-                  <td>
-                    <v-btn color="primary" @click="openEditModal(food)">수정</v-btn>
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+  <div class="nonshared-food-container">
+    <!-- 헤더 섹션 -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-info">
+          <h1 class="page-title">전체식품 목록</h1>
+        </div>
+        <div class="header-actions">
+          <v-btn 
+            @click="openCreateModal" 
+            color="success" 
+            prepend-icon="mdi-plus"
+            size="large"
+            class="add-food-btn"
+          >
+            식품 등록
+          </v-btn>
+        </div>
+      </div>
+    </div>
 
+    <!-- 메인 콘텐츠 -->
+    <v-card class="main-content-card">
+      <!-- 필터 탭 -->
+      <v-card-title class="filter-header">
+        <div class="filter-tab-container">
+          <v-tabs v-model="activeTab" class="filter-tabs" color="primary" density="compact" @change="onTabChange">
+            <v-tab value="ALL" class="filter-tab">
+              전체보기
+            </v-tab>
+            <v-tab value="EXPIRES_IN_THREE_DAYS" class="filter-tab">
+              3일전
+            </v-tab>
+            <v-tab value="EXPIRES_TODAY" class="filter-tab">
+              당일
+            </v-tab>
+            <v-tab value="EXPIRED" class="filter-tab">
+              지남
+            </v-tab>
+            <v-tab value="TEMP_ONLY" class="filter-tab">
+              임시보관
+            </v-tab>
+          </v-tabs>
+          
+          <!-- 페이지 크기 선택 -->
+          <div class="page-size-selector">
+            <v-select
+              v-model="pageSize"
+              :items="pageSizeOptions"
+              variant="outlined"
+              density="compact"
+              class="page-size-select"
+              @update:model-value="onPageSizeChange"
+              hide-details
+            ></v-select>
+          </div>
+        </div>
+      </v-card-title>
+
+      <!-- 카테고리 및 검색 필터 -->
+      <v-card-text class="filter-section">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label class="filter-label">카테고리별 보기</label>
+            <v-select
+              v-model="selectedCategory"
+              :items="categoryOptions"
+              item-title="title"
+              item-value="value"
+              placeholder="선택하세요"
+              variant="outlined"
+              density="compact"
+              class="category-select"
+              @update:model-value="onCategoryChange"
+            ></v-select>
+          </div>
+          <div class="filter-item">
+            <label class="filter-label">식품검색</label>
+            <v-text-field
+              v-model="searchQuery"
+              placeholder="식품명으로 검색"
+              variant="outlined"
+              density="compact"
+              class="search-field"
+              prepend-inner-icon="mdi-magnify"
+              @input="onSearchInput"
+            ></v-text-field>
+          </div>
+        </div>
+      </v-card-text>
+      
+      <v-card-text>
+        <!-- 로딩 상태 표시 -->
+        <div v-if="isLoading" class="loading-container">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="64"
+          ></v-progress-circular>
+          <p class="loading-text">데이터를 불러오는 중...</p>
+        </div>
+
+        <!-- 데이터 테이블 -->
+        <v-table v-else class="food-table">
+          <thead>
+            <tr>
+              <th class="text-left">식품명</th>
+              <th class="text-center">수량</th>
+              <th class="text-left">등록자</th>
+              <th class="text-left">등록일</th>
+              <th class="text-left">유통기한</th>
+              <th class="text-center">카테고리</th>
+              <th class="text-center">위치</th>
+              <th class="text-center">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="food in foodList" :key="food.id" class="food-row">
+              <td class="food-name text-left">{{ food.name || '이름 없음' }}</td>
+              <td class="quantity-cell text-center">{{ food.quantity || 0 }}</td>
+              <td class="member-cell text-left">{{ food.registeredName || '알 수 없음' }}</td>
+              <td class="date-cell text-left">{{ food.storageStartDate }}</td>
+              <td class="expiration-cell text-left" :class="getExpirationClass(food.expirationDateTime)">
+                {{ formatDate(food.expirationDateTime) }}
+              </td>
+              <td class="category-cell text-center">
+                <v-chip 
+                  :color="getCategoryColor(food.category)" 
+                  size="small"
+                  variant="outlined"
+                >
+                  {{ food.category || '미설정' }}
+                </v-chip>
+              </td>
+              <td class="storage-cell text-center">
+                <v-chip 
+                  :color="getStorageColor(food.storageType)" 
+                  size="small"
+                  variant="outlined"
+                >
+                  {{ food.storageType || '미설정' }}
+                </v-chip>
+              </td>
+              <td class="actions-cell text-center">
+                <v-btn
+                  color="primary"
+                  size="small"
+                  variant="text"
+                  @click="openEditModal(food)"
+                  class="edit-btn"
+                >
+                  수정
+                </v-btn>
+                <v-btn
+                  color="error"
+                  size="small"
+                  variant="text"
+                  @click="deleteFood(food)"
+                  class="delete-btn"
+                >
+                  삭제
+                </v-btn>
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+
+        <!-- 데이터가 없을 때 표시 -->
+        <div v-if="!isLoading && (!foodList || foodList.length === 0)" class="no-data-container">
+          <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-food-off</v-icon>
+          <h3 class="no-data-title">등록된 개인 식품이 없습니다</h3>
+          <p class="no-data-subtitle">새로운 식품을 등록하여 개인 식품을 관리해보세요</p>
+          <v-btn 
+            color="success" 
+            @click="openCreateModal"
+            prepend-icon="mdi-plus"
+            class="mt-4"
+          >
+            첫 식품 등록하기
+          </v-btn>
+        </div>
+
+        <!-- 페이징 컴포넌트 -->
+        <div v-if="!isLoading && foodList && foodList.length > 0" class="pagination-container">
+          <v-pagination
+            v-model="currentPage"
+            :length="totalPages"
+            :total-visible="7"
+            @update:model-value="onPageChange"
+            color="primary"
+            class="pagination-controls"
+          ></v-pagination>
+          
+          <!-- 페이지 정보 표시 -->
+          <div class="page-info">
+            <span class="page-text">
+              {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalElements) }} / 총 {{ totalElements }}개
+            </span>
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
+    <!-- 식품 등록/수정 모달 -->
     <FoodFormModal 
       v-model="isModalOpen" 
       :editing-food="selectedFood"
       @save="handleSave"
     />
-  </v-container>
+
+    <!-- 삭제 확인 다이얼로그 -->
+    <v-dialog v-model="deleteDialog" max-width="400">
+      <v-card>
+        <v-card-title>식품 삭제 확인</v-card-title>
+        <v-card-text>
+          정말로 "{{ selectedFood.name }}" 식품을 삭제하시겠습니까?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="deleteDialog = false">취소</v-btn>
+          <v-btn color="error" @click="confirmDelete">삭제</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
 
 <script>
@@ -68,17 +239,81 @@ export default {
       foodList: [],
       isModalOpen: false,
       selectedFood: {}, 
+      deleteDialog: false,
+      isLoading: false,
+      activeTab: 'ALL', // 필터 탭 상태
+      selectedCategory: 'ALL', // 카테고리 필터 상태
+      searchQuery: '', // 검색어 상태
+      categoryOptions: [],
+      pageSize: 10, // 페이지 크기 상태
+      pageSizeOptions: [
+        { title: '10개', value: 10 },
+        { title: '20개', value: 20 },
+        { title: '50개', value: 50 },
+        { title: '100개', value: 100 }
+      ],
+      currentPage: 1, // 현재 페이지
+      totalPages: 0, // 총 페이지 수
+      totalElements: 0 // 총 데이터 개수
     }
   },
   async created() {
+    await this.fetchEnums();
     await this.fetchFoodList();
   },
+  watch: {
+    activeTab() {
+      this.fetchFoodList();
+    }
+  },
   methods: {
+    async fetchEnums() {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/enums`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        // 백엔드에서 가져온 카테고리에 '전체' 옵션 추가
+        this.categoryOptions = [
+          { title: 'ALL', value: 'ALL' },
+          ...response.data.categories
+        ];
+      } catch (error) {
+        console.error("카테고리 목록을 불러오는 데 실패했습니다.", error);
+      }
+    },
     async fetchFoodList() {
-      const fridgeId = this.$route.params.fridgeId;
-      if (!fridgeId) return;
-      const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=false`);
-      this.foodList = response.data.result.content;
+      try {
+        this.isLoading = true;
+        const fridgeId = this.$route.params.fridgeId;
+        if (!fridgeId) return;
+        let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=false`;
+        
+        // 백엔드 API의 filterType 파라미터 사용
+        if (this.activeTab !== 'ALL') {
+          url += `&filterType=${this.activeTab}`;
+        }
+        if (this.selectedCategory !== 'ALL') {
+          url += `&category=${this.selectedCategory}`;
+        }
+        if (this.searchQuery) {
+          url += `&foodName=${this.searchQuery}`;
+        }
+        
+        // 페이징 파라미터 추가
+        url += `&page=${this.currentPage - 1}&size=${this.pageSize}`;
+
+        const response = await axios.get(url);
+        this.foodList = response.data.result.content || [];
+        this.totalPages = response.data.result.totalPages;
+        this.totalElements = response.data.result.totalElements;
+      } catch (error) {
+        console.error('식품 목록 조회 실패:', error);
+        this.foodList = [];
+      } finally {
+        this.isLoading = false;
+      }
     },
     openCreateModal() {
       this.selectedFood = { name: '', quantity: 0, storageStartDate: '', expirationDateTime: '', storageType: '', category: '', shareable: false };
@@ -94,10 +329,10 @@ export default {
         const fridgeId = this.$route.params.fridgeId;
         if (!fridgeId) { console.error('냉장고 ID가 없습니다.'); return; }
         let response;
-        if (foodData.id) { // 수정 모드
+        if (foodData.id) {
           response = await axios.put(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/update/${foodData.id}`, foodData);
           console.log('식품 수정 성공:', response.data);
-        } else { // 등록 모드
+        } else {
           response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
           console.log('식품 등록 성공:', response.data);
         }
@@ -105,10 +340,420 @@ export default {
         alert(foodData.id ? '식품이 수정되었습니다.' : '식품이 등록되었습니다.');
       } catch (error) {
         console.error('식품 저장 실패:', error);
-        console.error('에러 상세:', error.response?.data);
         alert('식품 저장에 실패했습니다: ' + (error.response?.data?.message || error.message));
       }
+    },
+    async deleteFood(food) {
+      this.selectedFood = food;
+      this.deleteDialog = true;
+    },
+    async confirmDelete() {
+      try {
+        const fridgeId = this.$route.params.fridgeId;
+        if (!fridgeId) { console.error('냉장고 ID가 없습니다.'); return; }
+        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/delete/${this.selectedFood.id}`);
+        await this.fetchFoodList();
+        alert('식품이 삭제되었습니다.');
+        this.deleteDialog = false;
+      } catch (error) {
+        console.error('식품 삭제 실패:', error);
+        alert('식품 삭제에 실패했습니다: ' + (error.response?.data?.message || error.message));
+      }
+    },
+    formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
+    },
+    getExpirationClass(dateString) {
+      if (!dateString) return '';
+      const expirationDate = new Date(dateString);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (expirationDate < today) {
+        return 'expired';
+      } else if (expirationDate.getTime() - today.getTime() < 24 * 60 * 60 * 1000) {
+        return 'expiring-soon';
+      } else {
+        return '';
+      }
+    },
+    getStorageColor(storageType) {
+      if (storageType === 'TEMPORARY') return 'info';
+      if (storageType === 'REFRIGERATOR') return 'success';
+      if (storageType === 'FREEZER') return 'warning';
+      return 'grey';
+    },
+    getCategoryColor(category) {
+      if (category === 'FRUIT') return 'info';
+      if (category === 'VEGETABLE') return 'success';
+      if (category === 'GRAIN') return 'warning';
+      if (category === 'MEAT') return 'error';
+      if (category === 'DAIRY') return 'purple';
+      if (category === 'OTHER') return 'grey';
+      return 'grey';
+    },
+    onCategoryChange() {
+      this.resetPagination();
+      this.fetchFoodList();
+    },
+    onSearchInput() {
+      this.resetPagination();
+      this.fetchFoodList();
+    },
+    onTabChange() {
+      this.resetPagination();
+      this.fetchFoodList();
+    },
+    onPageSizeChange() {
+      this.resetPagination();
+      this.fetchFoodList();
+    },
+    onPageChange() {
+      this.fetchFoodList();
+    },
+    // 페이징 초기화
+    resetPagination() {
+      this.currentPage = 1;
     }
   }
 }
 </script>
+
+<style scoped>
+.nonshared-food-container {
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+  position: relative;
+}
+
+.page-header {
+  background: white;
+  padding: 20px 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-info {
+  flex: 1;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.add-food-btn {
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.main-content-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.filter-header {
+  padding: 20px 24px 0;
+  background: white;
+  border-bottom: none;
+  margin-bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filter-tab-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.filter-tabs {
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
+  flex: 1;
+}
+
+.filter-tab {
+  font-weight: 500;
+  color: #666;
+  text-transform: none;
+  font-size: 14px;
+  padding: 12px 16px;
+  border-radius: 0;
+  margin: 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+  background-color: transparent;
+  color: #333;
+}
+
+.filter-tab.v-tab--active {
+  background-color: transparent;
+  color: #1976d2;
+  font-weight: 600;
+  border-bottom: 2px solid #1976d2;
+}
+
+.filter-tab.v-tab--active .v-icon {
+  color: #1976d2;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.page-size-select {
+  min-width: 100px;
+  max-width: 120px;
+}
+
+.page-size-select .v-field {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.filter-section {
+  padding: 20px 24px 0;
+}
+
+.filter-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.filter-item {
+  flex: 1;
+}
+
+.filter-label {
+  display: block;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.category-select, .search-field {
+  width: 100%;
+}
+
+.food-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.food-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+  padding: 16px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.food-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.food-row:hover {
+  background-color: #fafafa;
+}
+
+.food-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.quantity-cell {
+  color: #666;
+  font-weight: 500;
+}
+
+.member-cell, .date-cell, .expiration-cell {
+  color: #666;
+}
+
+.expiration-cell.expired {
+  color: #f44336;
+  font-weight: 500;
+}
+
+.expiration-cell.expiring-soon {
+  color: #ff9800;
+  font-weight: 500;
+}
+
+.storage-cell, .category-cell {
+  text-align: center;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+.edit-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.delete-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.no-data-container {
+  text-align: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+.no-data-title {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.no-data-subtitle {
+  margin-bottom: 24px;
+  font-size: 16px;
+  color: #666;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #888;
+}
+
+.loading-text {
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  padding: 16px 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.pagination-controls {
+  margin: 0;
+}
+
+.page-info {
+  position: absolute;
+  right: 24px;
+  font-size: 14px;
+  color: #666;
+}
+
+.page-text {
+  font-weight: 500;
+}
+
+.pagination-controls .v-pagination__item--active {
+  background-color: #1976d2;
+  color: white;
+}
+
+.pagination-controls .v-pagination__item--active:hover {
+  background-color: #1565c0;
+}
+
+.pagination-controls .v-pagination__item--disabled {
+  color: #b0bec5;
+}
+
+@media (max-width: 600px) {
+  .nonshared-food-container {
+    padding: 16px;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .filter-tab-container {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .page-size-selector {
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  .filter-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .pagination-container {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    text-align: center;
+    padding: 20px 16px;
+  }
+
+  .page-info {
+    position: static;
+    right: auto;
+    margin-top: 8px;
+  }
+}
+</style>
