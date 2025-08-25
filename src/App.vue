@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <SidebarComponent/>
+    <SidebarComponent v-if="!isLoginPage"/>
     <v-main>
       <router-view/>
     </v-main>
@@ -16,8 +16,15 @@ export default {
   name: 'App',
   components: {
     SidebarComponent
-  }
-  , setup() {
+  },
+  computed: {
+    isLoginPage() {
+      // 로그인 관련 페이지들과 NoFridgePage에서는 사이드바를 숨김
+      const hideSidebarRoutes = ['/', '/login', '/member/create', '/no-fridge', '/oauth/google/redirect', '/oauth/kakao/redirect', '/oauth/naver/redirect'];
+      return hideSidebarRoutes.includes(this.$route.path);
+    }
+  },
+  setup() {
     const store = useStore();
 
     onMounted(() => {
@@ -38,13 +45,6 @@ export default {
 
     onUnmounted(() => {
       // 컴포넌트 언마운트 시 정리
-      if (window.sseCheckInterval) {
-        clearInterval(window.sseCheckInterval);
-      }
-    });
-
-    // cleanup 함수에 포커스 이벤트 리스너 제거 추가
-    onUnmounted(() => {
       if (window.sseCheckInterval) {
         clearInterval(window.sseCheckInterval);
       }
