@@ -3,11 +3,17 @@
     <v-card class="d-flex flex-column chat-sidebar-card" rounded="xl">
       <v-list-item class="pa-4">
         <template v-slot:prepend>
-          <v-avatar color="primary" size="48">
-            <span class="text-h6">훈</span>
-          </v-avatar>
-        </template>
-        <v-list-item-title class="font-weight-bold text-h6 ml-3">훈이</v-list-item-title>
+        <v-avatar 
+          color="primary" 
+          size="48"
+          :image="userProfileImage"
+        >
+          <span v-if="!userProfileImage" class="text-h6">
+            {{ userName ? userName[0] : '' }}
+          </span>
+        </v-avatar>
+      </template>
+        <v-list-item-title class="font-weight-bold text-h6 ml-3">{{ userName }} </v-list-item-title>
       </v-list-item>
 
       <v-tabs v-model="tab" grow>
@@ -21,7 +27,7 @@
           <v-list @mouseleave="hoveredRoomId = null">
              <v-list-item
               v-if="managerRoom && managerRoom.isManager===false"
-              @click="selectRoom(managerRoom)"
+              @click="selectRoom(managerRoom, 'manager')"
               :active="selectedRoomId === managerRoom.roomId"
               class="ma-2 pa-0"
               rounded="lg"
@@ -172,18 +178,24 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import RoomInfoModal from './RoomInfoModal.vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
 import { getErrorMessage, getResultData } from '@/utils/commonDataHandler';
 import CreateRoomModal from './CreateRoomModal.vue';
+import { useStore } from 'vuex';
+
+const store = useStore();
+
+const userName = computed(() => store.getters.getUserName);
+const userProfileImage = computed(() => store.getters.getUserProfileImage);
 
 const isCreateModalOpen = ref(false);
 const tab = ref('chat');
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
-const emit = defineEmits(['select-room']);
+const emit = defineEmits(['select-room', 'select-roomType']);
 const isParticipantforModal = ref(false); // 사용자가 해당 방의 참여자인지 여부를 추적하는 ref 추가
 
 // [추가] 모달의 상태를 관리할 ref들을 추가합니다.
@@ -234,14 +246,14 @@ const isRoomFull = (room) => {
   return room.currentParticipants >= room.maxParticipants;
 };
 
-const selectRoom = (room) => {
+const selectRoom = (room, roomType) => {
   selectedRoomId.value = room.id;
-  emit('select-room', room);
+  emit('select-room', room, roomType);
 };
 
 const startChat = (room) => {
   console.log('채팅방 참여:', room.roomName);
-  selectRoom(room);
+  selectRoom(room, 'purchase');
 };
 
 // [수정] viewRoomInfo 함수가 모달을 열도록 수정합니다.

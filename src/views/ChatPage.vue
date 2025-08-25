@@ -8,7 +8,7 @@
           </v-col>
           
           <v-col cols="12" md="8" lg="9" xl="10">
-            <ChatWindow :selected-room="selectedRoom" />
+            <ChatWindow :selected-room="selectedRoom" :selected-roomType="selectedRoomType" />
           </v-col>
         </v-row>
       </v-container>
@@ -23,10 +23,12 @@ import ChatWindow from '../components/chat/ChatWindow.vue';   // 채팅창 컴�
 
 // 선택된 채팅방 정보를 저장할 반응형 변수
 const selectedRoom = ref(null);
+const selectedRoomType = ref(null);
 
 // 사이드바에서 채팅방을 선택했을 때 호출될 함수
-const handleRoomSelect = (room) => {
+const handleRoomSelect = (room, roomType) => {
   selectedRoom.value = room;
+  selectedRoomType.value = roomType;
 };
 </script>
 
