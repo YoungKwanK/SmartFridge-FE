@@ -106,8 +106,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import { useRoute } from 'vue-router';
 
 const store = useStore();
+const route = useRoute();
 const logoUrl = new URL('../../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
 
 const selectedItem = ref(['dashboard']);
@@ -155,11 +157,6 @@ onMounted(async () => {
     }
   }
 });
-
-import { useRoute } from 'vue-router';
-
-const route = useRoute();
-const store = useStore();
 
 const menuItems = computed(() => {
   const fridgeId = route.params.fridgeId;
