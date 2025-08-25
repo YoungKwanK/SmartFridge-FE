@@ -31,7 +31,7 @@
                   <td>{{ food.name }}</td>
                   <td>{{ food.registeredName }}</td>
                   <td>{{ food.quantity }}</td>
-                  <td>{{ food.expirationDateTime }}</td>
+                  <td>{{ formatDate(food.expirationDateTime) }}</td>
                   <td>{{ food.storageType }}</td>
                 </tr>
               </tbody>
@@ -70,7 +70,7 @@
                   <td>{{ food.name }}</td>
                   <td>{{ food.registeredName }}</td>
                   <td>{{ food.quantity }}</td>
-                  <td>{{ food.expirationDateTime }}</td>
+                  <td>{{ formatDate(food.expirationDateTime) }}</td>
                   <td>{{ food.storageType }}</td>
                 </tr>
               </tbody>
@@ -91,6 +91,19 @@ import router from '@/router';
 const route = useRoute();
 const recentFoods = ref([])
 const recentSharedFoods = ref([])
+
+// 유통기한을 깔끔하게 포맷팅하는 함수
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+}
 
 const fetchRecentFoods = async () => {
   try {
