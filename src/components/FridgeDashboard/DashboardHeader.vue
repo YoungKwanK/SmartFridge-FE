@@ -117,7 +117,11 @@
 <script setup>
 import { onMounted, computed, ref } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import axios from 'axios';
+
+const route = useRoute();
+const fridge = ref({});
 
 // Props 정의
 defineProps({
@@ -150,9 +154,29 @@ const recentNotifications = computed(() => {
   return notifications;
 });
 
+// 냉장고 정보 가져오기 (route.params.fridgeId 사용)
+const fetchFridgeInfo = async () => {
+  try {
+    const currentFridgeId = route.params.fridgeId;
+    if (!currentFridgeId) {
+      console.warn('URL에서 냉장고 ID를 찾을 수 없습니다.');
+      return;
+    }
+    
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${currentFridgeId}/detail`);
+    if (response.data.result) {
+      fridge.value = response.data.result;
+      console.log('냉장고 정보 로딩 완료:', fridge.value);
+    }
+  } catch (error) {
+    console.error('냉장고 정보 로딩 실패:', error);
+  }
+};
+
 onMounted(() => {
   // 전역 SSE 연결이 이미 App.vue에서 관리되므로 여기서는 별도 연결하지 않음
   console.log('DashboardHeader 마운트됨 - 전역 SSE 연결 사용');
+  fetchFridgeInfo();
 });
 
 // 전역 SSE 연결이 App.vue에서 관리되므로 별도 연결 코드 제거
@@ -160,28 +184,25 @@ onMounted(() => {
 // 냉장고 타입 관련 함수들
 const getTypeColor = (type) => {
   switch (type) {
-    case 'PERSONAL': return 'blue';
-    case 'SHARED': return 'green';
-    case 'COMMERCIAL': return 'purple';
+    case 'MANAGER': return 'success';  // 관리자: 초록색
+    case 'COMMON': return 'info';      // 일반: 파란색
     default: return 'grey';
   }
 };
 
 const getTypeIcon = (type) => {
   switch (type) {
-    case 'PERSONAL': return 'mdi-home';
-    case 'SHARED': return 'mdi-account-group';
-    case 'COMMERCIAL': return 'mdi-store';
-    default: return 'mdi-fridge';
+    case 'MANAGER': return 'mdi-account-cog';  // 관리자: 설정 아이콘
+    case 'COMMON': return 'mdi-account';       // 일반: 사용자 아이콘
+    default: return 'mdi-account';
   }
 };
 
 const getTypeText = (type) => {
   switch (type) {
-    case 'PERSONAL': return '개인용';
-    case 'SHARED': return '공유용';
-    case 'COMMERCIAL': return '상업용';
-    default: return '냉장고';
+    case 'MANAGER': return '관리자';  // 관리자
+    case 'COMMON': return '일반';     // 일반 멤버
+    default: return '멤버';
   }
 };
 

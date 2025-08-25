@@ -8,13 +8,7 @@
           <p class="page-subtitle">냉장고 멤버들과 소통하고 정보를 공유해보세요</p>
         </div>
         <div class="header-actions">
-          <v-btn 
-            @click="openCreateModal" 
-            color="primary" 
-            prepend-icon="mdi-plus"
-            size="large"
-            class="write-post-btn"
-          >
+          <v-btn @click="openCreateModal" color="primary" prepend-icon="mdi-plus" size="large" class="write-post-btn">
             글쓰기
           </v-btn>
         </div>
@@ -25,14 +19,14 @@
     <v-card class="main-content-card">
       <!-- 게시판 종류 탭 -->
       <v-card-title class="board-tabs-header">
-        <v-tabs v-model="activeBoard" class="board-tabs" color="primary" density="compact" @change="onBoardChange">
-          <v-tab 
-            v-for="category in boardCategories" 
-            :key="category" 
-            :value="category" 
-            class="board-tab"
-          >
-            {{ category }}
+        <v-tabs v-model="activeBoard" class="board-tabs" color="primary" density="compact" @update:model-value="onBoardChange">
+          <!-- 전체보기 탭 추가 -->
+          <v-tab value="전체" class="board-tab">
+            전체보기
+          </v-tab>
+          <!-- 기존 카테고리 탭들 -->
+          <v-tab v-for="category in boardCategories" :key="category.id" :value="category.category" class="board-tab">
+            {{ category.category }}
           </v-tab>
         </v-tabs>
       </v-card-title>
@@ -41,39 +35,20 @@
       <v-card-text class="search-section">
         <div class="search-row">
           <div class="search-item">
-            <v-text-field
-              v-model="searchQuery"
-              placeholder="제목, 내용, 작성자로 검색"
-              variant="outlined"
-              density="compact"
-              class="search-field"
-              prepend-inner-icon="mdi-magnify"
-              @input="onSearchInput"
-              hide-details
-            ></v-text-field>
+            <v-text-field v-model="searchQuery" placeholder="제목, 내용, 작성자로 검색" variant="outlined" density="compact"
+              class="search-field" prepend-inner-icon="mdi-magnify" @input="onSearchInput" hide-details></v-text-field>
           </div>
           <div class="search-item">
-            <v-select
-              v-model="sortBy"
-              :items="sortOptions"
-              variant="outlined"
-              density="compact"
-              class="sort-select"
-              @update:model-value="onSortChange"
-              hide-details
-            ></v-select>
+            <v-select v-model="sortBy" :items="sortOptions" variant="outlined" density="compact" class="sort-select"
+              @update:model-value="onSortChange" hide-details></v-select>
           </div>
         </div>
       </v-card-text>
-      
+
       <v-card-text>
         <!-- 로딩 상태 표시 -->
         <div v-if="isLoading" class="loading-container">
-          <v-progress-circular
-            indeterminate
-            color="primary"
-            size="64"
-          ></v-progress-circular>
+          <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
           <p class="loading-text">게시글을 불러오는 중...</p>
         </div>
 
@@ -84,25 +59,15 @@
               <div class="post-header">
                 <h3 class="post-title">{{ post.title }}</h3>
                 <div class="post-meta">
-                  <span class="post-author">{{ post.authorName }}</span>
-                  <span class="post-time">{{ formatTime(post.createdAt) }}</span>
+                  <span class="post-author">{{ post.writer }}</span>
+                  <span class="post-category">{{ post.categoryName }}</span>
+                  <span class="post-time">{{ post.timeAgo }}</span>
                 </div>
-              </div>
-              <div class="post-preview">
-                {{ post.content.substring(0, 100) }}{{ post.content.length > 100 ? '...' : '' }}
               </div>
               <div class="post-stats">
                 <div class="stat-item">
-                  <v-icon size="16" color="red">mdi-heart</v-icon>
-                  <span>{{ post.likeCount || 0 }}</span>
-                </div>
-                <div class="stat-item">
                   <v-icon size="16" color="blue">mdi-eye</v-icon>
-                  <span>{{ post.viewCount || 0 }}</span>
-                </div>
-                <div class="stat-item">
-                  <v-icon size="16" color="green">mdi-comment</v-icon>
-                  <span>{{ post.commentCount || 0 }}</span>
+                  <span>{{ post.viewCount }}</span>
                 </div>
               </div>
             </div>
@@ -114,31 +79,21 @@
           <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-post-outline</v-icon>
           <h3 class="no-data-title">등록된 게시글이 없습니다</h3>
           <p class="no-data-subtitle">첫 번째 게시글을 작성해보세요</p>
-          <v-btn 
-            color="primary" 
-            @click="openCreateModal"
-            prepend-icon="mdi-plus"
-            class="mt-4"
-          >
+          <v-btn color="primary" @click="openCreateModal" prepend-icon="mdi-plus" class="mt-4">
             첫 게시글 작성하기
           </v-btn>
         </div>
 
         <!-- 페이징 컴포넌트 -->
         <div v-if="!isLoading && postList && postList.length > 0" class="pagination-container">
-          <v-pagination
-            v-model="currentPage"
-            :length="totalPages"
-            :total-visible="7"
-            @update:model-value="onPageChange"
-            color="primary"
-            class="pagination-controls"
-          ></v-pagination>
-          
+          <v-pagination v-model="currentPage" :length="totalPages" :total-visible="7" @update:model-value="onPageChange"
+            color="primary" class="pagination-controls"></v-pagination>
+
           <!-- 페이지 정보 표시 -->
           <div class="page-info">
             <span class="page-text">
-              {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalElements) }} / 총 {{ totalElements }}개
+              {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalElements) }} / 총 {{
+              totalElements }}개
             </span>
           </div>
         </div>
@@ -146,11 +101,7 @@
     </v-card>
 
     <!-- 게시글 작성 모달 -->
-    <PostFormModal 
-      v-model="isModalOpen" 
-      :board-type="activeBoard"
-      @save="handleSave"
-    />
+    <PostFormModal v-model="isModalOpen" :board-type="activeBoard" @save="handleSave" />
   </div>
 </template>
 
@@ -164,7 +115,7 @@ export default {
   },
   data() {
     return {
-      activeBoard: '자유게시판', // 기본값: 자유게시판
+      activeBoard: '전체', // 기본값: 전체
       boardCategories: [], // API에서 가져올 카테고리 목록
       searchQuery: '',
       sortBy: 'latest',
@@ -184,26 +135,43 @@ export default {
     }
   },
   async created() {
+    console.log('=== CommunityPage created 시작 ===');
+    console.log('현재 activeBoard:', this.activeBoard);
+    console.log('현재 boardCategories:', this.boardCategories);
+    
     await this.fetchCategories();
+    console.log('카테고리 로드 완료 후 activeBoard:', this.activeBoard);
+    console.log('카테고리 로드 완료 후 boardCategories:', this.boardCategories);
+    
     await this.fetchPostList();
+    console.log('게시글 목록 로드 완료');
   },
   methods: {
     async fetchCategories() {
       try {
         const token = localStorage.getItem('accessToken');
+        console.log('카테고리 조회 시작 - 토큰:', token ? '있음' : '없음');
+        
         const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/categories`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        console.log('API 응답 전체:', response);
+        console.log('API 응답 데이터:', response.data);
         
         this.boardCategories = response.data;
-        // 첫 번째 카테고리를 기본값으로 설정
-        if (this.boardCategories.length > 0 && !this.boardCategories.includes(this.activeBoard)) {
-          this.activeBoard = this.boardCategories[0];
-        }
+        console.log('설정된 boardCategories:', this.boardCategories);
+        
       } catch (error) {
         console.error("커뮤니티 카테고리 목록을 불러오는 데 실패했습니다.", error);
-        // API 호출 실패 시 기본값으로 설정
-        this.boardCategories = ['공지사항', '자유게시판', '꿀팁', '레시피'];
+        // API 호출 실패 시 기본값으로 설정 - 객체 형태로 변경
+        this.boardCategories = [
+          { id: 1, category: '공지사항' },
+          { id: 2, category: '자유게시판' },
+          { id: 3, category: '꿀팁' },
+          { id: 4, category: '레시피' }
+        ];
+        console.log('기본 카테고리로 설정됨:', this.boardCategories);
       }
     },
     async fetchPostList() {
@@ -212,20 +180,31 @@ export default {
         const fridgeId = this.$route.params.fridgeId;
         if (!fridgeId) return;
 
-        let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post?category=${encodeURIComponent(this.activeBoard)}&page=${this.currentPage - 1}&size=${this.pageSize}`;
-        
+        let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/list?page=${this.currentPage - 1}&size=${this.pageSize}`;
+
+        // 전체가 아닐 때만 카테고리 파라미터 추가
+        if (this.activeBoard !== '전체') {
+          url += `&category=${encodeURIComponent(this.activeBoard)}`;
+          console.log('카테고리 필터 적용:', this.activeBoard);
+          console.log('필터링된 URL:', url);
+        }
+
         if (this.searchQuery) {
           url += `&search=${encodeURIComponent(this.searchQuery)}`;
         }
-        
+
         if (this.sortBy !== 'latest') {
           url += `&sort=${this.sortBy}`;
         }
 
+        console.log('최종 요청 URL:', url);
         const response = await axios.get(url);
-        this.postList = response.data.content || [];
-        this.totalPages = response.data.totalPages;
-        this.totalElements = response.data.totalElements;
+        console.log('게시글 목록 조회 응답:', response.data);
+
+        // 백엔드 응답 구조: { result: { content: [...], totalPages: ..., totalElements: ... } }
+        this.postList = response.data.result?.content || [];
+        this.totalPages = response.data.result?.totalPages || 0;
+        this.totalElements = response.data.result?.totalElements || 0;
 
       } catch (error) {
         console.error('게시글 목록 조회 실패:', error);
@@ -234,21 +213,21 @@ export default {
         this.isLoading = false;
       }
     },
-    
+
     openCreateModal() {
       this.isModalOpen = true;
     },
-    
+
     async handleSave(postData) {
       try {
         const fridgeId = this.$route.params.fridgeId;
         if (!fridgeId) return;
-        
+
         const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/create`, postData,
-          
+
         );
         console.log('게시글 등록 성공:', response.data);
-        
+
         await this.fetchPostList();
         this.isModalOpen = false;
         alert('게시글이 등록되었습니다.');
@@ -257,48 +236,55 @@ export default {
         alert('게시글 등록에 실패했습니다: ' + (error.response?.data?.message || error.message));
       }
     },
-    
+
     viewPost(post) {
-      this.$router.push(`/fridge/${this.$route.params.fridgeId}/community/post/${post.id}`);
+      console.log('=== viewPost 메서드 호출 ===');
+      console.log('클릭된 게시글:', post);
+      console.log('현재 fridgeId:', this.$route.params.fridgeId);
+      console.log('게시글 ID:', post.id);
+      console.log('이동할 URL:', `/fridge/${this.$route.params.fridgeId}/post/${post.id}`);
+      
+      try {
+        this.$router.push(`/fridge/${this.$route.params.fridgeId}/post/${post.id}`);
+        console.log('라우터 이동 성공');
+      } catch (error) {
+        console.error('라우터 이동 실패:', error);
+      }
     },
-    
-    formatTime(dateString) {
-      if (!dateString) return '';
+
+
+
+    onBoardChange(newValue) {
+      console.log('=== 카테고리 변경 이벤트 발생 ===');
+      console.log('이전 값:', this.activeBoard);
+      console.log('새로운 값:', newValue);
+      console.log('현재 activeBoard:', this.activeBoard);
+      console.log('사용 가능한 카테고리들:', this.boardCategories);
       
-      const now = new Date();
-      const postDate = new Date(dateString);
-      const diffMs = now - postDate;
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      // 값이 실제로 변경되었는지 확인
+      if (newValue !== this.activeBoard) {
+        console.log('값이 변경되었습니다. activeBoard를 업데이트합니다.');
+        this.activeBoard = newValue;
+      }
       
-      if (diffMins < 1) return '방금 전';
-      if (diffMins < 60) return `${diffMins}분 전`;
-      if (diffHours < 24) return `${diffHours}시간 전`;
-      if (diffDays < 7) return `${diffDays}일 전`;
-      
-      return postDate.toLocaleDateString('ko-KR');
-    },
-    
-    onBoardChange() {
       this.resetPagination();
       this.fetchPostList();
     },
-    
+
     onSearchInput() {
       this.resetPagination();
       this.fetchPostList();
     },
-    
+
     onSortChange() {
       this.resetPagination();
       this.fetchPostList();
     },
-    
+
     onPageChange() {
       this.fetchPostList();
     },
-    
+
     resetPagination() {
       this.currentPage = 1;
     }
@@ -308,18 +294,33 @@ export default {
 
 <style scoped>
 .community-container {
-  padding: 24px;
-  background: #f5f5f5;
+  padding: 32px;
+  margin-left: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   position: relative;
 }
 
+.community-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  opacity: 0.1;
+  z-index: -1;
+}
+
 .page-header {
-  background: white;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 24px;
 }
 
 .header-content {
@@ -333,8 +334,8 @@ export default {
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: #333;
   margin: 0 0 8px 0;
 }
@@ -351,22 +352,30 @@ export default {
 }
 
 .write-post-btn {
-  border-radius: 8px;
+  border-radius: 12px;
   text-transform: none;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
+  transition: all 0.3s ease;
+}
+
+.write-post-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
 }
 
 .main-content-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
 }
 
 .board-tabs-header {
   padding: 20px 24px 0;
-  background: white;
+  background: transparent;
   border-bottom: none;
   margin-bottom: 0;
 }
@@ -416,7 +425,8 @@ export default {
   flex: 1;
 }
 
-.search-field, .sort-select {
+.search-field,
+.sort-select {
   width: 100%;
 }
 
@@ -427,17 +437,21 @@ export default {
 }
 
 .post-item {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
   padding: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .post-item:hover {
   border-color: #1976d2;
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.1);
+  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.15);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .post-header {
@@ -467,6 +481,15 @@ export default {
   font-size: 14px;
   color: #666;
   font-weight: 500;
+}
+
+.post-category {
+  font-size: 12px;
+  color: #1976d2;
+  font-weight: 500;
+  background: rgba(25, 118, 210, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 .post-time {
@@ -534,10 +557,12 @@ export default {
   align-items: center;
   margin-top: 20px;
   padding: 16px 24px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(5px);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .pagination-controls {
@@ -555,15 +580,35 @@ export default {
   font-weight: 500;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 960px) {
   .community-container {
-    padding: 16px;
+    padding: 24px;
+    margin-left: 8px;
+  }
+  
+  .page-header {
+    padding: 20px;
   }
   
   .header-content {
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
+  }
+  
+  .page-title {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .community-container {
+    padding: 16px;
+    margin-left: 4px;
+  }
+
+  .page-header {
+    padding: 16px;
   }
 
   .search-row {
