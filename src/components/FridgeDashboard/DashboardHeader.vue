@@ -143,8 +143,16 @@ const showNotificationModal = ref(false);
 
 // Vuex store에서 상태 가져오기
 const fridgeId = computed(() => localStorage.getItem('fridgeId') || '1');
-const notificationCount = computed(() => store.getters['notification/getFridgeNotificationCount'](fridgeId.value));
-const recentNotifications = computed(() => store.getters['notification/getFridgeNotifications'](fridgeId.value));
+const notificationCount = computed(() => {
+  const count = store.getters['notification/getFridgeNotificationCount'](fridgeId.value);
+  console.log(`DashboardHeader - 냉장고 ${fridgeId.value} 알림 카운트:`, count);
+  return count;
+});
+const recentNotifications = computed(() => {
+  const notifications = store.getters['notification/getFridgeNotifications'](fridgeId.value);
+  console.log(`DashboardHeader - 냉장고 ${fridgeId.value} 알림 목록:`, notifications);
+  return notifications;
+});
 
 // 냉장고 정보 가져오기 (route.params.fridgeId 사용)
 const fetchFridgeInfo = async () => {

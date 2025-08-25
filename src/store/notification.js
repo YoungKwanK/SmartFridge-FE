@@ -27,7 +27,7 @@ function createSSEConnection(store) {
     return;
   }
 
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('accessToken');
   if (!token) {
     return;
   }
@@ -83,7 +83,8 @@ function createSSEConnection(store) {
     // 타입별 커스텀 이벤트 리스너 등록 (전역 처리)
     const notificationTypes = [
       'ADMIN_REPLY', 'NEW_FOOD', 'EXPIRATION_IMMINENT', 
-      'NEW_ANNOUNCEMENT', 'NEW_COMMENT', 'NEW_INQUIRY', 'NEW_MEMBER'
+      'NEW_ANNOUNCEMENT', 'NEW_COMMENT', 'NEW_INQUIRY', 'NEW_MEMBER',
+      'ADMIN_CHAT', 'GROUP_CHAT', 'INQUIRY_REPLY'
     ];
 
     notificationTypes.forEach(type => {
@@ -213,7 +214,8 @@ export default {
       NEW_INQUIRY: 0,
       NEW_MEMBER: 0,
       ADMIN_CHAT: 0,
-      GROUP_CHAT: 0
+      GROUP_CHAT: 0,
+      INQUIRY_REPLY: 0
     }
   },
   mutations: {
@@ -371,8 +373,18 @@ export default {
       return notifications.filter(n => !n.isRead).length;
     },
 
-    // 사이드바 빨간 점용 getter
-    inquiryBadgeCount: state => state.typeCounts.ADMIN_REPLY + state.typeCounts.NEW_INQUIRY,
+    // 사이드바 빨간 점용 getter (역할별로 분리)
+    inquiryBadgeCount: (state, getters, rootState) => {
+      const userRole = rootState.user?.userInfo?.role || 'USER';
+      
+      if (userRole === 'ADMIN') {
+        // ADMIN: 새로운 문의 알림만 표시
+        return state.typeCounts.NEW_INQUIRY || 0;
+      } else {
+        // USER: 관리자 답변 알림만 표시
+        return state.typeCounts.ADMIN_REPLY || 0;
+      }
+    },
     chatBadgeCount: state => state.typeCounts.ADMIN_CHAT + state.typeCounts.GROUP_CHAT
   }
 };

@@ -62,6 +62,10 @@
                   <div class="signup-header mb-6">
                     <h2 class="signup-title">회원가입</h2>
                     <p class="signup-subtitle">Share Refrigerator에 오신 것을 환영합니다</p>
+                    <div class="email-verification-notice mt-3">
+                      <v-icon class="notice-icon" color="primary" size="16">mdi-information-outline</v-icon>
+                      <span class="notice-text">회원가입 후 이메일 인증이 필요합니다</span>
+                    </div>
                   </div>
 
                   <!-- 에러 메시지 표시 -->
@@ -267,7 +271,6 @@
   </v-app>
 </template>
 <script>
-import axios from 'axios';
 
 export default {
   name: 'MemberCreate',
@@ -352,51 +355,52 @@ export default {
       this.errorMessage = "";
       this.successMessage = "";
 
-      // 백엔드 API에 맞춰 데이터 구성
+      // 회원가입 데이터를 세션 스토리지에 임시 저장 (이메일 인증 후 사용)
       const memberCreateDto = {
-        name: this.name,
-        email: this.email,
-        password: this.password,
-        passwordConfirm: this.passwordConfirm
+        name: this.name?.trim() || '',
+        email: this.email?.trim() || '',
+        password: this.password?.trim() || '',
+        passwordConfirm: this.passwordConfirm?.trim() || ''
       };
 
+      // null/undefined/빈값 체크
+      if (!memberCreateDto.name || !memberCreateDto.email || !memberCreateDto.password || !memberCreateDto.passwordConfirm) {
+        this.errorMessage = "모든 필수 정보를 입력해주세요.";
+        this.isLoading = false;
+        return;
+      }
+
       try {
-        // API 기본 URL 설정 (환경변수가 없는 경우 기본값 사용)
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080';
+        console.log('세션에 저장할 데이터:', {
+          name: memberCreateDto.name,
+          email: memberCreateDto.email,
+          password: '[보안상 숨김]',
+          passwordConfirm: '[보안상 숨김]'
+        });
         
-        const response = await axios.post(`${apiBaseUrl}/member/create`, memberCreateDto);
+        // 회원가입 정보를 세션 스토리지에 저장
+        sessionStorage.setItem('pendingSignupData', JSON.stringify(memberCreateDto));
         
-        console.log('회원가입 응답:', response.data);
+        // 저장 확인
+        const savedData = sessionStorage.getItem('pendingSignupData');
+        console.log('세션에 저장된 데이터 확인:', savedData ? '저장됨' : '저장 실패');
         
-        // 백엔드 응답 구조: { result: memberData, status_code: 201, status_message: "회원가입을 축하합니다!" }
-        if (response.data.status_code === 201) {
-          this.successMessage = response.data.status_message || "회원가입이 완료되었습니다!";
-          
-          // 성공 메시지 표시 후 로그인 페이지로 이동
-          setTimeout(() => {
-            this.$router.push('/').catch(() => {
-              window.location.href = "/";
-            });
-          }, 2000);
-          
-        } else {
-          this.errorMessage = response.data.status_message || "회원가입에 실패했습니다.";
-        }
+        // 성공 메시지 표시
+        this.successMessage = "이메일 인증 단계로 이동합니다...";
+        
+        // 이메일 인증 페이지로 이동
+        setTimeout(() => {
+          this.$router.push({
+            path: '/member/verify-email',
+            query: { email: this.email }
+          }).catch(() => {
+            window.location.href = `/member/verify-email?email=${encodeURIComponent(this.email)}`;
+          });
+        }, 1500);
         
       } catch (error) {
-        console.error('회원가입 에러:', error);
-        
-        if (error.response) {
-          // 서버에서 응답을 받은 경우
-          const errorData = error.response.data;
-          this.errorMessage = errorData.status_message || errorData.message || "회원가입에 실패했습니다.";
-        } else if (error.request) {
-          // 요청은 보냈지만 응답을 받지 못한 경우
-          this.errorMessage = "서버와의 연결에 실패했습니다. 네트워크 상태를 확인해주세요.";
-        } else {
-          // 요청 설정 중 오류가 발생한 경우
-          this.errorMessage = "회원가입 중 오류가 발생했습니다.";
-        }
+        console.error('회원가입 준비 에러:', error);
+        this.errorMessage = "회원가입 처리 중 오류가 발생했습니다.";
       } finally {
         this.isLoading = false;
       }
@@ -592,6 +596,29 @@ export default {
   color: #7f8c8d;
   font-weight: 400;
   margin: 0;
+}
+
+/* 이메일 인증 안내 */
+.email-verification-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #f0f4ff;
+  border: 1px solid #e3f2fd;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 12px;
+}
+
+.notice-icon {
+  flex-shrink: 0;
+}
+
+.notice-text {
+  font-size: 12px;
+  color: #667eea;
+  font-weight: 500;
 }
 
 /* 폼 그룹 */
