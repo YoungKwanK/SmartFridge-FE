@@ -7,6 +7,7 @@ import LoginPage from "@/views/LoginPage.vue";
 import NoFridgePage from "@/views/NoFridgePage.vue";
 import { InquiryRouter } from "./InquiryRouter";
 import { FoodRouter } from "./FoodRouter";
+import { CommunityRouter } from "./CommunityRouter";
 
 const routes = [
   {
@@ -30,7 +31,8 @@ const routes = [
   ...ChatRouter,
   ...NotificationRouter,
   ...InquiryRouter,
-  ...FoodRouter
+  ...FoodRouter,
+  ...CommunityRouter
 ]
 
 const router = createRouter(
@@ -55,6 +57,15 @@ router.beforeEach((to, from, next) => {
   } 
   else {
     next();
+  }
+  
+  // SSE 연결 상태 확인 및 필요시 재연결 (next() 호출 후)
+  const store = window.$store || window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.Vue?.prototype?.$store;
+  if (store && isAuthenticated) {
+    const isConnected = store.getters['notification/isSSEConnected'];
+    if (!isConnected) {
+      store.dispatch('notification/initSSE', store);
+    }
   }
 });
 

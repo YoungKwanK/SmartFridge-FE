@@ -1,4 +1,5 @@
 import { createStore } from "vuex";
+import notification from "./notification";
 import user from "./user";
 
 const store = createStore({
@@ -24,6 +25,7 @@ const store = createStore({
         getCurrentFridgeId: state => state.currentFridgeId
     },
     modules: {
+        notification,
         user
     }
 });
