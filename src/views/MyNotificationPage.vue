@@ -26,6 +26,7 @@
         <v-tab value="expiration">유통기한 알림</v-tab>
         <v-tab value="post">게시글 알림</v-tab>
         <v-tab value="comment">댓글알림</v-tab>
+        <v-tab value="inquiry-reply">문의 답변</v-tab>
         <v-tab 
           v-if="userType === 'MANAGER'" 
           value="member"
@@ -47,6 +48,7 @@
           'expiration-border': getNotificationType(notification) === 'expiration',
           'post-border': getNotificationType(notification) === 'post',
           'comment-border': getNotificationType(notification) === 'comment',
+          'inquiry-reply-border': getNotificationType(notification) === 'inquiry-reply',
           'member-border': getNotificationType(notification) === 'member',
           'other-border': getNotificationType(notification) === 'other'
         }"
@@ -82,6 +84,13 @@
               <v-chip color="blue" size="small" variant="outlined" class="comment-chip">
                 <v-icon size="16" class="mr-1">mdi-comment</v-icon>
                 새로운 댓글
+              </v-chip>
+            </div>
+
+            <div v-if="getNotificationType(notification) === 'inquiry-reply'" class="inquiry-reply-info">
+              <v-chip color="blue" size="small" variant="outlined" class="inquiry-reply-chip">
+                <v-icon size="16" class="mr-1">mdi-reply</v-icon>
+                문의 답변
               </v-chip>
             </div>
 
@@ -161,7 +170,7 @@ export default {
       notificationList: [],
       selectedTab: "all",
       selectedCategory: "ALL",
-      fridgeId: 1,
+      fridgeId: null, // 동적으로 설정
       hoveredId: null,
       deleteDialog: false,
       deleteTarget: null,
@@ -174,6 +183,8 @@ export default {
   },
   
   async created() {
+    // 현재 사용자의 냉장고 ID 설정
+    this.fridgeId = this.$store.state.user.userInfo?.fridgeId || 1;
     await this.fetchNotifications();
     window.addEventListener('scroll', this.handleScroll);
   },
@@ -209,7 +220,16 @@ export default {
       try {
         let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/list`;
         const params = new URLSearchParams();
-        if (this.selectedCategory !== "ALL") params.append('notificationType', this.selectedCategory);
+        if (this.selectedCategory !== "ALL") {
+          // 여러 알림 타입을 쉼표로 구분하여 처리
+          if (this.selectedCategory.includes(',')) {
+            this.selectedCategory.split(',').forEach(type => {
+              params.append('notificationType', type.trim());
+            });
+          } else {
+            params.append('notificationType', this.selectedCategory);
+          }
+        }
         params.append('page', this.currentPage.toString());
         params.append('size', this.pageSize.toString());
         if (params.toString()) url += `?${params.toString()}`;
@@ -253,6 +273,7 @@ export default {
       else if (tab === "expiration") category = "EXPIRATION_IMMINENT";
       else if (tab === "post") category = "NEW_ANNOUNCEMENT";
       else if (tab === "comment") category = "NEW_COMMENT";
+      else if (tab === "inquiry-reply") category = "INQUIRY_REPLY,NEW_INQUIRY";
       else if (tab === "member") category = "NEW_MEMBER";
 
       this.selectedCategory = category;
@@ -265,6 +286,8 @@ export default {
       if (notification.type === "EXPIRATION_IMMINENT") return "expiration";
       if (notification.type === "NEW_ANNOUNCEMENT") return "post";
       if (notification.type === "NEW_COMMENT") return "comment";
+      if (notification.type === "INQUIRY_REPLY") return "inquiry-reply";
+      if (notification.type === "NEW_INQUIRY") return "inquiry-reply";
       if (notification.type === "NEW_MEMBER") return "member";
       return "other";
     },
@@ -274,6 +297,8 @@ export default {
       if (notification.type === "NEW_FOOD") return `${notification.content || '새로운 음식'}이 냉장고에 등록되었습니다`;
       if (notification.type === "NEW_ANNOUNCEMENT") return `${notification.content || '새로운 공지사항'}이 게시되었습니다`;
       if (notification.type === "NEW_COMMENT") return `${notification.content || '새로운 댓글'}이 등록되었습니다`;
+      if (notification.type === "INQUIRY_REPLY") return `${notification.content || '새로운 문의 답변'}이 등록되었습니다`;
+      if (notification.type === "NEW_INQUIRY") return `${notification.content || '새로운 문의'}가 등록되었습니다`;
       if (notification.type === "NEW_MEMBER") return `${notification.content || '새로운 멤버'}가 냉장고에 참여했습니다`;
       return notification.content || '새로운 알림이 있습니다';
     },
@@ -439,6 +464,10 @@ export default {
   border-left-color: #17a2b8;
 }
 
+.notification-item.inquiry-reply-border {
+  border-left-color: #4285f4;
+}
+
 .notification-item.qa-border {
   border-left-color: #6f42c1;
 }
@@ -567,14 +596,16 @@ export default {
 
 .expiration-info,
 .food-info,
-.comment-info {
+.comment-info,
+.inquiry-reply-info {
   display: flex;
   align-items: center;
 }
 
 .expiration-chip,
 .food-chip,
-.comment-chip {
+.comment-chip,
+.inquiry-reply-chip {
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 16px;
@@ -594,6 +625,11 @@ export default {
 .comment-chip {
   border-color: #2196f3;
   color: #1565c0;
+}
+
+.inquiry-reply-chip {
+  border-color: #4285f4;
+  color: #1a73e8;
 }
 
 .post-chip {
