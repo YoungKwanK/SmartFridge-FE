@@ -139,8 +139,16 @@ const showNotificationModal = ref(false);
 
 // Vuex store에서 상태 가져오기
 const fridgeId = computed(() => localStorage.getItem('fridgeId') || '1');
-const notificationCount = computed(() => store.getters['notification/getFridgeNotificationCount'](fridgeId.value));
-const recentNotifications = computed(() => store.getters['notification/getFridgeNotifications'](fridgeId.value));
+const notificationCount = computed(() => {
+  const count = store.getters['notification/getFridgeNotificationCount'](fridgeId.value);
+  console.log(`DashboardHeader - 냉장고 ${fridgeId.value} 알림 카운트:`, count);
+  return count;
+});
+const recentNotifications = computed(() => {
+  const notifications = store.getters['notification/getFridgeNotifications'](fridgeId.value);
+  console.log(`DashboardHeader - 냉장고 ${fridgeId.value} 알림 목록:`, notifications);
+  return notifications;
+});
 
 onMounted(() => {
   // 전역 SSE 연결이 이미 App.vue에서 관리되므로 여기서는 별도 연결하지 않음

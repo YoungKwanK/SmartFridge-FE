@@ -170,7 +170,7 @@ export default {
       notificationList: [],
       selectedTab: "all",
       selectedCategory: "ALL",
-      fridgeId: 1,
+      fridgeId: null, // 동적으로 설정
       hoveredId: null,
       deleteDialog: false,
       deleteTarget: null,
@@ -183,6 +183,8 @@ export default {
   },
   
   async created() {
+    // 현재 사용자의 냉장고 ID 설정
+    this.fridgeId = this.$store.state.user.userInfo?.fridgeId || 1;
     await this.fetchNotifications();
     window.addEventListener('scroll', this.handleScroll);
   },
@@ -218,7 +220,16 @@ export default {
       try {
         let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${this.fridgeId}/notification/list`;
         const params = new URLSearchParams();
-        if (this.selectedCategory !== "ALL") params.append('notificationType', this.selectedCategory);
+        if (this.selectedCategory !== "ALL") {
+          // 여러 알림 타입을 쉼표로 구분하여 처리
+          if (this.selectedCategory.includes(',')) {
+            this.selectedCategory.split(',').forEach(type => {
+              params.append('notificationType', type.trim());
+            });
+          } else {
+            params.append('notificationType', this.selectedCategory);
+          }
+        }
         params.append('page', this.currentPage.toString());
         params.append('size', this.pageSize.toString());
         if (params.toString()) url += `?${params.toString()}`;
@@ -262,7 +273,7 @@ export default {
       else if (tab === "expiration") category = "EXPIRATION_IMMINENT";
       else if (tab === "post") category = "NEW_ANNOUNCEMENT";
       else if (tab === "comment") category = "NEW_COMMENT";
-      else if (tab === "inquiry-reply") category = "INQUIRY_REPLY";
+      else if (tab === "inquiry-reply") category = "INQUIRY_REPLY,NEW_INQUIRY";
       else if (tab === "member") category = "NEW_MEMBER";
 
       this.selectedCategory = category;
@@ -276,6 +287,7 @@ export default {
       if (notification.type === "NEW_ANNOUNCEMENT") return "post";
       if (notification.type === "NEW_COMMENT") return "comment";
       if (notification.type === "INQUIRY_REPLY") return "inquiry-reply";
+      if (notification.type === "NEW_INQUIRY") return "inquiry-reply";
       if (notification.type === "NEW_MEMBER") return "member";
       return "other";
     },
@@ -286,6 +298,7 @@ export default {
       if (notification.type === "NEW_ANNOUNCEMENT") return `${notification.content || '새로운 공지사항'}이 게시되었습니다`;
       if (notification.type === "NEW_COMMENT") return `${notification.content || '새로운 댓글'}이 등록되었습니다`;
       if (notification.type === "INQUIRY_REPLY") return `${notification.content || '새로운 문의 답변'}이 등록되었습니다`;
+      if (notification.type === "NEW_INQUIRY") return `${notification.content || '새로운 문의'}가 등록되었습니다`;
       if (notification.type === "NEW_MEMBER") return `${notification.content || '새로운 멤버'}가 냉장고에 참여했습니다`;
       return notification.content || '새로운 알림이 있습니다';
     },

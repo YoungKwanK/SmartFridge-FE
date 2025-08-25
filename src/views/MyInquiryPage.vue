@@ -554,9 +554,7 @@ export default {
         
         // 현재 로그인한 사용자의 문의 목록 조회 API 호출
         const response = await axios.get(url)
-        console.log('문의 목록 조회 응답:', response.data.result);
         
-        // 서버에서 List<InquiryResDto>를 직접 반환하므로 response.data.result가 바로 배열
         let inquiries = []
         
         if (response.data.result && Array.isArray(response.data.result)) {
@@ -627,6 +625,17 @@ export default {
         if (response.status === 201 || response.data.status_code === 201) {
           this.showMessage('문의가 성공적으로 등록되었습니다.', 'success')
           this.closeCreateModal()
+          
+          // ADMIN에게 새로운 문의 알림 발송
+          this.$store.commit('notification/addNotification', {
+            id: Date.now(),
+            type: 'NEW_INQUIRY',
+            content: `새로운 문의 "${this.inquiryData.title}"가 등록되었습니다.`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            fridgeId: this.$store.state.user.userInfo?.fridgeId || 1
+          });
+          
           await this.fetchInquiries() // 목록 새로고침
         } else {
           this.showMessage('문의 등록에 실패했습니다. 다시 시도해주세요.', 'error')
@@ -655,16 +664,12 @@ export default {
     },
 
     getTypeLabel(inquiryType) {
-      console.log('getTypeLabel 호출됨, inquiryType:', inquiryType);
-      console.log('inquiryTypes:', this.inquiryTypes);
-      
       if (!inquiryType) {
         console.warn('inquiryType이 undefined 또는 null입니다');
         return '알 수 없음';
       }
       
       const typeItem = this.inquiryTypes.find(item => item.value === inquiryType);
-      console.log('찾은 typeItem:', typeItem);
       
       if (typeItem) {
         return typeItem.title;
@@ -797,7 +802,6 @@ export default {
       this.stopAutoRefresh() // 기존 인터벌 정리
       this.autoRefreshInterval = setInterval(async () => {
         await this.fetchInquiries()
-        console.log('자동 새로고침 실행됨')
       }, 30000) // 30초마다 실행
     },
 
@@ -848,7 +852,7 @@ export default {
 
       try {
                  const requestData = {
-           contents: this.answerData.contents
+           content: this.answerData.contents
          };
         const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/inquirycomment/create?inquiryId=${this.selectedInquiry.id}`, requestData);
         
@@ -856,7 +860,17 @@ export default {
           this.showMessage('답변이 성공적으로 등록되었습니다.', 'success');
           this.closeAnswerModal();
           
-           await this.fetchInquiries(); // 목록 새로고침
+          // 문의 작성자에게 답변 알림 발송
+          this.$store.commit('notification/addNotification', {
+            id: Date.now(),
+            type: 'ADMIN_REPLY',
+            content: `문의 "${this.selectedInquiry?.title}"에 답변이 등록되었습니다.`,
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            fridgeId: this.$store.state.user.userInfo?.fridgeId || 1
+          });
+          
+          await this.fetchInquiries(); // 목록 새로고침
         } else {
           this.showMessage('답변 등록에 실패했습니다. 다시 시도해주세요.', 'error');
         }
@@ -866,6 +880,34 @@ export default {
       } finally {
         this.isSubmittingAnswer = false;
       }
+    },
+
+    testNotification() {
+      // 역할에 맞는 테스트 알림 생성
+      if (this.role === 'ADMIN') {
+        // ADMIN: NEW_INQUIRY 테스트 알림
+        this.$store.commit('notification/addNotification', {
+          id: Date.now(),
+          type: 'NEW_INQUIRY',
+          content: '테스트: 새로운 문의가 등록되었습니다.',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          fridgeId: this.$store.state.user.userInfo?.fridgeId || 1
+        });
+        this.showMessage('ADMIN용 NEW_INQUIRY 테스트 알림이 추가되었습니다.', 'info');
+      } else {
+        // USER: ADMIN_REPLY 테스트 알림
+        this.$store.commit('notification/addNotification', {
+          id: Date.now(),
+          type: 'ADMIN_REPLY',
+          content: '테스트: 문의에 답변이 등록되었습니다.',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          fridgeId: this.$store.state.user.userInfo?.fridgeId || 1
+        });
+        this.showMessage('USER용 ADMIN_REPLY 테스트 알림이 추가되었습니다.', 'info');
+      }
+  
     }
   }
 }
@@ -1129,6 +1171,46 @@ export default {
 .refresh-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.test-btn {
+  border-radius: 16px;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  padding: 16px 32px;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+}
+
+.test-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.test-btn:hover::before {
+  left: 100%;
+}
+
+.test-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
 }
 
 .inquiry-list {
