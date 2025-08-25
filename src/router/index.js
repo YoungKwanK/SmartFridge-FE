@@ -4,7 +4,7 @@ import { MemberRouter } from "./MemberRouter";
 import { NotificationRouter } from "./NotificationRouter";
 import MainDashboard from "@/views/MainDashboard.vue";
 import LoginPage from "@/views/LoginPage.vue";
-import NoFridgePage from "@/views/NoFridgePage.vue";
+import MyPage from "@/views/MyPage.vue";
 import { InquiryRouter } from "./InquiryRouter";
 import { FoodRouter } from "./FoodRouter";
 import { CommunityRouter } from "./CommunityRouter";
@@ -16,15 +16,15 @@ const routes = [
     component: LoginPage
   },
   {
-    path: '/no-fridge', // 참여한 냉장고가 없을 때 페이지
-    name: 'NoFridge',
-    component: NoFridgePage,
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/dashboard', // 메인 대시보드
     name: 'MainDashboard', 
     component: MainDashboard,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/mypage', // 마이페이지
+    name: 'MyPage',
+    component: MyPage,
     meta: { requiresAuth: true }
   },
   ...MemberRouter,
@@ -53,7 +53,7 @@ router.beforeEach((to, from, next) => {
   } 
   // 이미 로그인된 사용자가 로그인/회원가입 페이지에 접근하려는 경우
   else if ((to.path === '/' || to.path === '/member/create') && isAuthenticated) {
-    next('/dashboard');
+    next('/fridge/list');
   } 
   else {
     next();

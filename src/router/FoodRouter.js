@@ -13,7 +13,8 @@ export const FoodRouter = [
   {
     path: '/fridge/list',
     name: 'FridgeList',
-    component: FridgeList
+    component: FridgeList,
+    meta: { requiresAuth: true }
   },
   {
     path: '/fridge/:fridgeId/dashboard',

@@ -19,8 +19,20 @@ export default {
   },
   computed: {
     isLoginPage() {
-      // 로그인 관련 페이지들과 NoFridgePage에서는 사이드바를 숨김
-      const hideSidebarRoutes = ['/', '/login', '/member/create', '/no-fridge', '/oauth/google/redirect', '/oauth/kakao/redirect', '/oauth/naver/redirect'];
+      // 로그인 관련 페이지들, NoFridgePage, FridgeList, 이메일 인증 페이지에서는 사이드바를 숨김
+      const hideSidebarRoutes = [
+        '/', 
+        '/login', 
+        '/member/create', 
+        '/member/verify-email',
+        '/member/forgot-password',
+        '/reset-password',
+        '/no-fridge', 
+        '/fridge/list', 
+        '/oauth/google/redirect', 
+        '/oauth/kakao/redirect', 
+        '/oauth/naver/redirect'
+      ];
       return hideSidebarRoutes.includes(this.$route.path);
     }
   },

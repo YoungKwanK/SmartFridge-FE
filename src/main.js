@@ -13,10 +13,35 @@ window.$store = store;
 
 axios.interceptors.request.use(
   config=>{
-    const token = localStorage.getItem("accessToken");
-    if(token){
-      config.headers['Authorization'] = `Bearer ${token}`
+    // 인증이 필요 없는 API 경로들
+    const publicPaths = ['/email/send', '/email/verify', '/member/create', '/member/doLogin'];
+    
+    // 디버깅을 위한 로그
+    console.log('Axios interceptor - 요청 URL:', config.url);
+    
+    // 현재 요청 URL이 public API인지 확인
+    const isPublicAPI = publicPaths.some(path => {
+      const urlPath = config.url || '';
+      const isMatch = urlPath.includes(path);
+      console.log(`URL "${urlPath}" includes "${path}": ${isMatch}`);
+      return isMatch;
+    });
+    
+    console.log('Public API 여부:', isPublicAPI);
+    
+    // public API가 아닌 경우에만 토큰 추가
+    if (!isPublicAPI) {
+      const token = localStorage.getItem("accessToken");
+      if(token){
+        config.headers['Authorization'] = `Bearer ${token}`;
+        console.log('토큰 추가됨:', token.substring(0, 20) + '...');
+      } else {
+        console.log('토큰 없음');
+      }
+    } else {
+      console.log('Public API - 토큰 추가하지 않음');
     }
+    
     return config;
   },
   error => {
