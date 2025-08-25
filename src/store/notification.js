@@ -20,18 +20,15 @@ const sseState = {
 function createSSEConnection(store) {
   // 강제 종료 중이면 연결하지 않음
   if (isForceClosing) {
-    console.log('강제 종료 중이므로 SSE 연결을 생성하지 않음');
     return;
   }
 
   if (globalEventSource && globalEventSource.readyState === EventSource.OPEN) {
-    console.log('SSE 이미 연결됨');
     return;
   }
 
   const token = localStorage.getItem('token');
   if (!token) {
-    console.log('토큰이 없어 SSE 연결 불가');
     return;
   }
 
@@ -48,10 +45,6 @@ function createSSEConnection(store) {
   }
 
   try {
-    console.log('🔌 SSE 연결 생성 시작...');
-    console.log('🔌 API URL:', `${process.env.VUE_APP_API_BASE_URL}/sse/connect/notification`);
-    console.log('🔌 토큰 존재 여부:', !!token);
-    console.log('🔌 토큰 일부:', token ? `${token.substring(0, 20)}...` : '없음');
     
     globalEventSource = new EventSourcePolyfill(
       `${process.env.VUE_APP_API_BASE_URL}/sse/connect/notification`,
@@ -62,13 +55,8 @@ function createSSEConnection(store) {
       }
     );
 
-    console.log('🔌 EventSource 객체 생성됨:', globalEventSource);
-    console.log('🔌 EventSource readyState:', globalEventSource.readyState);
-
     // 연결 성공
     globalEventSource.onopen = () => {
-      console.log('✅ SSE 연결 성공!');
-      console.log('✅ EventSource readyState:', globalEventSource.readyState);
       sseState.isConnected = true;
       sseState.connectionAttempts = 0;
       sseState.lastConnectionTime = Date.now();
@@ -84,17 +72,11 @@ function createSSEConnection(store) {
     // 메시지 수신
     globalEventSource.onmessage = (event) => {
       try {
-        console.log('📨 SSE 원본 메시지 수신:', event.data);
         const data = JSON.parse(event.data);
-        console.log('📨 SSE 파싱된 메시지:', data);
-        console.log('📨 SSE 메시지 타입:', data.type);
-        console.log('📨 SSE 메시지 fridgeId:', data.fridgeId);
-        console.log('📨 SSE 메시지 전체 구조:', JSON.stringify(data, null, 2));
         
         store.commit('notification/addNotification', data);
       } catch (error) {
         console.error('SSE 메시지 파싱 오류:', error);
-        console.error('파싱 실패한 원본 데이터:', event.data);
       }
     };
 
@@ -112,7 +94,6 @@ function createSSEConnection(store) {
           store.commit('notification/addNotification', data);
         } catch (error) {
           console.error(`SSE [${type}] 메시지 파싱 오류:`, error);
-          console.error(`파싱 실패한 원본 데이터:`, event.data);
         }
       });
     });
