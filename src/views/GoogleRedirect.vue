@@ -5,7 +5,6 @@
 <script>
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-import { fridgeService } from '@/services/fridgeService';
 
 export default {
     created() {
@@ -52,8 +51,8 @@ export default {
                     
                     console.log("구글 로그인 성공, 냉장고 상태 확인");
                     
-                    // 냉장고 상태 확인 후 적절한 페이지로 리다이렉트
-                    await this.checkUserFridgeStatus(decodedToken);
+                    // FridgeList로 리다이렉트
+                    await this.checkUserFridgeStatus();
                 } else {
                     throw new Error(response.data.status_message || "구글 로그인에 실패했습니다.");
                 }
@@ -76,30 +75,16 @@ export default {
             }
         },
         
-        async checkUserFridgeStatus(decodedToken) {
+        async checkUserFridgeStatus() {
             try {
-                const memberId = decodedToken.memberId || decodedToken.sub;
-                
-                // 사용자가 참여한 냉장고 목록 조회
-                const response = await fridgeService.getFridgesByMember(memberId);
-                
-                if (response.status_code === 200 && response.result && response.result.length > 0) {
-                    // 냉장고가 있으면 첫 번째 냉장고의 대시보드로 이동
-                    const firstFridge = response.result[0];
-                    this.$router.push(`/fridge/${firstFridge.fridgeId}/dashboard`).catch(() => {
-                        // 냉장고별 대시보드 라우트가 없는 경우 메인 대시보드로 이동
-                        window.location.href = "/dashboard";
-                    });
-                } else {
-                    // 참여한 냉장고가 없으면 NoFridgePage로 이동
-                    this.$router.push('/no-fridge').catch(() => {
-                        window.location.href = "/no-fridge";
-                    });
-                }
+                // 로그인 성공 후 바로 FridgeList 페이지로 이동
+                this.$router.push('/fridge/list').catch(() => {
+                    window.location.href = "/fridge/list";
+                });
             } catch (error) {
-                console.error('냉장고 상태 확인 오류:', error);
-                // 오류 발생 시 기본적으로 메인 대시보드로 이동
-                window.location.href = "/dashboard";
+                console.error('페이지 이동 오류:', error);
+                // 오류 발생 시에도 FridgeList로 이동
+                window.location.href = "/fridge/list";
             }
         }
     }
