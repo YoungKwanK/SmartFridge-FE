@@ -87,7 +87,7 @@ const typeCounts = computed(() => store.getters['notification/typeCounts']);
 const unreadCount = computed(() => store.getters['notification/unreadCount']);
 
 onMounted(() => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('accessToken');
   if (!token) {
     console.warn('토큰이 없어서 SSE 연결을 시도하지 않습니다.');
     return;

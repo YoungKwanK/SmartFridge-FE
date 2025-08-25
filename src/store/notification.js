@@ -213,7 +213,8 @@ export default {
       NEW_INQUIRY: 0,
       NEW_MEMBER: 0,
       ADMIN_CHAT: 0,
-      GROUP_CHAT: 0
+      GROUP_CHAT: 0,
+      INQUIRY_REPLY: 0
     }
   },
   mutations: {
@@ -372,7 +373,7 @@ export default {
     },
 
     // 사이드바 빨간 점용 getter
-    inquiryBadgeCount: state => state.typeCounts.ADMIN_REPLY + state.typeCounts.NEW_INQUIRY,
+    inquiryBadgeCount: state => state.typeCounts.ADMIN_REPLY + state.typeCounts.NEW_INQUIRY + state.typeCounts.INQUIRY_REPLY,
     chatBadgeCount: state => state.typeCounts.ADMIN_CHAT + state.typeCounts.GROUP_CHAT
   }
 };
