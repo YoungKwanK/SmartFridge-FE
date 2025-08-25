@@ -172,7 +172,7 @@ export default {
       isValid: false,
       isSaving: false,
       formData: {
-        category: 2, // 기본값을 숫자 ID로 설정
+        category: null, // 초기값은 null로 설정하고 fetchCategories에서 설정
         title: '',
         content: '',
         imageFiles: []
