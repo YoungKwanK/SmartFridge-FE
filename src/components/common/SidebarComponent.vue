@@ -159,7 +159,6 @@ onMounted(async () => {
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
-const store = useStore();
 
 const menuItems = computed(() => {
   const fridgeId = route.params.fridgeId;
