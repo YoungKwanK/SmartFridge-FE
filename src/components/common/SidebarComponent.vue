@@ -56,6 +56,13 @@
         <template v-slot:prepend>
           <v-icon :icon="item.icon" :color="item.color"></v-icon>
         </template>
+        <template v-slot:append v-if="item.badgeCount > 0">
+          <v-badge
+            :content="item.badgeCount"
+            color="error"
+            :model-value="item.badgeCount > 0"
+          ></v-badge>
+        </template>
       </v-list-item>
     </v-list>
     
@@ -90,6 +97,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { useStore } from 'vuex';
 
 const logoUrl = new URL('../../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
 
@@ -108,18 +116,31 @@ const doLogout = () => {
 import { useRoute } from 'vue-router';
 
 const route = useRoute();
+const store = useStore();
 
 const menuItems = computed(() => {
   const fridgeId = route.params.fridgeId;
   return [
-    { title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', color: 'blue-darken-1', to: fridgeId ? `/fridge/${fridgeId}/dashboard` : "/#" },
-    { title: '공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'sharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#" },
-    { title: '비공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'nonsharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#" },
-    { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list' },
-    { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: `/chatpage/${fridgeId}` },
-    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: fridgeId ? `/fridge/${fridgeId}/community` : "/#" },
+    { 
+      title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', color: 'blue-darken-1', 
+      to: fridgeId ? `/fridge/${fridgeId}/dashboard` : "/#", 
+      badgeCount: 0
+    },
+    { title: '공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'sharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#", badgeCount: 0 },
+    { title: '비공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'nonsharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#", badgeCount: 0 },
+    { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list'},
+    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: "/#" },
+    { 
+      title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: `/chatpage/${fridgeId}`,  
+      badgeCount: store.getters['notification/chatBadgeCount'] // 채팅 관련 알림만
+    },
     { title: '프로필설정', icon: 'mdi-account-outline', value: 'profile', color: 'indigo-darken-1', to: "/#" },
-    { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/#"},
+    { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/#" },
+    { 
+      title: '문의하기', icon: 'mdi-email-outline', value: 'inquiry', color: 'cyan-darken-1', 
+      to: "/inquiry", 
+      badgeCount: store.getters['notification/inquiryBadgeCount'] // 문의 관련 알림만
+    }
   ];
 });
 </script>

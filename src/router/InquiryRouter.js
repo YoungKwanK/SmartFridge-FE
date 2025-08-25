@@ -1,10 +1,10 @@
-import InquiryPage from "@/views/InquiryPage.vue";
+import MyInquiryPage from "@/views/MyInquiryPage.vue";
 
 export const InquiryRouter = [
     {
       path:'/inquiry',
-      name: 'InquiryPage',
-      component: InquiryPage
+      name: 'MyInquiryPage',
+      component: MyInquiryPage
     }
     ,
   ]

@@ -28,4 +28,19 @@ const router = createRouter(
     }
 )
 
+// 전역 네비게이션 가드 추가
+router.beforeEach((to, from, next) => {
+  
+  // SSE 연결 상태 확인 및 필요시 재연결
+  const store = window.$store || window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.Vue?.prototype?.$store;
+  if (store) {
+    const isConnected = store.getters['notification/isSSEConnected'];
+    if (!isConnected) {
+      store.dispatch('notification/initSSE', store);
+    }
+  }
+  
+  next();
+});
+
 export default router;

@@ -8,6 +8,9 @@ import '@mdi/font/css/materialdesignicons.css'
 
 const app = createApp(App);
 
+// store를 전역으로 노출 (라우터에서 접근용)
+window.$store = store;
+
 axios.interceptors.request.use(
   config=>{
     const token = localStorage.getItem("token");
