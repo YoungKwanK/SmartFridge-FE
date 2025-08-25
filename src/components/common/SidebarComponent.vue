@@ -175,7 +175,7 @@ const menuItems = computed(() => {
       badgeCount: store.getters['notification/chatBadgeCount'] // 채팅 관련 알림만
     },
     { title: '프로필설정', icon: 'mdi-account-outline', value: 'profile', color: 'indigo-darken-1', to: "/#" },
-    { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/#" },
+    { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: `/fridge/${fridgeId}/member/list` },
     { 
       title: '문의하기', icon: 'mdi-email-outline', value: 'inquiry', color: 'cyan-darken-1', 
       to: "/inquiry", 
