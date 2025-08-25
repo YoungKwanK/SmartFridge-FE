@@ -63,12 +63,20 @@
       <div class="user-info-wrapper">
         <div class="user-info-frame">
           <router-link to="/#" class="avatar-link">
-            <div class="user-avatar-bg">
-              <span class="user-avatar-initial">홍</span>
+            <div class="user-avatar-bg" v-if="!userProfileImage">
+              <span class="user-avatar-initial">{{ userInitial }}</span>
             </div>
+            <v-img
+              v-else
+              :src="userProfileImage"
+              alt="Profile Image"
+              class="user-avatar-image"
+              width="40"
+              height="40"
+            />
           </router-link>  
           <div class="user-details">
-            <div class="user-name">홍길동님</div>
+            <div class="user-name">{{ displayUserName }}</div>
             <v-btn
                 :color="inquiryItem.color"
                 variant="text"
@@ -89,21 +97,57 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useStore } from 'vuex';
 
+const store = useStore();
 const logoUrl = new URL('../../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
-
-const fridgeName = ref('홍길동의 냉장고임');
 
 const selectedItem = ref(['dashboard']);
 
 const refrigeratorItem = ref({ title: '냉장고목록', icon: 'mdi-fridge-outline', color: 'cyan-darken-2', to: "/fridge/list" });
 const inquiryItem = ref({ title: '문의하기', icon: 'mdi-comment-question-outline', color: 'pink-darken-1', to: "/#" });
 
+// Store에서 사용자 정보 가져오기
+const userInfo = computed(() => store.getters.getUserInfo);
+const userName = computed(() => store.getters.getUserName);
+const userProfileImage = computed(() => store.getters.getUserProfileImage);
+const userInitial = computed(() => store.getters.getUserInitial);
+
+// 표시할 사용자 이름 (기본값 설정)
+const displayUserName = computed(() => {
+  if (userName.value) {
+    return `${userName.value}님`;
+  }
+  return '사용자님';
+});
+
+// 냉장고 이름 (사용자 이름 기반)
+const fridgeName = computed(() => {
+  if (userName.value) {
+    return `${userName.value}의 냉장고`;
+  }
+  return '나의 냉장고';
+});
+
 const doLogout = () => {
-  localStorage.clear();
-  window.location.reload();
+  store.dispatch('logout');
+  window.location.href = '/login';
 };
+
+// 컴포넌트 마운트 시 사용자 정보 로드
+onMounted(async () => {
+  const token = localStorage.getItem('accessToken');
+  if (token && !userInfo.value) {
+    try {
+      await store.dispatch('fetchUserInfo');
+      console.log('User info loaded successfully:', userInfo.value);
+    } catch (error) {
+      console.error('Failed to load user info:', error);
+      // 에러가 발생해도 기본값으로 표시되도록 함
+    }
+  }
+});
 
 import { useRoute } from 'vue-router';
 
@@ -220,6 +264,10 @@ const menuItems = computed(() => {
   font-weight: 700;
   font-size: 16px;
   color: #FFF;
+}
+.user-avatar-image {
+  border-radius: 20px;
+  object-fit: cover;
 }
 .user-details {
   display: flex;

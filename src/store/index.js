@@ -1,4 +1,5 @@
 import { createStore } from "vuex";
+import user from "./user";
 
 const store = createStore({
     state: {
@@ -23,7 +24,7 @@ const store = createStore({
         getCurrentFridgeId: state => state.currentFridgeId
     },
     modules: {
-        
+        user
     }
 });
 

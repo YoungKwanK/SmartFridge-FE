@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <SidebarComponent/>
+    <SidebarComponent v-if="!isLoginPage"/>
     <v-main>
       <router-view/>
     </v-main>
@@ -14,6 +14,13 @@ export default {
   name: 'App',
   components: {
     SidebarComponent
+  },
+  computed: {
+    isLoginPage() {
+      // 로그인 관련 페이지들과 NoFridgePage에서는 사이드바를 숨김
+      const hideSidebarRoutes = ['/', '/login', '/member/create', '/no-fridge', '/oauth/google/redirect', '/oauth/kakao/redirect', '/oauth/naver/redirect'];
+      return hideSidebarRoutes.includes(this.$route.path);
+    }
   }
 }
 </script>
