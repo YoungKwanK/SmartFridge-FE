@@ -157,12 +157,6 @@ onMounted(async () => {
     }
   }
 });
-<<<<<<< HEAD
-import { useRoute } from 'vue-router';
-
-const route = useRoute();
-=======
->>>>>>> 0dbde2af4aa04e2987529748a6971a523a841351
 
 const menuItems = computed(() => {
   const fridgeId = route.params.fridgeId;
@@ -183,11 +177,7 @@ const menuItems = computed(() => {
     { title: '공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'sharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#", badgeCount: 0 },
     { title: '비공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'nonsharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#", badgeCount: 0 },
     { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list'},
-<<<<<<< HEAD
-    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: fridgeId ? `/fridge/${fridgeId}/community` : "/#", badgeCount: 0 },
-=======
     { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: fridgeId ? `/fridge/${fridgeId}/community` : "/#", badgeCount: 0  },
->>>>>>> 0dbde2af4aa04e2987529748a6971a523a841351
     { 
       title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: `/chatpage/${fridgeId}`,  
       badgeCount: chatBadgeCount // 채팅 관련 알림만
