@@ -9,7 +9,7 @@
 
     <template v-else>
       <v-toolbar density="compact">
-        <v-toolbar-title class="font-weight-bold">{{ selectedRoom.title }}</v-toolbar-title>
+        <v-toolbar-title class="font-weight-bold">{{ selectedRoom.roomName }}</v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn icon="mdi-magnify"></v-btn>
         <v-btn icon="mdi-dots-vertical"></v-btn>
@@ -18,7 +18,7 @@
 
       <v-card-text class="flex-grow-1" style="overflow-y: auto;">
         <div class="pa-4 text-center">
-          "{{ selectedRoom.title }}" 채팅방에 오신 것을 환영합니다!
+          "{{ selectedRoom.roomName }}" 채팅방에 오신 것을 환영합니다!
         </div>
       </v-card-text>
       <v-divider></v-divider>
