@@ -3,11 +3,17 @@
     <v-card class="d-flex flex-column chat-sidebar-card" rounded="xl">
       <v-list-item class="pa-4">
         <template v-slot:prepend>
-          <v-avatar color="primary" size="48">
-            <span class="text-h6">훈</span>
+          <v-avatar 
+            color="primary" 
+            size="48"
+            :image="userProfileImage"
+          >
+            <span v-if="!userProfileImage" class="text-h6">
+              {{ userName ? userName[0] : '' }}
+            </span>
           </v-avatar>
         </template>
-        <v-list-item-title class="font-weight-bold text-h6 ml-3">훈이</v-list-item-title>
+        <v-list-item-title class="font-weight-bold text-h6 ml-3">{{ userName }} </v-list-item-title>
       </v-list-item>
 
       <v-tabs v-model="tab" grow>
@@ -172,12 +178,18 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import RoomInfoModal from './RoomInfoModal.vue';
 import axios from 'axios';
 import { useRoute } from 'vue-router';
 import { getErrorMessage, getResultData } from '@/utils/commonDataHandler';
 import CreateRoomModal from './CreateRoomModal.vue';
+import { useStore } from 'vuex';
+
+const store = useStore();
+
+const userName = computed(() => store.getters.getUserName);
+const userProfileImage = computed(() => store.getters.getUserProfileImage);
 
 const isCreateModalOpen = ref(false);
 const tab = ref('chat');
