@@ -289,6 +289,13 @@ export default {
           ...newFoodData
         };
 
+        // expirationDateTime을 expirationDate와 expirationTime으로 분리
+        if (newFoodData.expirationDateTime) {
+          const dateTime = new Date(newFoodData.expirationDateTime);
+          this.formData.expirationDate = dateTime.toISOString().split('T')[0]; // YYYY-MM-DD
+          this.formData.expirationTime = dateTime.toTimeString().slice(0, 5); // HH:MM
+        }
+
         // shareable이 명시적으로 설정되지 않은 경우에만 기본값 설정
         if (this.formData.shareable === undefined) {
           this.formData.shareable = false;
@@ -328,7 +335,6 @@ export default {
       this.isLoading = true;
       
       try {
-        // 백엔드 형식에 맞춰 시간을 hour와 minute으로 분리
         let expirationHour = null;
         let expirationMinute = null;
         
@@ -345,7 +351,6 @@ export default {
           isTemp: isTemp 
         };
         
-        // expirationTime은 제거 (백엔드에서 사용하지 않음)
         delete saveData.expirationTime;
         
         this.$emit('save', saveData);
