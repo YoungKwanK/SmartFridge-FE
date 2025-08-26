@@ -7,7 +7,7 @@
           <v-card-title class="d-flex justify-space-between align-center">
             <span>최근 등록한 식품</span>
             <div class="table-actions">
-              <v-btn color="success" prepend-icon="mdi-plus" size="small">
+              <v-btn color="success" prepend-icon="mdi-plus" size="small" @click="openFoodModal(false)">
                 식품 등록
               </v-btn>
               <v-btn color="purple" size="small" class="ml-2" @click="goToNonsharedFoodList">
@@ -46,7 +46,7 @@
           <v-card-title class="d-flex justify-space-between align-center">
             <span>최근 등록한 공유식품</span>
             <div class="table-actions">
-              <v-btn color="success" prepend-icon="mdi-plus" size="small">
+              <v-btn color="success" prepend-icon="mdi-plus" size="small" @click="openFoodModal(true)">
                 식품 등록
               </v-btn>
               <v-btn color="purple" size="small" class="ml-2" @click="goToSharedFoodList">
@@ -79,6 +79,13 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- FoodFormModal -->
+    <FoodFormModal 
+      v-model="isFoodModalOpen" 
+      :editing-food="selectedFood"
+      @save="handleFoodSave" 
+    />
   </div>
 </template>
 
@@ -87,10 +94,15 @@ import axios from 'axios';
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import router from '@/router';
+import FoodFormModal from '@/components/Food/FoodFormModal.vue';
 
 const route = useRoute();
 const recentFoods = ref([])
 const recentSharedFoods = ref([])
+
+// 모달 관련 상태
+const isFoodModalOpen = ref(false);
+const selectedFood = ref({});
 
 // 유통기한을 깔끔하게 포맷팅하는 함수
 const formatDate = (dateString) => {
@@ -105,11 +117,69 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
+// 식품 등록 모달 열기 (방법 2: 부모 컴포넌트에서 editingFood prop으로 초기화)
+const openFoodModal = (isShared) => {
+  // SharedFood와 동일한 방식으로 빈 값으로 초기화
+  selectedFood.value = {
+    name: '',
+    quantity: 1,
+    storageStartDate: '',
+    expirationDateTime: '',
+    storageType: '',
+    category: '',
+    shareable: isShared
+  };
+  isFoodModalOpen.value = true;
+};
+
+// 식품 저장 처리
+const handleFoodSave = async (foodData) => {
+  try {
+    const fridgeId = route.params.fridgeId;
+    
+    // 식품 등록 API 호출
+    await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
+    
+    // 성공 메시지
+    console.log('식품이 성공적으로 등록되었습니다.');
+    
+    // 목록 새로고침
+    await refreshFoodLists();
+    
+    // 모달은 FoodFormModal 내부에서 자동으로 닫힘
+    // 폼 데이터도 editingFood prop을 통해 자동으로 초기화됨
+    
+  } catch (error) {
+    console.error('식품 등록에 실패했습니다:', error);
+    alert('식품 등록에 실패했습니다: ' + (error.response?.data?.message || error.message));
+  }
+};
+
+// 식품 목록 새로고침
+const refreshFoodLists = async () => {
+  await Promise.all([
+    fetchRecentFoods(),
+    fetchRecentSharedFoods()
+  ]);
+};
+
 const fetchRecentFoods = async () => {
   try {
     const fridgeId = route.params.fridgeId;
     const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=false`);
-    recentFoods.value = response.data.result.content.slice(0, 5);
+    
+    console.log('API 응답 데이터:', response.data.result.content);
+    
+    // ID 기준으로 역순 정렬 (ID가 클수록 최신)
+    const sortedFoods = response.data.result.content.sort((a, b) => {
+      return (b.id || 0) - (a.id || 0);
+    });
+    
+    console.log('정렬된 결과:', sortedFoods);
+    
+    // 상위 5개 추출
+    recentFoods.value = sortedFoods.slice(0, 5);
+    console.log('최종 결과 (개인):', recentFoods.value);
   } catch (error) {
     console.error("최근 등록한 식품을 불러오는데 실패했습니다:", error);
   }
@@ -119,7 +189,19 @@ const fetchRecentSharedFoods = async () => {
   try {
     const fridgeId = route.params.fridgeId;
     const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=true`);
-    recentSharedFoods.value = response.data.result.content.slice(0, 5);
+    
+    console.log('공유식품 API 응답 데이터:', response.data.result.content);
+    
+    // ID 기준으로 역순 정렬 (ID가 클수록 최신)
+    const sortedFoods = response.data.result.content.sort((a, b) => {
+      return (b.id || 0) - (a.id || 0);
+    });
+    
+    console.log('공유식품 정렬된 결과:', sortedFoods);
+    
+    // 상위 5개 추출
+    recentSharedFoods.value = sortedFoods.slice(0, 5);
+    console.log('최종 결과 (공유):', recentSharedFoods.value);
   } catch (error) {
     console.error("최근 등록한 공유식품을 불러오는데 실패했습니다:", error);
   }

@@ -190,7 +190,7 @@ export default {
         }
 
         if (this.searchQuery) {
-          url += `&search=${encodeURIComponent(this.searchQuery)}`;
+          url += `&keyword=${encodeURIComponent(this.searchQuery)}`;
         }
 
         if (this.sortBy !== 'latest') {
