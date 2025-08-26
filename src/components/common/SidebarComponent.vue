@@ -171,13 +171,12 @@ const menuItems = computed(() => {
   return [
     { 
       title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', color: 'blue-darken-1', 
-      to: fridgeId ? `/fridge/${fridgeId}/dashboard` : "/#", 
-      badgeCount: 0
+      to: fridgeId ? `/fridge/${fridgeId}/dashboard` : "/#"
     },
-    { title: '공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'sharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#", badgeCount: 0 },
-    { title: '비공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'nonsharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#", badgeCount: 0 },
+    { title: '공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'sharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#" },
+    { title: '비공유식품목록', icon: 'mdi-format-list-bulleted-square', value: 'nonsharedfoodlist', color: 'green-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#" },
     { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list'},
-    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: fridgeId ? `/fridge/${fridgeId}/community` : "/#", badgeCount: 0  },
+    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: fridgeId ? `/fridge/${fridgeId}/community` : "/#"  },
     { 
       title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: `/chatpage/${fridgeId}`,  
       badgeCount: chatBadgeCount // 채팅 관련 알림만
