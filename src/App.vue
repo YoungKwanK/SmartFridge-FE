@@ -19,7 +19,7 @@ export default {
   },
   computed: {
     isLoginPage() {
-      // 로그인 관련 페이지들, NoFridgePage, FridgeList, 이메일 인증 페이지에서는 사이드바를 숨김
+      // 로그인 관련 페이지들, NoFridgePage, FridgeList, 이메일 인증 페이지, 관리자 페이지에서는 사이드바를 숨김
       const hideSidebarRoutes = [
         '/', 
         '/login', 
@@ -31,7 +31,11 @@ export default {
         '/fridge/list', 
         '/oauth/google/redirect', 
         '/oauth/kakao/redirect', 
-        '/oauth/naver/redirect'
+        '/oauth/naver/redirect',
+        '/admin',
+        '/admin/inquiry',
+        '/admin/notification',
+        '/admin/users'
       ];
       return hideSidebarRoutes.includes(this.$route.path);
     }
