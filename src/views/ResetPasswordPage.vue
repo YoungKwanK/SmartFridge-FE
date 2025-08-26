@@ -125,7 +125,8 @@ export default {
       isLoading: false,
       errorMessage: "",
       successMessage: "",
-      resetToken: "",
+      userEmail: "",
+      isVerified: false,
       
       // 폼 유효성 검사 규칙
       passwordRules: [
@@ -143,11 +144,16 @@ export default {
   },
   
   mounted() {
-    // URL에서 토큰 파라미터 추출
-    this.resetToken = this.$route.query.token;
+    // URL에서 이메일과 인증 상태 확인
+    this.userEmail = this.$route.query.email;
+    this.isVerified = this.$route.query.verified === 'true';
     
-    if (!this.resetToken) {
-      this.errorMessage = "유효하지 않은 재설정 링크입니다.";
+    if (!this.userEmail || !this.isVerified) {
+      this.errorMessage = "유효하지 않은 접근입니다. 비밀번호 찾기를 다시 진행해주세요.";
+      // 3초 후 비밀번호 찾기 페이지로 리다이렉트
+      setTimeout(() => {
+        this.$router.push('/forgot-password');
+      }, 3000);
     }
   },
   
@@ -164,19 +170,26 @@ export default {
       this.successMessage = "";
 
       const resetData = {
-        token: this.resetToken,
+        email: this.userEmail,
         newPassword: this.password
       };
 
       try {
-        // 토큰 없이 요청하기 위해 별도의 axios 인스턴스 사용
-        const response = await axios.create().post(`${process.env.VUE_APP_API_BASE_URL}/member/reset-password`, resetData);
+        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080';
+        
+        // 비밀번호 변경 API 호출
+        const response = await axios.create({
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).post(`${apiBaseUrl}/member/reset-password`, resetData);
         
         console.log('Reset password response:', response.data);
         
-        // 백엔드 응답 구조에 맞춰 처리
-        if (response.data.status_code === 200) {
-          this.successMessage = "비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.";
+        // 백엔드 응답 구조에 맞춰 처리 (CommonDto 구조)
+        if (response.data.result === true && response.data.status_code === 200) {
+          this.successMessage = response.data.status_message || "비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.";
           this.password = "";
           this.confirmPassword = "";
         } else {
@@ -188,7 +201,11 @@ export default {
         if (error.response) {
           // 서버에서 응답을 받은 경우
           const errorData = error.response.data;
-          this.errorMessage = errorData.status_message || "비밀번호 변경에 실패했습니다.";
+          if (errorData.status_code === 400) {
+            this.errorMessage = "유효하지 않은 토큰이거나 만료된 토큰입니다. 다시 비밀번호 재설정을 요청해주세요.";
+          } else {
+            this.errorMessage = errorData.status_message || "비밀번호 변경에 실패했습니다.";
+          }
         } else if (error.request) {
           // 요청은 보냈지만 응답을 받지 못한 경우
           this.errorMessage = "서버와의 연결에 실패했습니다. 네트워크 상태를 확인해주세요.";
