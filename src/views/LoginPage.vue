@@ -171,6 +171,19 @@
                     <span class="signup-divider">|</span>
                     <router-link to="/member/forgot-password" class="signup-text signup-link">비밀번호 찾기</router-link>
                   </div>
+                  
+                  <!-- 관리자 로그인 (테스트용) -->
+                  <div class="admin-login-section text-center mt-4">
+                    <v-btn
+                      variant="text"
+                      color="warning"
+                      size="small"
+                      @click="adminLogin"
+                      class="admin-login-btn"
+                    >
+                      관리자 로그인 (테스트)
+                    </v-btn>
+                  </div>
                 </v-card-text>
               </v-card>
             </div>
@@ -307,16 +320,43 @@ export default {
       window.location.href = auth_uri;
     },
     
+    adminLogin() {
+      // 테스트용 관리자 로그인
+      localStorage.setItem("accessToken", "admin_test_token");
+      localStorage.setItem("refreshToken", "admin_refresh_token");
+      localStorage.setItem("role", "ADMIN");
+      localStorage.setItem("email", "admin@smartfridge.com");
+      
+      // 관리자 대시보드로 이동
+      this.$router.push('/admin').catch(() => {
+        window.location.href = "/admin";
+      });
+    },
+    
     async checkUserFridgeStatus() {
       try {
-        // 로그인 성공 후 바로 FridgeList 페이지로 이동
-        this.$router.push('/fridge/list').catch(() => {
-          window.location.href = "/fridge/list";
-        });
+        // 사용자 역할에 따라 다른 페이지로 이동
+        const role = localStorage.getItem('role');
+        if (role === 'ADMIN') {
+          // 관리자인 경우 관리자 대시보드로 이동
+          this.$router.push('/admin').catch(() => {
+            window.location.href = "/admin";
+          });
+        } else {
+          // 일반 사용자인 경우 냉장고 목록으로 이동
+          this.$router.push('/fridge/list').catch(() => {
+            window.location.href = "/fridge/list";
+          });
+        }
       } catch (error) {
         console.error('페이지 이동 오류:', error);
-        // 오류 발생 시에도 FridgeList로 이동
-        window.location.href = "/fridge/list";
+        // 오류 발생 시 역할에 따라 이동
+        const role = localStorage.getItem('role');
+        if (role === 'ADMIN') {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/fridge/list";
+        }
       }
     }
   },
@@ -329,7 +369,7 @@ export default {
         const decodedToken = jwtDecode(token);
         const currentTime = Date.now() / 1000;
         
-        // 토큰이 만료되지 않았다면 FridgeList로 리다이렉트
+        // 토큰이 만료되지 않았다면 역할에 따라 적절한 페이지로 리다이렉트
         if (decodedToken.exp > currentTime) {
           await this.checkUserFridgeStatus();
         } else {
