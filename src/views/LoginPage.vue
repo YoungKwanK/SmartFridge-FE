@@ -393,8 +393,9 @@ export default {
 /* 전체 페이지 래퍼 */
 .login-page-wrapper {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  width: 100%;
   position: relative;
+  overflow-x: hidden;
 }
 
 /* 상단 로고 */
@@ -423,12 +424,14 @@ export default {
 .unified-background {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   margin: 0;
+  overflow-x: hidden;
+  position: relative;
 }
 
 /* 콘텐츠 래퍼 */
@@ -438,25 +441,31 @@ export default {
   max-width: 1400px;
   min-height: 100vh;
   align-items: center;
+  justify-content: space-between;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 /* 프로모션 콘텐츠 영역 */
 .promotion-content-area {
-  flex: 0 0 58.33%; /* 약 7/12 비율 */
+  flex: 1;
+  max-width: 60%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 80px 60px;
+  padding: 80px 40px 80px 60px;
   color: white;
 }
 
 /* 로그인 콘텐츠 영역 */
 .login-content-area {
-  flex: 0 0 41.67%; /* 약 5/12 비율 */
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 450px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 40px 20px;
 }
 
 .promotion-content {
@@ -751,10 +760,25 @@ export default {
 }
 
 /* 반응형 디자인 */
+@media (max-width: 1200px) {
+  .content-wrapper {
+    padding: 0 15px;
+  }
+  
+  .promotion-content-area {
+    padding: 60px 30px 60px 40px;
+  }
+  
+  .promotion-title {
+    font-size: 40px;
+  }
+}
+
 @media (max-width: 960px) {
   .content-wrapper {
     flex-direction: column;
     justify-content: center;
+    padding: 0;
   }
   
   .promotion-content-area {
@@ -765,6 +789,7 @@ export default {
     flex: 1;
     width: 100%;
     max-width: 500px;
+    padding: 40px 20px;
   }
   
   .top-logo {
@@ -773,6 +798,10 @@ export default {
     left: 0;
     justify-content: center;
     padding: 24px 0;
+  }
+  
+  .unified-background {
+    width: 100%;
   }
 }
 

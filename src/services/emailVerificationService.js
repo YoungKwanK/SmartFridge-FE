@@ -22,11 +22,11 @@ class EmailVerificationService {
    */
   async sendVerificationCode(email) {
     try {
-      console.log('이메일 발송 요청 시작 - URL:', '/email/send');
+      console.log('이메일 발송 요청 시작 - URL:', '/api/v1/email/send');
       console.log('요청 데이터:', { mail: email });
       
       // interceptor가 없는 별도 axios 인스턴스 사용
-      const response = await emailAxios.post('/email/send', {
+      const response = await emailAxios.post('/api/v1/email/send', {
         mail: email
       });
       
@@ -46,11 +46,11 @@ class EmailVerificationService {
    */
   async verifyEmailCode(email, verifyCode) {
     try {
-      console.log('이메일 인증 요청 시작 - URL:', '/email/verify');
+      console.log('이메일 인증 요청 시작 - URL:', '/api/v1/email/verify');
       console.log('요청 데이터:', { mail: email, verifyCode: verifyCode });
       
       // interceptor가 없는 별도 axios 인스턴스 사용
-      const response = await emailAxios.post('/email/verify', {
+      const response = await emailAxios.post('/api/v1/email/verify', {
         mail: email,
         verifyCode: verifyCode
       });
@@ -100,6 +100,11 @@ class EmailVerificationService {
         errorMessage = errorData;
       } else if (errorData.status_message) {
         errorMessage = errorData.status_message;
+        
+        // Redis 관련 에러 메시지를 사용자 친화적으로 변경
+        if (errorMessage.includes('non null key required')) {
+          errorMessage = '이메일 인증 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        }
       } else if (errorData.message) {
         errorMessage = errorData.message;
       }

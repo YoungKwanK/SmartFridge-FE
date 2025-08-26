@@ -48,8 +48,12 @@
                     @click:close="errorMessage = ''"
                   ></v-alert>
 
-                  <!-- 비밀번호 찾기 폼 -->
-                  <v-form @submit.prevent="sendResetLink" ref="forgotPasswordForm">
+                  <!-- 1단계: 이메일 입력 -->
+                  <v-form 
+                    v-if="step === 1" 
+                    @submit.prevent="sendVerificationCode" 
+                    ref="emailForm"
+                  >
                     <div class="form-group mb-6">
                       <label class="form-label">이메일</label>
                       <v-text-field
@@ -74,9 +78,81 @@
                       class="reset-btn mb-6"
                       elevation="0"
                     >
-                      비밀번호 재설정 링크 보내기
+                      인증 코드 발송
                     </v-btn>
                   </v-form>
+
+                  <!-- 2단계: 인증 코드 입력 -->
+                  <div v-if="step === 2">
+                    <div class="verification-info mb-6 text-center">
+                      <v-icon color="primary" size="60" class="mb-3">mdi-email-lock-outline</v-icon>
+                      <h3 class="mb-2">인증 코드 입력</h3>
+                      <p class="text-grey-darken-1">
+                        {{ email }}로<br>
+                        인증 코드를 발송했습니다.
+                      </p>
+                    </div>
+
+                    <v-form @submit.prevent="verifyCode" ref="codeForm">
+                      <div class="form-group mb-4">
+                        <label class="form-label">인증 코드</label>
+                        <v-text-field
+                          v-model="verificationCode"
+                          variant="outlined"
+                          placeholder="6자리 인증 코드를 입력하세요"
+                          :rules="codeRules"
+                          maxlength="6"
+                          required
+                          color="primary"
+                          bg-color="grey-lighten-5"
+                          hide-details="auto"
+                          autocomplete="off"
+                        >
+                          <template v-slot:append-inner>
+                            <v-icon v-if="verificationCode && verificationCode.length === 6" color="success">
+                              mdi-check-circle
+                            </v-icon>
+                          </template>
+                        </v-text-field>
+                      </div>
+
+                      <v-btn 
+                        type="submit" 
+                        color="primary" 
+                        block 
+                        size="large"
+                        :loading="isVerifying"
+                        class="reset-btn mb-4"
+                        elevation="0"
+                      >
+                        인증 코드 확인
+                      </v-btn>
+
+                      <v-btn 
+                        @click="resendCode" 
+                        variant="outlined"
+                        color="grey-darken-1"
+                        block 
+                        size="large"
+                        :loading="isResending"
+                        class="mb-4"
+                        elevation="0"
+                      >
+                        인증 코드 재발송
+                      </v-btn>
+
+                      <v-btn 
+                        @click="goBack" 
+                        variant="text"
+                        color="grey-darken-1"
+                        block 
+                        size="large"
+                        class="mb-2"
+                      >
+                        이메일 다시 입력
+                      </v-btn>
+                    </v-form>
+                  </div>
 
                   <!-- 로그인 페이지로 돌아가기 -->
                   <div class="back-to-login text-center">
@@ -99,8 +175,12 @@ export default {
   name: 'ForgotPasswordPage',
   data() {
     return {
+      step: 1, // 1: 이메일 입력, 2: 인증 코드 입력
       email: "",
+      verificationCode: "",
       isLoading: false,
+      isVerifying: false,
+      isResending: false,
       errorMessage: "",
       successMessage: "",
       
@@ -108,56 +188,137 @@ export default {
       emailRules: [
         v => !!v || '이메일을 입력해주세요.',
         v => /.+@.+\..+/.test(v) || '올바른 이메일 형식을 입력해주세요.'
+      ],
+      codeRules: [
+        v => !!v || '인증 코드를 입력해주세요.',
+        v => (v && v.length === 6) || '인증 코드는 6자리입니다.',
+        v => /^[A-Za-z0-9]{6}$/.test(v) || '영문자와 숫자만 입력 가능합니다.'
       ]
     }
   },
   
   methods: {
-    async sendResetLink() {
-      // 폼 유효성 검사
-      const { valid } = await this.$refs.forgotPasswordForm.validate();
-      if (!valid) {
-        return;
-      }
+    // 1단계: 인증 코드 발송
+    async sendVerificationCode() {
+      const { valid } = await this.$refs.emailForm.validate();
+      if (!valid) return;
 
       this.isLoading = true;
       this.errorMessage = "";
       this.successMessage = "";
 
-      const resetData = {
-        email: this.email
-      };
-
       try {
-        // 토큰 없이 요청하기 위해 별도의 axios 인스턴스 사용
-        const response = await axios.create().post(`${process.env.VUE_APP_API_BASE_URL}/member/forgot-password`, resetData);
+        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080';
         
-        console.log('Forgot password response:', response.data);
-        
-        // 백엔드 응답 구조에 맞춰 처리
-        if (response.data.status_code === 200) {
-          this.successMessage = "비밀번호 재설정 링크가 이메일로 전송되었습니다. 이메일을 확인해주세요.";
-          this.email = ""; // 폼 초기화
+        // 비밀번호 재설정용 인증 코드 발송 API 호출
+        const response = await axios.create({
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).post(`${apiBaseUrl}/member/forgot-password-code`, {
+          email: this.email
+        });
+
+        console.log('Verification code sent:', response.data);
+
+        if (response.data.result === true && response.data.status_code === 200) {
+          this.successMessage = "인증 코드가 이메일로 전송되었습니다.";
+          this.step = 2; // 인증 코드 입력 단계로 이동
         } else {
-          this.errorMessage = response.data.status_message || "비밀번호 재설정 요청에 실패했습니다.";
+          this.errorMessage = response.data.status_message || "인증 코드 발송에 실패했습니다.";
         }
       } catch (error) {
-        console.error('Forgot password error:', error);
+        console.error('Send verification code error:', error);
         
         if (error.response) {
-          // 서버에서 응답을 받은 경우
           const errorData = error.response.data;
-          this.errorMessage = errorData.status_message || "비밀번호 재설정 요청에 실패했습니다.";
-        } else if (error.request) {
-          // 요청은 보냈지만 응답을 받지 못한 경우
-          this.errorMessage = "서버와의 연결에 실패했습니다. 네트워크 상태를 확인해주세요.";
+          if (errorData.status_code === 404) {
+            this.errorMessage = "등록되지 않은 이메일입니다. 이메일을 확인해주세요.";
+          } else {
+            this.errorMessage = errorData.status_message || "인증 코드 발송에 실패했습니다.";
+          }
         } else {
-          // 요청 설정 중 오류가 발생한 경우
-          this.errorMessage = "요청 처리 중 오류가 발생했습니다.";
+          this.errorMessage = "서버와의 연결에 실패했습니다. 네트워크 상태를 확인해주세요.";
         }
       } finally {
         this.isLoading = false;
       }
+    },
+
+    // 2단계: 인증 코드 검증
+    async verifyCode() {
+      const { valid } = await this.$refs.codeForm.validate();
+      if (!valid) return;
+
+      this.isVerifying = true;
+      this.errorMessage = "";
+
+      try {
+        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080';
+        
+        // 비밀번호 재설정용 인증 코드 검증 API 호출
+        const response = await axios.create({
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).post(`${apiBaseUrl}/member/verify-password-reset-code`, {
+          email: this.email,
+          verifyCode: this.verificationCode
+        });
+
+        console.log('Code verification response:', response.data);
+
+        if (response.data.result === true && response.data.status_code === 200) {
+          // 인증 성공 시 비밀번호 변경 페이지로 이동 (이메일 정보를 쿼리로 전달)
+          this.$router.push({
+            path: '/reset-password',
+            query: { 
+              email: this.email,
+              verified: 'true'
+            }
+          });
+        } else {
+          this.errorMessage = response.data.status_message || "인증 코드가 올바르지 않습니다.";
+        }
+      } catch (error) {
+        console.error('Code verification error:', error);
+        
+        if (error.response) {
+          const errorData = error.response.data;
+          this.errorMessage = errorData.status_message || "인증 코드 확인에 실패했습니다.";
+        } else {
+          this.errorMessage = "서버와의 연결에 실패했습니다. 네트워크 상태를 확인해주세요.";
+        }
+      } finally {
+        this.isVerifying = false;
+      }
+    },
+
+    // 인증 코드 재발송
+    async resendCode() {
+      this.isResending = true;
+      this.errorMessage = "";
+      
+      try {
+        await this.sendVerificationCode();
+        if (this.step === 2) {
+          this.successMessage = "인증 코드를 다시 발송했습니다.";
+        }
+      } catch (error) {
+        console.error('Resend code error:', error);
+      } finally {
+        this.isResending = false;
+      }
+    },
+
+    // 이전 단계로 돌아가기
+    goBack() {
+      this.step = 1;
+      this.verificationCode = "";
+      this.errorMessage = "";
+      this.successMessage = "";
     }
   }
 }
@@ -373,3 +534,4 @@ export default {
   outline: none;
 }
 </style>
+
