@@ -150,6 +150,28 @@
                 </v-btn>
               </div>
 
+              <!-- USER용 수정/삭제 버튼 (우측 하단) -->
+              <div v-if="role !== 'ADMIN'" class="user-actions-bottom">
+                <v-btn
+                  @click="openEditModal(inquiry)"
+                  variant="outlined"
+                  size="small"
+                  prepend-icon="mdi-pencil"
+                  class="edit-btn-bottom"
+                >
+                  수정하기
+                </v-btn>
+                <v-btn
+                  @click="openDeleteConfirmModal(inquiry)"
+                  variant="outlined"
+                  size="small"
+                  prepend-icon="mdi-delete"
+                  class="delete-btn-bottom"
+                >
+                  삭제하기
+                </v-btn>
+              </div>
+
               <!-- 아코디언 상세 내용 -->
               <v-expand-transition>
                 <div v-show="inquiry.isExpanded" class="inquiry-detail-accordion">
@@ -301,6 +323,23 @@
               class="form-field"
               required
             ></v-textarea>
+
+            <!-- 이미지 파일 업로드 -->
+            <div class="image-upload-section">
+              <label class="image-upload-label">이미지 첨부 (선택사항)</label>
+              <v-file-input
+                v-model="inquiryData.imageFiles"
+                multiple
+                accept="image/*"
+                label="이미지 파일을 선택하세요"
+                variant="outlined"
+                prepend-icon="mdi-camera"
+                class="form-field"
+                show-size
+                counter
+                :rules="[rules.imageFiles]"
+              ></v-file-input>
+            </div>
           </v-form>
         </v-card-text>
 
@@ -327,7 +366,184 @@
             class="submit-btn"
             elevation="0"
           >
-            문의하기
+            문의 등록
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- 문의 수정 모달 -->
+    <v-dialog v-model="showEditModal" max-width="600" persistent>
+      <v-card class="edit-modal" elevation="0" variant="outlined">
+        <v-card-title class="modal-header">
+          <div class="modal-title">
+            <span>문의 수정</span>
+          </div>
+          <v-btn 
+            icon 
+            variant="text" 
+            size="small"
+            @click="closeEditModal"
+            class="close-btn"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </v-card-title>
+        
+        <v-divider></v-divider>
+
+        <v-card-text class="modal-content">
+          <v-form @submit.prevent="submitEditInquiry" ref="editForm">
+            <v-select
+              v-model="editData.inquiryType"
+              :items="inquiryTypes"
+              label="문의 종류"
+              placeholder="문의 종류를 선택해주세요"
+              :rules="[rules.required]"
+              variant="outlined"
+              class="form-field"
+              required
+            ></v-select>
+
+            <v-text-field
+              v-model="editData.title"
+              label="제목"
+              placeholder="문의 제목을 입력해주세요"
+              :rules="[rules.required]"
+              variant="outlined"
+              class="form-field"
+              required
+            ></v-text-field>
+
+            <v-textarea
+              v-model="editData.contents"
+              label="문의 내용"
+              placeholder="문의 내용을 자세히 작성해주세요"
+              :rules="[rules.required, rules.minLength]"
+              variant="outlined"
+              rows="6"
+              class="form-field"
+              required
+            ></v-textarea>
+
+            <!-- 기존 이미지 표시 -->
+            <div v-if="editData.existingImages && editData.existingImages.length > 0" class="existing-images-section">
+              <label class="existing-images-label">기존 첨부 이미지</label>
+              <div class="existing-images-grid">
+                <div 
+                  v-for="(imageUrl, index) in editData.existingImages" 
+                  :key="index"
+                  class="existing-image-item"
+                >
+                  <img :src="imageUrl" :alt="`기존 이미지 ${index + 1}`" class="existing-image" />
+                  <v-btn
+                    @click="removeExistingImage(index)"
+                    icon
+                    variant="text"
+                    size="small"
+                    color="error"
+                    class="remove-image-btn"
+                  >
+                    <v-icon size="16">mdi-close</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+            </div>
+
+            <!-- 이미지 파일 업로드 -->
+            <div class="image-upload-section">
+              <label class="image-upload-label">새 이미지 첨부 (선택사항)</label>
+              <v-file-input
+                v-model="editData.newImageFiles"
+                multiple
+                accept="image/*"
+                label="새 이미지 파일을 선택하세요"
+                variant="outlined"
+                prepend-icon="mdi-camera"
+                class="form-field"
+                show-size
+                counter
+                :rules="[rules.imageFiles]"
+              ></v-file-input>
+            </div>
+          </v-form>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions class="modal-actions">
+          <v-spacer></v-spacer>
+          <v-btn
+            @click="closeEditModal"
+            variant="outlined"
+            color="grey-darken-1"
+            size="large"
+            class="cancel-btn"
+          >
+            취소
+          </v-btn>
+          <v-btn
+            @click="submitEditInquiry"
+            color="warning"
+            variant="elevated"
+            size="large"
+            :loading="isSubmittingEdit"
+            :disabled="!isEditFormValid"
+            class="submit-edit-btn"
+            elevation="0"
+          >
+            수정하기
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- 삭제 확인 모달 -->
+    <v-dialog v-model="showDeleteConfirmModal" max-width="400" persistent>
+      <v-card class="delete-confirm-modal" elevation="0" variant="outlined">
+        <v-card-title class="modal-header">
+          <div class="modal-title">
+            <v-icon color="error" size="24" class="mr-3">mdi-alert-circle</v-icon>
+            <span>문의 삭제 확인</span>
+          </div>
+        </v-card-title>
+        
+        <v-divider></v-divider>
+
+        <v-card-text class="modal-content">
+          <div class="delete-confirm-content">
+            <p class="delete-confirm-text">
+              정말로 이 문의를 삭제하시겠습니까?
+            </p>
+            <p class="delete-confirm-subtext">
+              삭제된 문의는 복구할 수 없습니다.
+            </p>
+          </div>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions class="modal-actions">
+          <v-spacer></v-spacer>
+          <v-btn
+            @click="closeDeleteConfirmModal"
+            variant="outlined"
+            color="grey-darken-1"
+            size="large"
+            class="cancel-btn"
+          >
+            취소
+          </v-btn>
+          <v-btn
+            @click="confirmDeleteInquiry"
+            color="error"
+            variant="elevated"
+            size="large"
+            :loading="isDeleting"
+            class="confirm-delete-btn"
+            elevation="0"
+          >
+            삭제
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -449,7 +665,16 @@ export default {
       ],
       rules: {
         required: v => !!v || '필수 입력 항목입니다.',
-        minLength: v => v.length >= 10 || '최소 10자 이상 입력해주세요.'
+        minLength: v => v.length >= 10 || '최소 10자 이상 입력해주세요.',
+        imageFiles: v => {
+          if (!v || v.length === 0) return true; // 이미지가 없어도 됨
+          if (v.length > 5) return '이미지는 최대 5개까지 첨부할 수 있습니다.';
+          const maxSize = 5 * 1024 * 1024; // 5MB
+          for (let file of v) {
+            if (file.size > maxSize) return '각 이미지 파일은 5MB 이하여야 합니다.';
+          }
+          return true;
+        }
       },
       isSubmitting: false,
       showSnackbar: false,
@@ -472,7 +697,19 @@ export default {
       answerData: {
         contents: ''
       },
-      isSubmittingAnswer: false
+      isSubmittingAnswer: false,
+      showEditModal: false, // 문의 수정 모달 상태
+      editData: { // 수정할 문의 데이터
+        inquiryType: '',
+        title: '',
+        contents: '',
+        existingImages: [], // 기존 이미지 URL들
+        newImageFiles: [], // 새로 업로드할 이미지 파일들
+        removedImageIndexes: [] // 삭제할 이미지 인덱스들
+      },
+      isSubmittingEdit: false, // 수정 제출 중 상태
+      showDeleteConfirmModal: false, // 삭제 확인 모달 상태
+      isDeleting: false // 삭제 중 상태
     }
   },
   computed: {
@@ -530,6 +767,12 @@ export default {
     },
     isAnswerValid() {
       return this.answerData.contents && this.answerData.contents.length >= 10;
+    },
+    isEditFormValid() {
+      return this.editData.title && 
+             this.editData.inquiryType && 
+             this.editData.contents &&
+             this.editData.contents.length >= 10;
     }
   },
   async mounted() {
@@ -908,9 +1151,113 @@ export default {
         this.showMessage('USER용 ADMIN_REPLY 테스트 알림이 추가되었습니다.', 'info');
       }
   
-    }
-  }
-}
+    },
+
+    openEditModal(inquiry) {
+      this.selectedInquiry = inquiry; // 수정할 문의 데이터 설정
+      this.editData.inquiryType = inquiry.inquiryType;
+      this.editData.title = inquiry.title;
+      this.editData.contents = inquiry.contents;
+      this.editData.existingImages = inquiry.imageUrls || []; // 기존 이미지 URL들
+      this.editData.newImageFiles = []; // 새 이미지 파일들 초기화
+      this.editData.removedImageIndexes = []; // 삭제할 이미지 인덱스들 초기화
+      this.showEditModal = true;
+    },
+
+    closeEditModal() {
+      this.showEditModal = false;
+      this.resetEditForm();
+    },
+
+    resetEditForm() {
+      this.editData = {
+        inquiryType: '',
+        title: '',
+        contents: '',
+        existingImages: [],
+        newImageFiles: [],
+        removedImageIndexes: []
+      };
+      this.$refs.editForm?.resetValidation();
+    },
+
+    removeExistingImage(index) {
+      this.editData.removedImageIndexes.push(index);
+      this.editData.existingImages.splice(index, 1);
+    },
+
+    async submitEditInquiry() {
+      if (!this.isEditFormValid) {
+        this.showMessage('모든 필수 항목을 입력해주세요.', 'error');
+        return;
+      }
+
+      this.isSubmittingEdit = true;
+
+      try {
+        const formData = new FormData();
+        formData.append('inquiryType', this.editData.inquiryType);
+        formData.append('title', this.editData.title);
+        formData.append('contents', this.editData.contents);
+
+        // 새로 업로드할 이미지 파일들
+        this.editData.newImageFiles.forEach(file => {
+          formData.append('imageFiles', file);
+        });
+
+        // 삭제할 이미지 인덱스들
+        if (this.editData.removedImageIndexes.length > 0) {
+          formData.append('removedImageIndexes', JSON.stringify(this.editData.removedImageIndexes));
+        }
+
+        const response = await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/inquiry/update/${this.selectedInquiry.id}`, formData);
+        
+        if (response.status === 200 || response.data.status_code === 200) {
+          this.showMessage('문의가 성공적으로 수정되었습니다.', 'success');
+          this.closeEditModal();
+          await this.fetchInquiries(); // 목록 새로고침
+        } else {
+          this.showMessage('문의 수정에 실패했습니다. 다시 시도해주세요.', 'error');
+        }
+      } catch (error) {
+        console.error('문의 수정 오류:', error);
+        this.showMessage('문의 수정 중 오류가 발생했습니다.', 'error');
+       } finally {
+         this.isSubmittingEdit = false;
+       }
+     },
+
+     openDeleteConfirmModal(inquiry) {
+       this.selectedInquiry = inquiry;
+       this.showDeleteConfirmModal = true;
+     },
+
+     closeDeleteConfirmModal() {
+       this.showDeleteConfirmModal = false;
+     },
+
+     async confirmDeleteInquiry() {
+       this.isDeleting = true;
+
+       try {
+         const response = await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/inquiry/delete/${this.selectedInquiry.id}`);
+         
+         if (response.status === 200 || response.data.status_code === 200) {
+           this.showMessage('문의가 성공적으로 삭제되었습니다.', 'success');
+           this.closeDeleteConfirmModal();
+           await this.fetchInquiries(); // 목록 새로고침
+         } else {
+           this.showMessage('문의 삭제에 실패했습니다. 다시 시도해주세요.', 'error');
+         }
+       } catch (error) {
+         console.error('문의 삭제 오류:', error);
+         this.showMessage('문의 삭제 중 오류가 발생했습니다.', 'error');
+       } finally {
+         this.isDeleting = false;
+       }
+     }
+   }
+ }
 </script>
 
 <style scoped>
@@ -920,7 +1267,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 80px; /* Header height */
+  padding-top: 80px;
   background-color: #f5f5f5;
 }
 
@@ -2156,5 +2503,257 @@ export default {
 .answer-btn-small:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+/* 수정/삭제 버튼 스타일 (우측 하단) */
+.user-actions-bottom {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.edit-btn-bottom, .delete-btn-bottom {
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-width: 1px;
+}
+
+.edit-btn-bottom {
+  color: #3b82f6 !important;
+  border-color: #dbeafe;
+  background-color: #f8fafc;
+}
+
+.edit-btn-bottom:hover {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.delete-btn-bottom {
+  color: #ef4444 !important;
+  border-color: #fecaca;
+  background-color: #fef2f2;
+}
+
+.delete-btn-bottom:hover {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  transform: translateY(-1px);
+}
+
+/* 기존 수정/삭제 버튼 스타일 (아코디언 내부용) */
+.user-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.edit-btn, .delete-btn {
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.edit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.delete-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.delete-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* 수정 모달 스타일 */
+.edit-modal {
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.submit-edit-btn {
+  border-radius: 16px;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  padding: 16px 32px;
+  font-size: 1rem;
+  background: linear-gradient(135deg,  #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.submit-edit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+}
+
+/* 삭제 확인 모달 스타일 */
+.delete-confirm-modal {
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.delete-confirm-content {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.delete-confirm-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.delete-confirm-subtext {
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.confirm-delete-btn {
+  border-radius: 16px;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  padding: 16px 32px;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.confirm-delete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+/* 이미지 업로드 섹션 스타일 */
+.image-upload-section, .existing-images-section {
+  margin-top: 24px;
+}
+
+.image-upload-label, .existing-images-label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.existing-images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.existing-image-item {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.existing-image-item:hover {
+  transform: scale(1.05);
+}
+
+.existing-image {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: rgba(239, 68, 68, 0.9) !important;
+  color: white !important;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.remove-image-btn:hover {
+  background-color: rgba(239, 68, 68, 1) !important;
+  transform: scale(1.1);
+}
+
+/* 반응형 디자인에서 수정/삭제 버튼 */
+@media (max-width: 768px) {
+  .user-actions, .user-actions-bottom {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .edit-btn, .delete-btn, .edit-btn-bottom, .delete-btn-bottom {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .existing-images-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+  }
+
+  .existing-image {
+    height: 100px;
+  }
 }
 </style>
