@@ -173,8 +173,8 @@ const menuItems = computed(() => {
       title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', color: 'blue-darken-1', 
       to: fridgeId ? `/fridge/${fridgeId}/dashboard` : "/#"
     },
-    { title: '공유식품목록', icon: 'mdi-food-fork-drink', value: 'sharedfoodlist', color: 'green-darken-2', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#" },
-    { title: '비공유식품목록', icon: 'mdi-food-off', value: 'nonsharedfoodlist', color: 'red-darken-1', to: fridgeId ? `/fridge/${fridgeId}/food/nonshared` : "/#" },
+    { title: '식품목록', icon: 'mdi-food-fork-drink', value: 'sharedfoodlist', color: 'green-darken-2', to: fridgeId ? `/fridge/${fridgeId}/food/shared` : "/#", badgeCount: 0 },
+    
     { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list'},
     { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: fridgeId ? `/fridge/${fridgeId}/community` : "/#"  },
     { 

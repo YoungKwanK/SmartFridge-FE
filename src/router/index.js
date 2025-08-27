@@ -19,8 +19,7 @@ const routes = [
   {
     path: '/dashboard', // 메인 대시보드
     name: 'MainDashboard', 
-    component: MainDashboard,
-    meta: { requiresAuth: true }
+    component: MainDashboard
   },
   {
     path: '/mypage', // 마이페이지
