@@ -7,15 +7,23 @@
           <h1 class="page-title">전체식품 목록</h1>
         </div>
         <div class="header-actions">
-          <v-btn 
-            @click="openCreateModal" 
-            color="success" 
-            prepend-icon="mdi-plus"
-            size="large"
-            class="add-food-btn"
-          >
-            식품 등록
-          </v-btn>
+          <!-- Shared/NonShared 토글 버튼 -->
+          <div class="toggle-button-container">
+            <v-btn
+              :color="isSharedView ? 'info' : 'grey'"
+              :variant="isSharedView ? 'elevated' : 'outlined'"
+              size="large"
+              class="toggle-button"
+              @click="onToggleChange"
+              :class="{ 'active': isSharedView }"
+            >
+              <v-icon 
+                :icon="isSharedView ? 'mdi-share-variant' : 'mdi-account'"
+                class="mr-2"
+              ></v-icon>
+              {{ isSharedView ? '공유식품' : '개인식품' }}
+            </v-btn>
+          </div>
         </div>
       </div>
     </div>
@@ -43,17 +51,17 @@
             </v-tab>
           </v-tabs>
           
-          <!-- 페이지 크기 선택 -->
-          <div class="page-size-selector">
-            <v-select
-              v-model="pageSize"
-              :items="pageSizeOptions"
-              variant="outlined"
-              density="compact"
-              class="page-size-select"
-              @update:model-value="onPageSizeChange"
-              hide-details
-            ></v-select>
+          <!-- 식품 등록 버튼 -->
+          <div class="add-food-container">
+            <v-btn 
+              @click="openCreateModal" 
+              color="success" 
+              prepend-icon="mdi-plus"
+              size="large"
+              class="add-food-btn"
+            >
+              식품 등록
+            </v-btn>
           </div>
         </div>
       </v-card-title>
@@ -169,8 +177,8 @@
         <!-- 데이터가 없을 때 표시 -->
         <div v-if="!isLoading && (!foodList || foodList.length === 0)" class="no-data-container">
           <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-food-off</v-icon>
-          <h3 class="no-data-title">등록된 공유 식품이 없습니다</h3>
-          <p class="no-data-subtitle">새로운 식품을 등록하여 멤버들과 공유해보세요</p>
+          <h3 class="no-data-title">등록된 {{ isSharedView ? '공유' : '개인' }} 식품이 없습니다</h3>
+          <p class="no-data-subtitle">새로운 식품을 등록하여 {{ isSharedView ? '멤버들과 공유' : '개인적으로 관리' }}해보세요</p>
           <v-btn 
             color="success" 
             @click="openCreateModal"
@@ -197,6 +205,19 @@
             <span class="page-text">
               {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalElements) }} / 총 {{ totalElements }}개
             </span>
+            
+            <!-- 페이지 크기 선택 -->
+            <div class="page-size-selector">
+              <v-select
+                v-model="pageSize"
+                :items="pageSizeOptions"
+                variant="outlined"
+                density="compact"
+                class="page-size-select"
+                @update:model-value="onPageSizeChange"
+                hide-details
+              ></v-select>
+            </div>
           </div>
         </div>
       </v-card-text>
@@ -254,10 +275,16 @@ export default {
         { title: '20개', value: 20 },
         { title: '50개', value: 50 },
         { title: '100개', value: 100 },
-      ]
+      ],
+      isSharedView: true, // 공유/개인 토글 상태
     }
   },
   async created() {
+    // URL 쿼리 파라미터 확인하여 개인식품 모드로 설정
+    if (this.$route.query.mode === 'nonshared') {
+      this.isSharedView = false;
+    }
+    
     await this.fetchEnums();
     await this.fetchFoodList();
   },
@@ -289,7 +316,7 @@ export default {
         const fridgeId = this.$route.params.fridgeId;
         if (!fridgeId) return;
 
-        let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=true&page=${this.currentPage - 1}&size=${this.pageSize}`;
+        let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=${this.isSharedView}&page=${this.currentPage - 1}&size=${this.pageSize}`;
         
         // 백엔드 API의 filterType 파라미터 사용
         if (this.activeTab !== 'ALL') {
@@ -430,6 +457,23 @@ export default {
       this.resetPagination();
       this.fetchFoodList();
     },
+    onToggleChange() {
+      this.isSharedView = !this.isSharedView;
+      
+      // URL 쿼리 파라미터 업데이트
+      const query = { ...this.$route.query };
+      if (this.isSharedView) {
+        delete query.mode;
+      } else {
+        query.mode = 'nonshared';
+      }
+      
+      // URL 업데이트 (브라우저 히스토리에 추가하지 않음)
+      this.$router.replace({ query });
+      
+      this.resetPagination();
+      this.fetchFoodList();
+    },
     // 페이징 초기화
     resetPagination() {
       this.currentPage = 1;
@@ -452,12 +496,16 @@ export default {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
 }
 
 .header-info {
@@ -474,6 +522,68 @@ export default {
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 10px;
+}
+
+.toggle-button-container {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-button {
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 12px 20px;
+  min-width: 140px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.toggle-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-button.active {
+  background: linear-gradient(135deg, #64b5f6 0%, #90caf9 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(100, 181, 246, 0.4);
+}
+
+.toggle-button:not(.active) {
+  background: linear-gradient(135deg, #f5f1e8 0%, #e6d7c3 100%);
+  color: #8b7355;
+  border: 2px solid #d4c4a8;
+  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.15);
+}
+
+.toggle-button:not(.active):hover {
+  background: linear-gradient(135deg, #f8f4ec 0%, #e8d9c6 100%);
+  border-color: #c4b498;
+  box-shadow: 0 4px 12px rgba(139, 115, 85, 0.25);
+  transform: translateY(-1px);
+}
+
+.toggle-button .v-icon {
+  transition: all 0.3s ease;
+}
+
+.toggle-button.active .v-icon {
+  color: white;
+  transform: scale(1.1);
+}
+
+.toggle-button:not(.active) .v-icon {
+  color: #666;
+}
+
+.add-food-container {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
 }
 
 .add-food-btn {
@@ -690,6 +800,23 @@ export default {
   right: 24px;
   font-size: 14px;
   color: #666;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.page-text {
+  white-space: nowrap;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+}
+
+.page-size-select {
+  min-width: 100px;
+  max-width: 120px;
 }
 
 .loading-container {
@@ -716,6 +843,25 @@ export default {
     flex-direction: column;
     gap: 16px;
     align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+    margin-top: 16px;
+  }
+
+  .toggle-button-container {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .toggle-button {
+    width: 100%;
+    max-width: 200px;
+    font-size: 13px;
+    padding: 10px 16px;
+    min-width: auto;
   }
 
   .filter-tab-container {
@@ -745,6 +891,13 @@ export default {
   .page-info {
     position: static;
     right: auto;
+    margin-top: 8px;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .page-size-selector {
     margin-top: 8px;
   }
 }

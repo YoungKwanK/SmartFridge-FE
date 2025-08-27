@@ -5,7 +5,7 @@
       <v-col cols="12" lg="6">
         <v-card class="food-table-card">
           <v-card-title class="d-flex justify-space-between align-center">
-            <span>최근 등록한 식품</span>
+            <span>최근 등록한 개인식품</span>
             <div class="table-actions">
               <v-btn color="success" prepend-icon="mdi-plus" size="small" @click="openFoodModal(false)">
                 식품 등록
@@ -217,8 +217,14 @@ const goToSharedFoodList = () => {
 }
 
 const goToNonsharedFoodList = () => {
-  router.push(`/fridge/${route.params.fridgeId}/food/nonshared`);
+  // 전체식품 페이지로 이동하면서 개인식품 모드로 설정
+  router.push({
+    path: `/fridge/${route.params.fridgeId}/food/shared`,
+    query: { mode: 'nonshared' }
+  });
 }
+
+
 
 </script>
 

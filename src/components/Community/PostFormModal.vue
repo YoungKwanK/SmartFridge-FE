@@ -100,6 +100,7 @@
               <div class="form-row">
                 <label class="form-label">이미지 첨부</label>
                 <v-file-input
+                  :key="fileInputKey"
                   v-model="formData.imageFiles"
                   multiple
                   variant="outlined"
@@ -109,10 +110,12 @@
                   prepend-icon="mdi-image"
                   placeholder="이미지 파일을 선택하세요 (여러 개 선택 가능)"
                   hide-details
-                  @change="handleImageFilesChange"
+                  @update:model-value="handleImageFilesChange"
+                  @click:clear="clearFileInput"
                 ></v-file-input>
                 <small class="text-caption text-grey">
-                  여러 이미지를 선택할 수 있습니다. 각 이미지는 내용에 삽입하거나 첨부파일로 저장할 수 있습니다.
+                  여러 이미지를 선택할 수 있습니다. 각 이미지는 내용에 삽입하거나 첨부파일로 저장할 수 있습니다.<br>
+                  <strong>참고:</strong> 이미지를 삽입한 후 내용에서 이미지 태그를 삭제하면 해당 이미지는 게시글에 포함되지 않습니다.
                 </small>
               </div>
             </div>
@@ -177,7 +180,8 @@ export default {
         content: '',
         imageFiles: []
       },
-      boardTypeOptions: []
+      boardTypeOptions: [],
+      fileInputKey: 0 // 파일 입력 컴포넌트의 키를 위한 변수
     }
   },
   computed: {
@@ -202,7 +206,7 @@ export default {
             category: this.getCategoryId(newPost.category),
             title: newPost.title || '',
             content: newPost.content || '',
-            imageFiles: newPost.attachments || []
+            imageFiles: [] // 수정 모드에서는 이미지 파일을 새로 선택하도록
           };
         } else {
           // 새 글 작성 모드
@@ -296,6 +300,7 @@ export default {
         content: '',
         imageFiles: []
       };
+      this.fileInputKey = 0; // 파일 입력 키 초기화
       this.$refs.form?.resetValidation();
       
       // 디버깅용 로그
@@ -350,6 +355,7 @@ export default {
     closeModal() {
       this.dialog = false;
       this.resetForm();
+      this.fileInputKey = 0; // 파일 입력 키 초기화
     },
     
     // savePost 메서드 수정 - 이미지 업로드 로직 추가
@@ -374,30 +380,19 @@ export default {
       try {
         this.isSaving = true;
         
-                 // 이미지가 있다면 먼저 업로드
-         let imageUrls = [];
-         if (this.formData.imageFiles && this.formData.imageFiles.length > 0) {
-           imageUrls = await this.uploadImages(this.formData.imageFiles);
-         }
-         
-         // formData.imageUrls와 새로 업로드된 이미지 URL을 합침
-         const allImageUrls = [
-           ...(this.formData.imageUrls || []),  // 이미 삽입된 이미지들
-           ...imageUrls  // 새로 업로드된 이미지들
-         ];
-         
-         console.log('=== 이미지 URL 디버깅 ===');
-         console.log('formData.imageUrls (삽입된 이미지):', this.formData.imageUrls);
-         console.log('새로 업로드된 imageUrls:', imageUrls);
-         console.log('최종 allImageUrls:', allImageUrls);
-         
-         // 게시글 데이터 준비 (이미지 URL 포함)
-         const postData = {
-           title: this.formData.title,
-           content: this.formData.content,
-           categoryId: categoryId,  // 검증된 카테고리 ID 사용
-           imageUrls: allImageUrls  // 모든 이미지 URL 배열 추가
-         };
+        // 내용에서 실제로 사용되는 이미지 URL만 추출
+        const contentImageUrls = this.extractImageUrlsFromContent(this.formData.content);
+        
+        console.log('=== 이미지 URL 디버깅 ===');
+        console.log('내용에서 추출된 이미지 URL:', contentImageUrls);
+        
+        // 게시글 데이터 준비 (실제 사용되는 이미지 URL만 포함)
+        const postData = {
+          title: this.formData.title,
+          content: this.formData.content,
+          categoryId: categoryId,  // 검증된 카테고리 ID 사용
+          imageUrls: contentImageUrls  // 내용에 실제로 삽입된 이미지 URL만
+        };
         
         // 수정 모드일 때만 id 포함
         if (this.editingPost.id) {
@@ -433,14 +428,6 @@ export default {
         if (uploadedUrls && uploadedUrls.length > 0) {
           const imageUrl = uploadedUrls[0]; // 업로드된 이미지 URL
           
-          // imageUrls 배열에 추가
-          if (!this.formData.imageUrls) {
-            this.formData.imageUrls = [];
-          }
-          this.formData.imageUrls.push(imageUrl);
-          
-          console.log('이미지 URL 추가 후 imageUrls:', this.formData.imageUrls);
-          
           // 현재 커서 위치에 이미지 삽입
           const textarea = this.$refs.contentTextarea;
           if (textarea) {
@@ -472,11 +459,51 @@ export default {
     // 이미지 제거 메서드
     removeImage(index) {
       this.formData.imageFiles.splice(index, 1);
+      this.fileInputKey++; // 파일 입력 컴포넌트의 키를 증가시켜 파일 입력 필드를 다시 렌더링
     },
 
     // 파일 입력 변경 시 이미지 파일만 필터링
-    handleImageFilesChange(event) {
-      this.formData.imageFiles = Array.from(event.target.files).filter(file => file.type.startsWith('image/'));
+    handleImageFilesChange(files) {
+      console.log('handleImageFilesChange 호출됨:', files);
+      
+      if (!files) {
+        this.formData.imageFiles = [];
+        return;
+      }
+      
+      // Vuetify v-file-input에서는 files가 이미 배열 형태로 전달됨
+      let fileArray;
+      if (Array.isArray(files)) {
+        fileArray = files;
+      } else if (files instanceof FileList) {
+        fileArray = Array.from(files);
+      } else {
+        console.error('예상치 못한 파일 타입:', typeof files, files);
+        this.formData.imageFiles = [];
+        return;
+      }
+      
+      // 이미지 파일만 필터링
+      this.formData.imageFiles = fileArray.filter(file => {
+        const isValidImage = file.type.startsWith('image/');
+        console.log('파일 검증:', file.name, file.type, isValidImage);
+        return isValidImage;
+      });
+      
+      console.log('최종 선택된 이미지 파일:', this.formData.imageFiles);
+    },
+
+    // 파일 입력 필드 클리어 시 호출되는 메서드
+    clearFileInput() {
+      this.formData.imageFiles = [];
+      this.fileInputKey++; // 파일 입력 컴포넌트의 키를 증가시켜 파일 입력 필드를 다시 렌더링
+    },
+
+    // 내용에서 이미지 태그를 제거하고 해당 URL도 함께 제거하는 메서드 추가
+    removeImageFromContent(imageUrl) {
+      // 내용에서 해당 이미지 태그 제거
+      const imageTagRegex = new RegExp(`\\n!\\[이미지 \\d+\\]\\(${imageUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)\\n`, 'g');
+      this.formData.content = this.formData.content.replace(imageTagRegex, '');
     },
 
     // 마크다운 이미지 태그를 HTML로 변환
@@ -488,6 +515,21 @@ export default {
         /!\[([^\]]*)\]\(([^)]+)\)/g,
         '<img src="$2" alt="$1" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">'
       );
+    },
+
+    // 내용에서 이미지 URL을 추출하는 메서드 추가
+    extractImageUrlsFromContent(content) {
+      if (!content) return [];
+      
+      const imageUrlRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+      const imageUrls = [];
+      let match;
+      
+      while ((match = imageUrlRegex.exec(content)) !== null) {
+        imageUrls.push(match[2]); // URL 부분만 추출
+      }
+      
+      return imageUrls;
     }
   }
 }

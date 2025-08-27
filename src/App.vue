@@ -29,6 +29,7 @@ export default {
         '/reset-password',
         '/no-fridge', 
         '/fridge/list', 
+        '/dashboard',
         '/oauth/google/redirect', 
         '/oauth/kakao/redirect', 
         '/oauth/naver/redirect',

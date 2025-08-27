@@ -10,6 +10,17 @@
           <h1 class="page-title">게시글</h1>
         </div>
         <div class="header-actions" v-if="postDetail">
+          <!-- 본인이 작성한 게시글인 경우에만 수정/삭제 버튼 표시 -->
+          <div v-if="isAuthor" class="author-actions">
+            <v-btn @click="openEditModal" color="primary" variant="outlined" class="edit-btn">
+              <v-icon>mdi-pencil</v-icon>
+              수정
+            </v-btn>
+            <v-btn @click="deletePost" color="error" variant="outlined" class="delete-btn">
+              <v-icon>mdi-delete</v-icon>
+              삭제
+            </v-btn>
+          </div>
           <v-btn @click="toggleLike" :color="postDetail.isLiked ? 'red' : 'grey'" variant="outlined" class="like-btn">
             <v-icon>{{ postDetail.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
             좋아요 {{ postDetail.likeCount }}
@@ -49,13 +60,6 @@
       <!-- 게시글 내용 -->
       <v-card-text class="post-content">
         <div class="content-text" v-html="processedContent"></div>
-        
-        <!-- 이미지가 있는 경우 -->
-        <div v-if="postDetail.imageUrls && postDetail.imageUrls.length > 0" class="post-images">
-          <div v-for="(imageUrl, index) in postDetail.imageUrls" :key="index" class="image-container">
-            <v-img :src="imageUrl" :alt="`게시글 이미지 ${index + 1}`" class="post-image" />
-          </div>
-        </div>
       </v-card-text>
     </v-card>
 
@@ -110,8 +114,8 @@
                 </div>
                 <div class="comment-actions">
                   <span class="comment-date">{{ formatDate(comment.createdDate) }}</span>
-                  <!-- 실제로는 작성자 본인만 수정/삭제 가능하도록 처리해야 함 -->
-                  <div class="comment-buttons">
+                  <!-- 댓글 작성자 본인만 수정/삭제 가능하도록 처리 -->
+                  <div v-if="isCommentAuthor(comment)" class="comment-buttons">
                     <v-btn @click="startEditComment(comment)" size="small" variant="text" color="primary" class="action-btn">
                       <v-icon size="16">mdi-pencil</v-icon>
                       수정
@@ -183,6 +187,14 @@
       </v-card-text>
     </v-card>
 
+    <!-- 수정 모달 -->
+    <PostFormModal
+      v-model="showEditModal"
+      :editing-post="editingPost"
+      :board-type="postDetail?.categoryName || '자유게시판'"
+      @save="handlePostUpdate"
+    />
+
     <!-- 로딩 상태 -->
     <div v-if="isLoading" class="loading-overlay">
       <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
@@ -193,9 +205,14 @@
 
 <script>
 import axios from 'axios';
+import { mapGetters } from 'vuex';
+import PostFormModal from '@/components/Community/PostFormModal.vue';
 
 export default {
   name: 'PostDetailPage',
+  components: {
+    PostFormModal
+  },
   data() {
     return {
       postDetail: null,
@@ -211,23 +228,48 @@ export default {
       // 댓글 수정 관련
       editingCommentId: null,
       editingCommentContent: '',
-      // 댓글 작성자 확인용 (실제로는 백엔드에서 받아와야 함)
-      currentUserId: null
+      // 게시글 수정 관련
+      showEditModal: false,
+      editingPost: {}
     }
   },
   computed: {
-    // 마크다운 이미지를 제거한 순수 텍스트 콘텐츠
+    ...mapGetters(['getUserInfo', 'isLoggedIn']),
+    
+    // 마크다운 이미지를 HTML로 변환한 콘텐츠
     processedContent() {
       if (!this.postDetail?.content) return '';
       
-      // 마크다운 이미지 형식 ![alt](url)을 제거하고 텍스트만 반환
+      // 마크다운 이미지 형식 ![alt](url)을 HTML img 태그로 변환
       return this.postDetail.content.replace(
         /!\[([^\]]*)\]\(([^)]+)\)/g,
-        ''  // 이미지 마크다운을 빈 문자열로 대체
-      ).trim();
+        '<img src="$2" alt="$1" style="max-width: 100%; height: auto; margin: 16px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block;">'
+      );
+    },
+    
+    // 게시글 작성자 여부 확인
+    isAuthor() {
+      if (!this.postDetail || !this.userInfo) return false;
+      return this.postDetail.writer === this.userInfo.name || 
+             this.postDetail.writer === this.userInfo.email;
+    },
+    
+    // 사용자 정보
+    userInfo() {
+      return this.getUserInfo;
     }
   },
+  
   async created() {
+    // 사용자 정보가 없으면 가져오기
+    if (!this.isLoggedIn) {
+      try {
+        await this.$store.dispatch('fetchUserInfo');
+      } catch (error) {
+        console.error('사용자 정보 조회 실패:', error);
+      }
+    }
+    
     await this.fetchPostDetail();
     await this.fetchComments();
   },
@@ -452,6 +494,75 @@ export default {
 
     goBack() {
       this.$router.go(-1);
+    },
+
+    // 게시글 수정 모달 열기
+    openEditModal() {
+      this.editingPost = {
+        id: this.postDetail.id,
+        title: this.postDetail.title,
+        content: this.postDetail.content,
+        category: this.postDetail.categoryName
+      };
+      this.showEditModal = true;
+    },
+    
+    // 게시글 수정 처리
+    async handlePostUpdate(updatedPost) {
+      try {
+        const fridgeId = this.$route.params.fridgeId;
+        const postId = this.$route.params.postId;
+        
+        const response = await axios.put(
+          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/update`,
+          updatedPost,
+          {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+          }
+        );
+        
+        if (response.data.status_code === 200) {
+          // 게시글 정보 새로고침
+          await this.fetchPostDetail();
+          this.showEditModal = false;
+          alert('게시글이 수정되었습니다.');
+        }
+      } catch (error) {
+        console.error('게시글 수정 실패:', error);
+        alert('게시글 수정에 실패했습니다: ' + (error.response?.data?.message || error.message));
+      }
+    },
+    
+    // 게시글 삭제
+    async deletePost() {
+      if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+      
+      try {
+        const fridgeId = this.$route.params.fridgeId;
+        const postId = this.$route.params.postId;
+        
+        const response = await axios.delete(
+          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/delete/${postId}`,
+          {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+          }
+        );
+        
+        if (response.data.status_code === 200) {
+          alert('게시글이 삭제되었습니다.');
+          this.$router.push(`/fridge/${fridgeId}/community`);
+        }
+      } catch (error) {
+        console.error('게시글 삭제 실패:', error);
+        alert('게시글 삭제에 실패했습니다: ' + (error.response?.data?.message || error.message));
+      }
+    },
+    
+    // 댓글 작성자 여부 확인
+    isCommentAuthor(comment) {
+      if (!comment || !this.userInfo) return false;
+      return comment.writer === this.userInfo.name || 
+             comment.writer === this.userInfo.email;
     }
   }
 }
@@ -521,6 +632,25 @@ export default {
 .header-actions {
   display: flex;
   align-items: center;
+}
+
+.author-actions {
+  display: flex;
+  gap: 12px;
+  margin-right: 16px;
+}
+
+.edit-btn, .delete-btn {
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-btn:hover, .delete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .like-btn {
@@ -618,30 +748,20 @@ export default {
   white-space: pre-wrap;
 }
 
-.post-images {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
-}
-
-.image-container {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.image-container:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-.post-image {
-  width: 100%;
+.content-text img {
+  max-width: 100%;
   height: auto;
-  border-radius: 12px;
+  margin: 16px 0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: block;
 }
+
+.content-text p {
+  margin: 16px 0;
+}
+
+
 
 .comments-card {
   background: rgba(255, 255, 255, 0.95);
@@ -901,6 +1021,11 @@ export default {
   .post-title {
     font-size: 24px;
   }
+  
+  .author-actions {
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -941,6 +1066,17 @@ export default {
   
   .comment-actions {
     align-self: flex-end;
+  }
+  
+  .author-actions {
+    flex-direction: column;
+    gap: 8px;
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+  
+  .edit-btn, .delete-btn {
+    width: 100%;
   }
 }
 </style>
