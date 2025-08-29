@@ -181,7 +181,8 @@
 import { computed, onMounted, ref } from 'vue';
 import RoomInfoModal from './RoomInfoModal.vue';
 import axios from 'axios';
-import { getErrorMessage, getFridgeId, getResultData } from '@/utils/commonDataHandler';
+import { useRoute } from 'vue-router';
+import { getErrorMessage, getResultData } from '@/utils/commonDataHandler';
 import CreateRoomModal from './CreateRoomModal.vue';
 import { useStore } from 'vuex';
 
