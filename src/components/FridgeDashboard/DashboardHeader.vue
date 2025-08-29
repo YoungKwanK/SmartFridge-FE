@@ -325,8 +325,7 @@ const handleNotificationClick = (notification) => {
 };
 
 const goToNotificationList = () => {
-  // 알림 목록 페이지로 이동 (fridgeId 포함)
-  router.push(`/notification/list/${props.fridgeId}`);
+  router.push(`/notification/list`);
 };
 
 const formatTimeAgo = (timestamp) => {
