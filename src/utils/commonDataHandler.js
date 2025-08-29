@@ -7,7 +7,3 @@ export function getResultData(response){
 export function getFridgeId(store) {
   return store.getters.getCurrentFridgeId;
 }
-
-export function getFridgeId2() {
-  return this.$store.getters.getCurrentFridgeId;
-}
