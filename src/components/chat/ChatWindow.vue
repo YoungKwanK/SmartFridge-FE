@@ -13,22 +13,34 @@
       </v-toolbar>
       <v-divider />
 
-      <v-card-text ref="chatBox" class="flex-grow-1 pa-0 chat-box">
-        <div
-          v-for="(msg, index) in messages"
-          :key="index"
-          :class="['message-wrapper', msg.senderEmail === senderEmail ? 'sent' : 'received']"
-        >
-          <div class="message-bubble">
-            <div v-if="msg.senderEmail !== senderEmail" class="sender-name">{{ msg.senderName }}</div>
-            <div v-if="msg.imageUrls && msg.imageUrls.length > 0" class="image-container">
-              <img v-for="(url, imgIndex) in msg.imageUrls" :key="imgIndex" :src="url" alt="이미지" class="chat-image" />
+      <div class="chat-container">
+        <v-card-text ref="chatBox" class="flex-grow-1 pa-0 chat-box" @scroll="handleScroll">
+          <div
+            v-for="(msg, index) in messages"
+            :key="`${msg.senderEmail}-${msg.timestamp}-${index}`"
+            :class="['message-wrapper', msg.senderEmail === senderEmail ? 'sent' : 'received']"
+          >
+            <div class="message-bubble">
+              <div v-if="msg.senderEmail !== senderEmail" class="sender-name">{{ msg.senderName }}</div>
+              <div v-if="msg.imageUrls && msg.imageUrls.length > 0" class="image-container">
+                <img v-for="(url, imgIndex) in msg.imageUrls" :key="imgIndex" :src="url" alt="이미지" class="chat-image" />
+              </div>
+              <div class="message-text">{{ msg.message }}</div>
+              <div class="message-time">{{ msg.timestamp }}</div>
             </div>
-            <div class="message-text">{{ msg.message }}</div>
-            <div class="message-time">{{ msg.timestamp }}</div>
           </div>
-        </div>
-      </v-card-text>
+        </v-card-text>
+
+        <v-fade-transition>
+          <div v-if="showNewMessageIndicator" class="new-message-indicator">
+            <v-btn small rounded color="primary" @click="scrollToBottom">
+              <v-icon left>mdi-arrow-down</v-icon>
+              새로운 메시지
+            </v-btn>
+          </div>
+        </v-fade-transition>
+      </div>
+
       <v-divider />
 
       <div class="input-area">
@@ -83,6 +95,7 @@ const newImages = ref([]);
 const imagePreview = ref([]);
 const chatBox = ref(null);
 const fileInput = ref(null);
+const showNewMessageIndicator = ref(false);
 
 watch(
   [() => props.selectedRoom, () => props.selectedRoomType],
@@ -91,30 +104,52 @@ watch(
       disconnectWebSocket(oldRoom, oldRoomType);
     }
 
-    messages.value = [];
-    newMessage.value = "";
-    imagePreview.value = [];
-    newImages.value = [];
+    resetChatState();
 
     if (newRoom && newRoom.roomId) {
-      try {
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/${newRoomType}/chat/history/${newRoom.roomId}`);
-        messages.value = getResultData(response);
-        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/${newRoomType}/chat/${newRoom.roomId}/read`);
-        scrollToBottom();
-        connectWebsocket(newRoom.roomId, newRoomType);
-      } catch (error) {
-        console.error("채팅 내역 로딩 실패:", error);
-      }
+      await loadChatHistory(newRoom, newRoomType);
+      connectWebsocket(newRoom.roomId, newRoomType);
     }
-  }, 
+  },
   { deep: true }
 );
 
 // --- 함수 (Functions) ---
+const resetChatState = () => {
+  messages.value = [];
+  newMessage.value = "";
+  imagePreview.value = [];
+  newImages.value = [];
+  showNewMessageIndicator.value = false;
+};
+
+const loadChatHistory = async (room, roomType) => {
+  try {
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/history/${room.roomId}`);
+    messages.value = getResultData(response);
+    await axios.post(`${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/${room.roomId}/read`);
+    scrollToBottom();
+  } catch (error) {
+    console.error("채팅 내역 로딩 실패:", error);
+  }
+};
+
+const handleScroll = () => {
+  const el = chatBox.value;
+  if (!el) return;
+  // 사용자가 수동으로 맨 아래로 스크롤하면 새 메시지 표시기를 숨깁니다.
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 1) {
+    showNewMessageIndicator.value = false;
+  }
+};
+
 const scrollToBottom = () => {
+  showNewMessageIndicator.value = false;
   nextTick(() => {
-    if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight;
+    if (chatBox.value) {
+      const element = chatBox.value.$el || chatBox.value;
+      element.scrollTop = element.scrollHeight;
+    }
   });
 };
 
@@ -124,8 +159,24 @@ const connectWebsocket = (roomId, roomType) => {
   stompClient.value = Stomp.over(sockJs);
   stompClient.value.connect({ Authorization: `Bearer ${token.value}` }, () => {
     stompClient.value.subscribe(`/topic/chat/${roomType.toUpperCase()}/${roomId}`, (message) => {
-      messages.value.push(JSON.parse(message.body));
-      scrollToBottom();
+      const newMessage = JSON.parse(message.body);
+      messages.value.push(newMessage);
+      
+      // 내가 보낸 메시지라면 무조건 스크롤을 아래로 이동
+      if (newMessage.senderEmail === senderEmail.value) {
+        scrollToBottom();
+        return;
+      }
+      
+      const el = chatBox.value;
+      // 다른 사람이 보낸 메시지의 경우, 사용자가 하단에 거의 스크롤되었는지 확인합니다.
+      const isAtBottom = el ? el.scrollHeight - el.clientHeight <= el.scrollTop + 20 : true;
+
+      if (isAtBottom) {
+        scrollToBottom();
+      } else {
+        showNewMessageIndicator.value = true;
+      }
     }, { Authorization: `Bearer ${token.value}` });
   });
 };
@@ -202,7 +253,18 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.chat-box { overflow-y: auto; padding: 20px; background: #f8f9fa; }
+.chat-window-card { height: 100vh; }
+.chat-container {
+  position: relative;
+  flex: 1 1 auto;
+  overflow-y: hidden;
+}
+.chat-box { 
+  height: 100%;
+  overflow-y: auto; 
+  padding: 20px; 
+  background: #f8f9fa; 
+}
 .message-wrapper { margin: 8px 0; display: flex; flex-direction: column; }
 .message-bubble { max-width: 70%; padding: 12px 16px; border-radius: 12px; word-break: break-word; }
 .sent { align-items: flex-end; }
@@ -219,4 +281,12 @@ onUnmounted(() => {
 .preview-image { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .remove-image-btn { position: absolute !important; top: -4px !important; right: -4px !important; width: 20px !important; height: 20px !important; min-width: 20px !important; background-color: #ff4444 !important; }
 .remove-image-btn .v-icon { font-size: 16px !important; color: white !important; }
+.new-message-indicator {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  opacity: 0.9;
+}
 </style>
