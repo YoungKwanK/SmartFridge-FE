@@ -20,7 +20,7 @@
           :class="['message-wrapper', msg.senderEmail === senderEmail ? 'sent' : 'received']"
         >
           <div class="message-bubble">
-            <div class="sender-name">{{ msg.senderName }}</div>
+            <div v-if="msg.senderEmail !== senderEmail" class="sender-name">{{ msg.senderName }}</div>
             <div v-if="msg.imageUrls && msg.imageUrls.length > 0" class="image-container">
               <img v-for="(url, imgIndex) in msg.imageUrls" :key="imgIndex" :src="url" alt="이미지" class="chat-image" />
             </div>
