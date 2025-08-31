@@ -562,7 +562,7 @@ const promoteToAdmin = async (user) => {
     try {
       await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`);
       alert(`${user.name}님을 관리자로 승격하였습니다.`);
-      router.push('/');
+      router.push('/fridge/dashboard');
     } catch (error) {
       console.error("관리자 승격 실패:", getErrorMessage(error));
       alert("관리자 승격에 실패했습니다.");
@@ -574,8 +574,7 @@ const removeUser = async (user) => {
   if (confirm(`${user.name}님을 냉장고에서 제거하시겠습니까?`)) {
     try {
       await axios.delete(
-        `${process.env.VUE_APP_API_BASE_URL}/${fridgeId.value}/members/${user.email}`,
-        { headers: { Authorization: `Bearer ${token.value}` } }
+        `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/members/${user.email}`,
       );
       users.value = users.value.filter((u) => u.email !== user.email);
       if (selectedUser.value && selectedUser.value.email === user.email) {
