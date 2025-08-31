@@ -400,9 +400,21 @@ export default {
       }
     },
     enterFridge(fridgeId) {
-      // Vuex store에 냉장고 ID 저장
+      const currentFridge = this.fridgeList.find(f => f.fridgeId === fridgeId);
+      
+      // 기존 냉장고 ID 저장
+      const previousFridgeId = this.$store.getters.getCurrentFridgeId;
+      
       this.$store.commit('setCurrentFridgeId', fridgeId);
-      // 새로운 경로로 이동
+      if (currentFridge) {
+        this.$store.commit('setCurrentFridgeInfo', currentFridge);
+      }
+      
+      // 냉장고가 변경되었을 때만 알림 초기화
+      if (previousFridgeId && previousFridgeId !== fridgeId) {
+        this.$store.dispatch('notification/refreshSSEOnFridgeChange', fridgeId);
+      }
+      
       this.$router.push('/fridge/dashboard');
     },
     openCreateModal() {

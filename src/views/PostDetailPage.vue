@@ -65,7 +65,7 @@
 
     <!-- 댓글 섹션 -->
     <v-card class="comments-card">
-      <v-card-title class="comments-header">
+      <v-card-title class="comments-header" id="comments-section">
         <div class="comments-title-section">
           <v-icon color="primary" size="24" class="mr-2">mdi-comment-multiple</v-icon>
           <h3>댓글 ({{ postDetail?.commentCount || 0 }})</h3>
@@ -102,7 +102,7 @@
         </div>
 
         <div v-else-if="comments && comments.length > 0" class="comment-list">
-          <div v-for="comment in comments" :key="comment.id" class="comment-item">
+          <div v-for="comment in comments" :key="comment.id" class="comment-item" :id="`comment-${comment.id}`">
             <!-- 수정 모드가 아닐 때 -->
             <div v-if="editingCommentId !== comment.id">
               <div class="comment-header">
@@ -274,10 +274,13 @@ export default {
     await this.fetchComments();
   },
   methods: {
+    getFridgeId() {
+      return this.$store?.getters?.getCurrentFridgeId || localStorage.getItem('currentFridgeId');
+    },
     async fetchPostDetail() {
       try {
         this.isLoading = true;
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         const response = await axios.get(
@@ -288,7 +291,6 @@ export default {
         );
         
         this.postDetail = response.data.result;
-        console.log('게시글 상세 정보:', this.postDetail);
         
       } catch (error) {
         console.error('게시글 상세 정보 조회 실패:', error);
@@ -301,7 +303,7 @@ export default {
     async fetchComments() {
       try {
         this.isLoadingComments = true;
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         const response = await axios.get(
@@ -314,7 +316,25 @@ export default {
         this.comments = response.data.result.content || [];
         this.commentTotalPages = response.data.result.totalPages;
         this.commentTotalElements = response.data.result.totalElements;
-        console.log('댓글 목록:', this.comments);
+        
+        // 댓글 로드 후 스크롤 처리
+        this.$nextTick(() => {
+          const qCommentId = this.$route.query?.commentId;
+          const qScrollTo = this.$route.query?.scrollTo;
+          if (qCommentId) {
+            const el = document.getElementById(`comment-${qCommentId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.style.transition = 'background-color 0.8s ease';
+              const originalBg = el.style.backgroundColor;
+              el.style.backgroundColor = '#fff8e1';
+              setTimeout(() => { el.style.backgroundColor = originalBg || ''; }, 1200);
+            }
+          } else if (qScrollTo === 'comments') {
+            const section = document.getElementById('comments-section');
+            if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
         
       } catch (error) {
         console.error('댓글 목록 조회 실패:', error);
@@ -328,7 +348,7 @@ export default {
       if (!this.newComment.trim()) return;
       
       try {
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         const commentData = {
@@ -363,7 +383,7 @@ export default {
       if (!this.editingCommentContent.trim()) return;
       
       try {
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         const updateData = {
@@ -397,7 +417,7 @@ export default {
       if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
       
       try {
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         await axios.delete(
@@ -445,7 +465,7 @@ export default {
 
     async toggleLike() {
       try {
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         if (this.postDetail.isLiked) {
@@ -510,7 +530,7 @@ export default {
     // 게시글 수정 처리
     async handlePostUpdate(updatedPost) {
       try {
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         const response = await axios.put(
@@ -538,7 +558,7 @@ export default {
       if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
       
       try {
-        const fridgeId = this.$route.params.fridgeId;
+        const fridgeId = this.getFridgeId();
         const postId = this.$route.params.postId;
         
         const response = await axios.delete(
@@ -550,7 +570,7 @@ export default {
         
         if (response.data.status_code === 200) {
           alert('게시글이 삭제되었습니다.');
-          this.$router.push(`/fridge/${fridgeId}/community`);
+          this.$router.push('/fridge/community');
         }
       } catch (error) {
         console.error('게시글 삭제 실패:', error);

@@ -190,6 +190,12 @@ const fetchNotifications = async (isLoadMore = false) => {
   if (isLoading.value) return;
   isLoading.value = true;
   
+  // 냉장고 Id 가 없으면 냉장고 목록으로 이동
+  if (fridgeId.value === null) {
+    router.push('/fridge/list');
+    return;
+  }
+
   try {
     let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/notification/list`;
     const params = new URLSearchParams();
@@ -261,13 +267,13 @@ const getNotificationType = (notification) => {
 };
 
 const getNotificationText = (notification) => {
-  if (notification.type === "EXPIRATION_IMMINENT") return `${notification.content || '음식'}의 유통기한이 곧 만료됩니다`;
-  if (notification.type === "NEW_FOOD") return `${notification.content || '새로운 음식'}이 냉장고에 등록되었습니다`;
-  if (notification.type === "NEW_ANNOUNCEMENT") return `${notification.content || '새로운 공지사항'}이 게시되었습니다`;
-  if (notification.type === "NEW_COMMENT") return `${notification.content || '새로운 댓글'}이 등록되었습니다`;
-  if (notification.type === "INQUIRY_REPLY") return `${notification.content || '새로운 문의 답변'}이 등록되었습니다`;
-  if (notification.type === "NEW_INQUIRY") return `${notification.content || '새로운 문의'}가 등록되었습니다`;
-  if (notification.type === "NEW_MEMBER") return `${notification.content || '새로운 멤버'}가 냉장고에 참여했습니다`;
+  if (notification.type === "EXPIRATION_IMMINENT") return `${notification.content || '음식'}`;
+  if (notification.type === "NEW_FOOD") return `${notification.content || '새로운 음식'}`;
+  if (notification.type === "NEW_ANNOUNCEMENT") return `${notification.content || '새로운 공지사항'}`;
+  if (notification.type === "NEW_COMMENT") return `${notification.content || '새로운 댓글'}`;
+  if (notification.type === "INQUIRY_REPLY") return `${notification.content || '새로운 문의 답변'}`;
+  if (notification.type === "NEW_INQUIRY") return `${notification.content || '새로운 문의'}`;
+  if (notification.type === "NEW_MEMBER") return `${notification.content || '새로운 멤버'}`;
   return notification.content || '새로운 알림이 있습니다';
 };
 
@@ -297,8 +303,53 @@ const formatTimeAgo = (dateStr) => {
 };
 
 const goToDetail = (notification) => {
-  if (notification.targetType === "ANNOUNCE") router.push(`/fridge/${fridgeId.value}/post/${notification.targetId}`);
-  else if (notification.targetType === "FOOD") router.push(`/food/${notification.targetId}`);
+  const type = notification?.type;
+  const extractPostId = (n) => (
+    n?.targetId ?? n?.postId ?? n?.announceId ?? n?.announcementId ?? n?.boardId ?? n?.post?.id ?? n?.target?.id ?? null
+  );
+  const postId = extractPostId(notification);
+
+  if (type === 'NEW_FOOD' || type === 'EXPIRATION_IMMINENT') {
+    router.push('/fridge/food/shared');
+    return;
+  }
+
+  if (type === 'NEW_MEMBER') {
+    router.push('/fridge/member/list');
+    return;
+  }
+
+  if (type === 'INQUIRY_REPLY' || type === 'NEW_INQUIRY') {
+    router.push('/inquiry');
+    return;
+  }
+
+  if (type === 'NEW_ANNOUNCEMENT' || type === 'NEW_COMMENT') {
+    if (postId) {
+      const commentId = notification?.commentId || notification?.targetCommentId || notification?.comment?.id;
+      if (type === 'NEW_COMMENT' && commentId) {
+        router.push({ path: `/fridge/post/${postId}`, query: { commentId } });
+      } else if (type === 'NEW_COMMENT') {
+        router.push({ path: `/fridge/post/${postId}`, query: { scrollTo: 'comments' } });
+      } else {
+        router.push(`/fridge/post/${postId}`);
+      }
+    } else {
+      router.push('/fridge/community');
+    }
+    return;
+  }
+
+  // 기존 fallbacks (예방적 유지)
+  if (notification.targetType === 'ANNOUNCE') {
+    if (postId) router.push(`/fridge/post/${postId}`);
+    else router.push('/fridge/community');
+    return;
+  }
+  if (notification.targetType === 'FOOD') {
+    router.push('/fridge/food/shared');
+    return;
+  }
 };
 
 const confirmDelete = (notification) => {

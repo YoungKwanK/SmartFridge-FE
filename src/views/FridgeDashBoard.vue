@@ -19,14 +19,16 @@ const store = useStore()
 // 현재 선택된 냉장고 ID를 Vuex store에서 가져오기
 const currentFridgeId = computed(() => store.getters.getCurrentFridgeId)
 
-// 컴포넌트 마운트 시 냉장고 ID 확인
+// 컴포넌트 마운트 시 냉장고 ID 확인 및 알림 초기화
 onMounted(() => {
-  console.log('현재 선택된 냉장고 ID:', currentFridgeId.value)
   
   // 냉장고 ID가 없으면 처리
   if (!currentFridgeId.value) {
     console.warn('선택된 냉장고가 없습니다.')
     // 필요시 다른 페이지로 리다이렉트하거나 처리
+  } else {
+    // 냉장고 대시보드 진입 시 해당 냉장고의 알림으로 SSE 연결
+    store.dispatch('notification/refreshSSEOnFridgeChange', currentFridgeId.value)
   }
 })
 </script>

@@ -779,6 +779,8 @@ export default {
     await this.fetchInquiries()
     // 30초마다 자동 새로고침 (상태 업데이트 확인용)
     this.startAutoRefresh()
+    // 페이지 진입 시 문의 알림 제거
+    this.$store.dispatch('notification/clearInquiryNotificationsOnEnter')
   },
   
   beforeUnmount() {

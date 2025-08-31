@@ -270,6 +270,19 @@ const filteredUsers = computed(() => {
   );
 });
 
+// --- Lifecycle Hooks ---
+onMounted(async () => {
+  // 유저관리 페이지 진입 시 ADMIN_CHAT 알림 제거
+  try {
+    await store.dispatch('notification/clearAdminChatNotificationsOnEnter');
+  } catch (error) {
+    console.error('ADMIN_CHAT 알림 제거 실패:', error);
+  }
+  
+  // 사용자 목록 로드
+  await fetchUsers();
+});
+
 // --- Watcher ---
 watch(selectedUser, async (newUser, oldUser) => {
   if (oldUser) {
