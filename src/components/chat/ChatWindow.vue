@@ -31,15 +31,19 @@
             >
               <div class="message-bubble">
                 <div v-if="msg.senderEmail !== senderEmail" class="sender-name">{{ msg.senderName }}</div>
-                <div v-if="msg.imageUrls && msg.imageUrls.length > 0" class="image-container">
-                  <img 
+                <div v-if="msg.imageUrls && msg.imageUrls.length > 0" :class="['image-container', `image-count-${msg.imageUrls.length}`]">
+                  <div 
                     v-for="(url, imgIndex) in msg.imageUrls" 
                     :key="imgIndex" 
-                    :src="url" 
-                    alt="이미지" 
-                    class="chat-image clickable" 
-                    @click="openImageModal(msg.imageUrls, imgIndex)"
-                  />
+                    class="image-wrapper"
+                  >
+                    <img 
+                      :src="url" 
+                      alt="이미지" 
+                      class="chat-image clickable" 
+                      @click="openImageModal(msg.imageUrls, imgIndex)"
+                    />
+                  </div>
                 </div>
                 <div class="message-text">{{ msg.message }}</div>
                 <div class="message-time">{{ formatMessageTime(msg.timestamp) }}</div>
@@ -422,7 +426,79 @@ onUnmounted(() => {
 .sender-name { font-size: 0.75rem; margin-bottom: 4px; opacity: 0.8; }
 .message-text { font-size: 0.95rem; line-height: 1.4; }
 .message-time { font-size: 0.7rem; margin-top: 4px; opacity: 0.7; }
-.chat-image { max-width: 200px; border-radius: 8px; margin: 4px 0; }
+/* 이미지 컨테이너 스타일 */
+.image-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+  max-width: 420px; /* 2열로 배치할 때 적절한 크기 */
+}
+
+.image-wrapper {
+  flex: 0 0 auto;
+}
+
+.chat-image { 
+  width: 200px; 
+  height: 150px; 
+  object-fit: cover; 
+  border-radius: 12px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: block;
+}
+
+/* 이미지 개수별 크기 조정 */
+.image-container.image-count-1 .chat-image {
+  width: 250px;
+  height: 180px;
+}
+
+.image-container.image-count-2 .chat-image {
+  width: 180px;
+  height: 135px;
+}
+
+.image-container.image-count-3 .chat-image,
+.image-container.image-count-4 .chat-image {
+  width: 130px;
+  height: 100px;
+}
+
+/* 5개 이상일 때는 더 작게 */
+.image-container[class*="image-count-"]:not(.image-count-1):not(.image-count-2):not(.image-count-3):not(.image-count-4) .chat-image {
+  width: 100px;
+  height: 80px;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .image-container {
+    max-width: 300px;
+  }
+  
+  .image-container.image-count-1 .chat-image {
+    width: 200px;
+    height: 150px;
+  }
+  
+  .image-container.image-count-2 .chat-image {
+    width: 140px;
+    height: 105px;
+  }
+  
+  .image-container.image-count-3 .chat-image,
+  .image-container.image-count-4 .chat-image {
+    width: 90px;
+    height: 70px;
+  }
+  
+  .image-container[class*="image-count-"]:not(.image-count-1):not(.image-count-2):not(.image-count-3):not(.image-count-4) .chat-image {
+    width: 70px;
+    height: 55px;
+  }
+}
 .input-area { padding: 12px; background: white; border-top: 1px solid #eee; }
 .image-preview-container { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 4px 12px; }
 .image-preview-item { position: relative; width: 60px; height: 60px; }
