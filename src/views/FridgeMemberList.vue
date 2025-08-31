@@ -432,12 +432,9 @@ const removeImage = (index) => {
 const promoteToAdmin = async (user) => {
   if (confirm(`${user.name}님을 관리자로 승격하시겠습니까?`)) {
     try {
-      await axios.put(
-        `${process.env.VUE_APP_API_BASE_URL}/${fridgeId.value}/members/${user.email}/role`,
-        { role: 'MANAGER' },
-        { headers: { 'Authorization': `Bearer ${token.value}` } }
+      await axios.patch(
+        `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`
       );
-      user.role = 'MANAGER';
     } catch (error) {
       console.error('관리자 승격 실패:', getErrorMessage(error));
       alert('관리자 승격에 실패했습니다.');
