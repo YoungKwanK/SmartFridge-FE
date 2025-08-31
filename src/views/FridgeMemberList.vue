@@ -297,6 +297,7 @@ import {
   getFridgeId,
 } from "@/utils/commonDataHandler";
 import { useStore } from "vuex";
+import router from "@/router";
 
 // --- 상태 변수 ---
 const store = useStore();
@@ -559,9 +560,9 @@ const removeImage = (index) => {
 const promoteToAdmin = async (user) => {
   if (confirm(`${user.name}님을 관리자로 승격하시겠습니까?`)) {
     try {
-      await axios.patch(
-        `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`
-      );
+      await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`);
+      alert(`${user.name}님을 관리자로 승격하였습니다.`);
+      router.push('/');
     } catch (error) {
       console.error("관리자 승격 실패:", getErrorMessage(error));
       alert("관리자 승격에 실패했습니다.");
