@@ -102,8 +102,6 @@
 
 <script setup>
 import { ref, watch, nextTick, onUnmounted, computed } from 'vue';
-import { ref, watch, nextTick, onUnmounted } from 'vue';
-import { useStore } from 'vuex';
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
 import axios from 'axios';
@@ -114,8 +112,6 @@ const props = defineProps({
   selectedRoom: { type: Object, default: null },
   selectedRoomType: { type: String, default: null }
 });
-
-const store = useStore();
 
 // --- 상태 (State) ---
 const messages = ref([]);
@@ -390,7 +386,6 @@ const sendMessage = async () => {
       senderName: senderName.value,
       message: currentMessage, 
       imageUrls,
-      fridgeId: store.getters.getCurrentFridgeId || localStorage.getItem('currentFridgeId')
     };
     if (stompClient.value?.connected) {
       stompClient.value.send(`/publish/chat/${props.selectedRoomType.toUpperCase()}/${props.selectedRoom.roomId}`, JSON.stringify(message));
