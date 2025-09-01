@@ -172,18 +172,7 @@
                     <router-link to="/member/forgot-password" class="signup-text signup-link">비밀번호 찾기</router-link>
                   </div>
                   
-                  <!-- 관리자 로그인 (테스트용) -->
-                  <div class="admin-login-section text-center mt-4">
-                    <v-btn
-                      variant="text"
-                      color="warning"
-                      size="small"
-                      @click="adminLogin"
-                      class="admin-login-btn"
-                    >
-                      관리자 로그인 (테스트)
-                    </v-btn>
-                  </div>
+
                 </v-card-text>
               </v-card>
             </div>
@@ -318,19 +307,6 @@ export default {
       this.socialLoading.naver = true;
       const auth_uri = `${this.naverUrl}?client_id=${this.naverClientId}&redirect_uri=${this.naverRedirectUrl}&response_type=code`;
       window.location.href = auth_uri;
-    },
-    
-    adminLogin() {
-      // 테스트용 관리자 로그인
-      localStorage.setItem("accessToken", "admin_test_token");
-      localStorage.setItem("refreshToken", "admin_refresh_token");
-      localStorage.setItem("role", "ADMIN");
-      localStorage.setItem("email", "admin@smartfridge.com");
-      
-      // 관리자 대시보드로 이동
-      this.$router.push('/admin').catch(() => {
-        window.location.href = "/admin";
-      });
     },
     
     async checkUserFridgeStatus() {

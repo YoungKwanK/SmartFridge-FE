@@ -36,6 +36,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'AdminDashboard',
   data() {
@@ -44,7 +46,7 @@ export default {
       unansweredCount: 0,
       userCount: 0,
       newNotificationCount: 0,
-      recentInquiries: []
+      loading: true
     }
   },
   mounted() {
@@ -53,24 +55,30 @@ export default {
   methods: {
     async loadDashboardData() {
       try {
-        // 실제 API 호출로 대체 필요
-        this.inquiryCount = 15;
-        this.unansweredCount = 8;
-        this.userCount = 120;
-        this.newNotificationCount = 3;
+        this.loading = true;
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/dashboard`);
         
-        this.recentInquiries = [
-          { id: 1, title: '로그인 문제', status: '답변대기', createdAt: '2024-01-15' },
-          { id: 2, title: '회원가입 오류', status: '답변완료', createdAt: '2024-01-14' },
-          { id: 3, title: '비밀번호 재설정', status: '답변대기', createdAt: '2024-01-13' }
-        ];
+        if (response.data.status_code === 200) {
+          const data = response.data.result;
+          this.inquiryCount = data.inquiryCount || 0;
+          this.unansweredCount = data.unansweredCount || 0;
+          this.userCount = data.userCount || 0;
+          this.newNotificationCount = data.newNotification || 0;
+        }
       } catch (error) {
         console.error('대시보드 데이터 로드 실패:', error);
+        this.$store.dispatch('showSnackbar', {
+          message: '대시보드 데이터 로드에 실패했습니다.',
+          color: 'error'
+        });
+      } finally {
+        this.loading = false;
       }
     },
     
     logout() {
       localStorage.clear();
+      this.$store.dispatch('user/logout');
       this.$router.push('/');
     }
   }

@@ -148,11 +148,27 @@ export default {
     this.userEmail = this.$route.query.email;
     this.isVerified = this.$route.query.verified === 'true';
     
-    if (!this.userEmail || !this.isVerified) {
-      this.errorMessage = "유효하지 않은 접근입니다. 비밀번호 찾기를 다시 진행해주세요.";
-      // 3초 후 비밀번호 찾기 페이지로 리다이렉트
+    // 임시 인증 토큰 확인
+    const tempAuth = sessionStorage.getItem('tempResetAuth');
+    const tempEmail = sessionStorage.getItem('tempResetEmail');
+    const tempTime = sessionStorage.getItem('tempResetTime');
+    
+    // 30분(1800000ms) 이내 인증만 유효
+    const isTokenValid = tempAuth && tempEmail && tempTime && 
+                        (Date.now() - parseInt(tempTime)) < 1800000 &&
+                        tempEmail === this.userEmail;
+    
+    if (!this.userEmail || !this.isVerified || !isTokenValid) {
+      this.errorMessage = "유효하지 않은 접근이거나 인증이 만료되었습니다. 비밀번호 찾기를 다시 진행해주세요.";
+      
+      // 세션 정리
+      sessionStorage.removeItem('tempResetAuth');
+      sessionStorage.removeItem('tempResetEmail');
+      sessionStorage.removeItem('tempResetTime');
+      
+      // 3초 후 비밀번고 찾기 페이지로 리다이렉트
       setTimeout(() => {
-        this.$router.push('/forgot-password');
+        this.$router.push('/member/forgot-password');
       }, 3000);
     }
   },
@@ -171,27 +187,47 @@ export default {
 
       const resetData = {
         email: this.userEmail,
-        newPassword: this.password
+        newPassword: this.password,
+        newPasswordConfirm: this.confirmPassword
       };
 
       try {
         const apiBaseUrl = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080';
         
-        // 비밀번호 변경 API 호출
+        // 임시 토큰 생성 (비밀번호 찾기용)
+        const tempToken = btoa(JSON.stringify({
+          email: this.userEmail,
+          purpose: 'password-reset',
+          timestamp: Date.now(),
+          verified: true
+        }));
+        
+        // 비밀번호 변경 API 호출 (임시 토큰 포함)
         const response = await axios.create({
           timeout: 10000,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tempToken}`
           }
-        }).post(`${apiBaseUrl}/member/reset-password`, resetData);
+        }).put(`${apiBaseUrl}/member/forgot-password/updatepw`, resetData);
         
         console.log('Reset password response:', response.data);
         
         // 백엔드 응답 구조에 맞춰 처리 (CommonDto 구조)
-        if (response.data.result === true && response.data.status_code === 200) {
+        if (response.data.status_code === 200) {
           this.successMessage = response.data.status_message || "비밀번호가 성공적으로 변경되었습니다. 새 비밀번호로 로그인해주세요.";
           this.password = "";
           this.confirmPassword = "";
+          
+          // 임시 인증 정보 제거
+          sessionStorage.removeItem('tempResetAuth');
+          sessionStorage.removeItem('tempResetEmail');
+          sessionStorage.removeItem('tempResetTime');
+          
+          // 3초 후 로그인 페이지로 이동
+          setTimeout(() => {
+            this.$router.push('/');
+          }, 3000);
         } else {
           this.errorMessage = response.data.status_message || "비밀번호 변경에 실패했습니다.";
         }
@@ -202,7 +238,9 @@ export default {
           // 서버에서 응답을 받은 경우
           const errorData = error.response.data;
           if (errorData.status_code === 400) {
-            this.errorMessage = "유효하지 않은 토큰이거나 만료된 토큰입니다. 다시 비밀번호 재설정을 요청해주세요.";
+            this.errorMessage = errorData.status_message || "비밀번호를 확인해 주세요.";
+          } else if (errorData.status_code === 401) {
+            this.errorMessage = "인증이 만료되었습니다. 비밀번호 찾기를 다시 진행해주세요.";
           } else {
             this.errorMessage = errorData.status_message || "비밀번호 변경에 실패했습니다.";
           }
