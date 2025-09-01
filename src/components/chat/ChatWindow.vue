@@ -335,7 +335,8 @@ const unsubscribe = (room, roomType) => {
   try {
     // 1. 먼저 구독 해제
     if (subscription.value) {
-      subscription.value.unsubscribe();
+      const id = { roomId: room.roomId, roomType };
+      subscription.value.unsubscribe(id);
       subscription.value = null;
       console.log('구독이 해제되었습니다.');
     }
