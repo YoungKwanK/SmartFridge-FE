@@ -117,6 +117,7 @@ const props = defineProps({
 const messages = ref([]);
 const newMessage = ref("");
 const stompClient = ref(null);
+const subscription = ref(null); // 구독 객체 저장
 const token = ref(localStorage.getItem("accessToken"));
 const senderEmail = ref(localStorage.getItem("email"));
 const senderName = ref(localStorage.getItem("name")); // [개선] senderName 추가
@@ -131,8 +132,6 @@ const modalStartIndex = ref(0);
 
 // timestamp를 Date 객체로 변환하는 함수
 const parseTimestamp = (timestamp) => {
-  // 디버깅용 로그 (실제 데이터 형식 확인)
-  console.log('Original timestamp:', timestamp, 'Type:', typeof timestamp);
   
   // 다양한 형식의 timestamp를 처리
   if (!timestamp) return new Date();
@@ -239,7 +238,7 @@ watch(
   [() => props.selectedRoom, () => props.selectedRoomType],
   async ([newRoom, newRoomType], [oldRoom, oldRoomType]) => {
     if (oldRoom) {
-      disconnectWebSocket(oldRoom, oldRoomType);
+      unsubscribe(oldRoom, oldRoomType);
     }
 
     resetChatState();
@@ -260,6 +259,9 @@ const resetChatState = () => {
   newImages.value = [];
   showNewMessageIndicator.value = false;
   closeImageModal(); // 이미지 모달도 닫기
+  
+  // 구독 상태도 초기화
+  subscription.value = null;
 };
 
 const loadChatHistory = async (room, roomType) => {
@@ -297,7 +299,8 @@ const connectWebsocket = (roomId, roomType) => {
   const sockJs = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/connect/chat`);
   stompClient.value = Stomp.over(sockJs);
   stompClient.value.connect({ Authorization: `Bearer ${token.value}` }, () => {
-    stompClient.value.subscribe(`/topic/chat/${roomType.toUpperCase()}/${roomId}`, (message) => {
+    // 구독 객체를 저장
+    subscription.value = stompClient.value.subscribe(`/topic/chat/${roomType.toUpperCase()}/${roomId}`, (message) => {
       const newMessage = JSON.parse(message.body);
       messages.value.push(newMessage);
       
@@ -320,10 +323,35 @@ const connectWebsocket = (roomId, roomType) => {
   });
 };
 
-const disconnectWebSocket = (room, roomType) => {
-  // [수정] stompClient가 null이 아닐 때만 접근하도록 하고, 불안정한 unsubscribe 로직 제거
-  if (stompClient.value?.connected && room && roomType) {
-    stompClient.value.disconnect();
+// 구독 해제 로직
+const unsubscribe = (room, roomType) => {
+  if (!room || !roomType) {
+    console.warn('unsubscribe: room 또는 roomType이 없습니다.');
+    return;
+  }
+
+  console.log(`채팅방 ${room.roomName || room.roomId} 구독 해제 시작`);
+  
+  try {
+    // 1. 먼저 구독 해제
+    if (subscription.value) {
+      subscription.value.unsubscribe();
+      subscription.value = null;
+      console.log('구독이 해제되었습니다.');
+    }
+    
+    // 2. 그 다음 연결 해제
+    if (stompClient.value?.connected) {
+      stompClient.value.disconnect(() => {
+        console.log('WebSocket 연결이 정상적으로 해제되었습니다 (disconnected)');
+      });
+      stompClient.value = null;
+      console.log('WebSocket 연결 해제 완료');
+    }
+  } catch (error) {
+    console.error('구독 해제 중 오류 발생:', error);
+    // 오류 발생 시에도 상태 정리
+    subscription.value = null;
     stompClient.value = null;
   }
 };
@@ -400,7 +428,7 @@ const closeImageModal = () => {
 
 // [수정] 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제
 onUnmounted(() => {
-  disconnectWebSocket(props.selectedRoom, props.selectedRoomType);
+  unsubscribe(props.selectedRoom, props.selectedRoomType);
 });
 </script>
 
