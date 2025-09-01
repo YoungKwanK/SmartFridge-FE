@@ -389,8 +389,7 @@ const sendMessage = async () => {
       senderEmail: senderEmail.value, 
       senderName: senderName.value,
       message: currentMessage, 
-      imageUrls,
-      fridgeId: store.getters.getCurrentFridgeId || localStorage.getItem('currentFridgeId')
+      imageUrls
     };
     if (stompClient.value?.connected) {
       stompClient.value.send(`/publish/chat/${props.selectedRoomType.toUpperCase()}/${props.selectedRoom.roomId}`, JSON.stringify(message));
