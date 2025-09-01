@@ -17,8 +17,11 @@
         <select v-model="typeFilter" @change="filterNotifications">
           <option value="">전체 타입</option>
           <option value="문의등록">문의등록</option>
+          <option value="답변완료">답변완료</option>
           <option value="시스템">시스템</option>
           <option value="사용자">사용자</option>
+          <option value="식품만료알림">식품만료알림</option>
+          <option value="냉장고초대">냉장고초대</option>
         </select>
         <select v-model="readFilter" @change="filterNotifications">
           <option value="">전체 상태</option>
@@ -101,6 +104,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'NotificationList',
   data() {
@@ -109,7 +114,8 @@ export default {
       filteredNotifications: [],
       typeFilter: '',
       readFilter: '',
-      selectedNotification: null
+      selectedNotification: null,
+      loading: true
     }
   },
   mounted() {
@@ -118,40 +124,42 @@ export default {
   methods: {
     async loadNotifications() {
       try {
-        // 실제 API 호출로 대체 필요
-        this.notifications = [
-          { 
-            id: 1, 
-            type: '문의등록', 
-            title: '새로운 문의가 등록되었습니다', 
-            content: '사용자 user1@email.com이 "로그인 문제" 문의를 등록했습니다.',
-            status: '읽지않음',
-            createdAt: '2024-01-15 14:30',
-            relatedData: { inquiryId: 1, userId: 'user1', inquiryTitle: '로그인 문제' }
-          },
-          { 
-            id: 2, 
-            type: '시스템', 
-            title: '시스템 점검 알림', 
-            content: '정기 시스템 점검이 예정되어 있습니다.',
-            status: '읽음',
-            createdAt: '2024-01-15 10:00',
-            relatedData: { maintenanceDate: '2024-01-20', duration: '2시간' }
-          },
-          { 
-            id: 3, 
-            type: '사용자', 
-            title: '새 사용자 가입', 
-            content: '새로운 사용자가 가입했습니다.',
-            status: '읽지않음',
-            createdAt: '2024-01-15 09:15',
-            relatedData: { newUserId: 'user123', email: 'newuser@email.com' }
-          }
-        ];
-        this.filteredNotifications = [...this.notifications];
+        this.loading = true;
+        const response = await axios.get('http://localhost:8080/admin/notification/list');
+        
+        if (response.data.status_code === 200) {
+          this.notifications = response.data.result.map(notification => ({
+            id: notification.notificationId,
+            type: this.getNotificationTypeKorean(notification.type),
+            title: notification.title || '알림',
+            content: notification.message,
+            status: notification.isRead ? '읽음' : '읽지않음',
+            createdAt: notification.createdTime ? new Date(notification.createdTime).toLocaleString() : '-',
+            relatedData: notification.relatedData || null
+          }));
+          this.filteredNotifications = [...this.notifications];
+        }
       } catch (error) {
         console.error('알림 목록 로드 실패:', error);
+        this.$store.dispatch('showSnackbar', {
+          message: '알림 목록 로드에 실패했습니다.',
+          color: 'error'
+        });
+      } finally {
+        this.loading = false;
       }
+    },
+    
+    getNotificationTypeKorean(type) {
+      const typeMap = {
+        'INQUIRY_CREATED': '문의등록',
+        'ADMIN_REPLY': '답변완료',
+        'SYSTEM': '시스템',
+        'USER': '사용자',
+        'FOOD_EXPIRY_WARNING': '식품만료알림',
+        'FRIDGE_INVITATION': '냉장고초대'
+      };
+      return typeMap[type] || type;
     },
     
     filterNotifications() {
@@ -183,54 +191,121 @@ export default {
     
     async markAsRead(notification) {
       try {
-        // 실제 API 호출로 대체 필요
-        notification.status = '읽음';
+        // 백엔드 알림 읽음 처리 API 호출
+        const response = await axios.patch('http://localhost:8080/notification/isRead', [
+          {
+            notificationId: notification.id
+          }
+        ]);
         
-        // 목록 업데이트
-        const index = this.notifications.findIndex(n => n.id === notification.id);
-        if (index !== -1) {
-          this.notifications[index] = { ...notification };
-        }
-        
-        this.filterNotifications();
-        
-        if (this.selectedNotification && this.selectedNotification.id === notification.id) {
-          this.selectedNotification.status = '읽음';
+        if (response.data.status_code === 200) {
+          notification.status = '읽음';
+          
+          // 목록 업데이트
+          const index = this.notifications.findIndex(n => n.id === notification.id);
+          if (index !== -1) {
+            this.notifications[index] = { ...notification };
+          }
+          
+          this.filterNotifications();
+          
+          if (this.selectedNotification && this.selectedNotification.id === notification.id) {
+            this.selectedNotification.status = '읽음';
+          }
+          
+          this.$store.dispatch('showSnackbar', {
+            message: '알림이 읽음 처리되었습니다.',
+            color: 'success'
+          });
         }
       } catch (error) {
         console.error('읽음 처리 실패:', error);
+        console.error('Error details:', error.response?.data);
+        this.$store.dispatch('showSnackbar', {
+          message: '읽음 처리에 실패했습니다.',
+          color: 'error'
+        });
       }
     },
     
     async markAllAsRead() {
       try {
-        // 실제 API 호출로 대체 필요
-        this.notifications.forEach(notification => {
-          notification.status = '읽음';
-        });
+        // 읽지 않은 알림들만 필터링
+        const unreadNotifications = this.notifications.filter(n => n.status === '읽지않음');
         
-        this.filterNotifications();
+        if (unreadNotifications.length === 0) {
+          this.$store.dispatch('showSnackbar', {
+            message: '읽지 않은 알림이 없습니다.',
+            color: 'info'
+          });
+          return;
+        }
+        
+        // 읽지 않은 알림들의 ID 배열 생성
+        const notificationReadList = unreadNotifications.map(notification => ({
+          notificationId: notification.id
+        }));
+        
+        // 백엔드 전체 읽음 처리 API 호출
+        const response = await axios.patch('http://localhost:8080/notification/isRead', notificationReadList);
+        
+        if (response.data.status_code === 200) {
+          // 모든 알림을 읽음으로 변경
+          this.notifications.forEach(notification => {
+            if (notification.status === '읽지않음') {
+              notification.status = '읽음';
+            }
+          });
+          
+          this.filterNotifications();
+          
+          this.$store.dispatch('showSnackbar', {
+            message: '모든 알림이 읽음 처리되었습니다.',
+            color: 'success'
+          });
+        }
       } catch (error) {
         console.error('전체 읽음 처리 실패:', error);
+        console.error('Error details:', error.response?.data);
+        this.$store.dispatch('showSnackbar', {
+          message: '전체 읽음 처리에 실패했습니다.',
+          color: 'error'
+        });
       }
     },
     
     async deleteNotification(notification) {
       if (confirm('이 알림을 삭제하시겠습니까?')) {
         try {
-          // 실제 API 호출로 대체 필요
-          const index = this.notifications.findIndex(n => n.id === notification.id);
-          if (index !== -1) {
-            this.notifications.splice(index, 1);
-          }
+          // 백엔드 알림 삭제 API 호출
+          const response = await axios.delete(`http://localhost:8080/notification/delete/${notification.id}`);
           
-          this.filterNotifications();
-          
-          if (this.selectedNotification && this.selectedNotification.id === notification.id) {
-            this.closeModal();
+          if (response.data.status_code === 200) {
+            // 목록에서 해당 알림 제거
+            const index = this.notifications.findIndex(n => n.id === notification.id);
+            if (index !== -1) {
+              this.notifications.splice(index, 1);
+            }
+            
+            this.filterNotifications();
+            
+            // 현재 선택된 알림이 삭제된 알림과 같다면 모달 닫기
+            if (this.selectedNotification && this.selectedNotification.id === notification.id) {
+              this.closeModal();
+            }
+            
+            this.$store.dispatch('showSnackbar', {
+              message: '알림이 삭제되었습니다.',
+              color: 'success'
+            });
           }
         } catch (error) {
           console.error('알림 삭제 실패:', error);
+          console.error('Error details:', error.response?.data);
+          this.$store.dispatch('showSnackbar', {
+            message: '알림 삭제에 실패했습니다.',
+            color: 'error'
+          });
         }
       }
     },
@@ -241,6 +316,7 @@ export default {
     
     logout() {
       localStorage.clear();
+      this.$store.dispatch('user/logout');
       this.$router.push('/');
     }
   }

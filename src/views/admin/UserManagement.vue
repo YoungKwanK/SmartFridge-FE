@@ -33,7 +33,7 @@
         <table>
           <thead>
             <tr>
-              <th>번호</th>
+              <th>id</th>
               <th>이름</th>
               <th>이메일</th>
               <th>역할</th>
@@ -62,25 +62,21 @@
               <td>{{ user.lastLoginAt || '-' }}</td>
               <td>
                 <button @click="viewUser(user)" class="view-btn">보기</button>
-                <button @click="editUser(user)" class="edit-btn">수정</button>
-                <button v-if="user.status === '활성'" @click="deactivateUser(user)" class="deactivate-btn">비활성화</button>
-                <button v-else @click="activateUser(user)" class="activate-btn">활성화</button>
-                <button @click="deleteUser(user)" class="delete-btn">삭제</button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- 사용자 상세 보기/수정 모달 -->
+      <!-- 사용자 상세 보기 모달 -->
       <div v-if="selectedUser" class="modal">
         <div class="modal-content">
           <div class="modal-header">
-            <h2>{{ isEditing ? '사용자 수정' : '사용자 정보' }}</h2>
+            <h2>사용자 정보</h2>
             <button @click="closeModal" class="close-btn">×</button>
           </div>
           <div class="modal-body">
-            <div v-if="!isEditing" class="user-detail">
+            <div class="user-detail">
               <p><strong>ID:</strong> {{ selectedUser.id }}</p>
               <p><strong>이름:</strong> {{ selectedUser.name }}</p>
               <p><strong>이메일:</strong> {{ selectedUser.email }}</p>
@@ -91,39 +87,7 @@
               <p><strong>프로필 이미지:</strong> {{ selectedUser.profileImage || '없음' }}</p>
             </div>
             
-            <div v-else class="user-edit-form">
-              <div class="form-group">
-                <label>이름:</label>
-                <input type="text" v-model="editForm.name" required>
-              </div>
-              <div class="form-group">
-                <label>이메일:</label>
-                <input type="email" v-model="editForm.email" required>
-              </div>
-              <div class="form-group">
-                <label>역할:</label>
-                <select v-model="editForm.role">
-                  <option value="USER">일반사용자</option>
-                  <option value="ADMIN">관리자</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>상태:</label>
-                <select v-model="editForm.status">
-                  <option value="활성">활성</option>
-                  <option value="비활성">비활성</option>
-                  <option value="정지">정지</option>
-                </select>
-              </div>
-              
-              <div class="form-actions">
-                <button @click="saveUser" class="save-btn">저장</button>
-                <button @click="cancelEdit" class="cancel-btn">취소</button>
-              </div>
-            </div>
-            
-            <div v-if="!isEditing" class="modal-actions">
-              <button @click="startEdit" class="edit-btn">수정</button>
+            <div class="modal-actions">
               <button @click="closeModal" class="close-modal-btn">닫기</button>
             </div>
           </div>
@@ -134,6 +98,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'UserManagement',
   data() {
@@ -144,13 +110,7 @@ export default {
       statusFilter: '',
       searchQuery: '',
       selectedUser: null,
-      isEditing: false,
-      editForm: {
-        name: '',
-        email: '',
-        role: '',
-        status: ''
-      }
+      loading: true
     }
   },
   mounted() {
@@ -159,52 +119,38 @@ export default {
   methods: {
     async loadUsers() {
       try {
-        // 실제 API 호출로 대체 필요
-        this.users = [
-          { 
-            id: 1, 
-            name: '관리자1', 
-            email: 'admin1@email.com', 
-            role: 'ADMIN', 
-            status: '활성', 
-            createdAt: '2024-01-01',
-            lastLoginAt: '2024-01-15 14:30',
-            profileImage: null
-          },
-          { 
-            id: 2, 
-            name: '사용자1', 
-            email: 'user1@email.com', 
-            role: 'USER', 
-            status: '활성', 
-            createdAt: '2024-01-02',
-            lastLoginAt: '2024-01-15 10:15',
-            profileImage: 'profile1.jpg'
-          },
-          { 
-            id: 3, 
-            name: '사용자2', 
-            email: 'user2@email.com', 
-            role: 'USER', 
-            status: '비활성', 
-            createdAt: '2024-01-03',
-            lastLoginAt: '2024-01-10 09:45',
-            profileImage: null
-          },
-          { 
-            id: 4, 
-            name: '사용자3', 
-            email: 'user3@email.com', 
-            role: 'USER', 
-            status: '정지', 
-            createdAt: '2024-01-04',
-            lastLoginAt: '2024-01-08 16:20',
-            profileImage: 'profile3.jpg'
-          }
-        ];
-        this.filteredUsers = [...this.users];
+        this.loading = true;
+        const response = await axios.get('http://localhost:8080/admin/member/list');
+        
+        console.log('Member List API Response:', response.data);
+        
+        if (response.data.status_code === 200) {
+          console.log('First member item:', response.data.result[0]);
+          
+          this.users = response.data.result
+            .filter(member => member.email !== 'admin@naver.com') // admin 계정 제외
+            .map(member => ({
+              // MemberResDto 실제 구조에 맞게 매핑
+              id: member.id, // UUID
+              name: member.name,
+              email: member.email,
+              role: 'USER', // MemberResDto에 role 필드가 없으므로 기본값
+              status: '활성', // MemberResDto에 status 필드가 없으므로 기본값
+              createdAt: member.createdTime ? new Date(member.createdTime).toLocaleDateString() : '-',
+              lastLoginAt: member.lastLoginTime ? new Date(member.lastLoginTime).toLocaleString() : '-',
+              profileImage: member.profileImage || null
+            }));
+          this.filteredUsers = [...this.users];
+        }
       } catch (error) {
         console.error('사용자 목록 로드 실패:', error);
+        console.error('Error details:', error.response?.data);
+        this.$store.dispatch('showSnackbar', {
+          message: '사용자 목록 로드에 실패했습니다.',
+          color: 'error'
+        });
+      } finally {
+        this.loading = false;
       }
     },
     
@@ -243,107 +189,29 @@ export default {
       return classes[status] || '';
     },
     
-    viewUser(user) {
-      this.selectedUser = user;
-      this.isEditing = false;
-    },
-    
-    editUser(user) {
-      this.selectedUser = user;
-      this.isEditing = true;
-      this.editForm = {
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        status: user.status
-      };
-    },
-    
-    startEdit() {
-      this.isEditing = true;
-      this.editForm = {
-        name: this.selectedUser.name,
-        email: this.selectedUser.email,
-        role: this.selectedUser.role,
-        status: this.selectedUser.status
-      };
-    },
-    
-    async saveUser() {
+    async viewUser(user) {
       try {
-        // 실제 API 호출로 대체 필요
-        Object.assign(this.selectedUser, this.editForm);
+        const response = await axios.get(`http://localhost:8080/admin/member/detail/${user.email}`);
         
-        // 목록 업데이트
-        const index = this.users.findIndex(u => u.id === this.selectedUser.id);
-        if (index !== -1) {
-          this.users[index] = { ...this.selectedUser };
+        console.log('Member Detail API Response:', response.data);
+        
+        if (response.data.status_code === 200) {
+          const memberDetail = response.data.result;
+          this.selectedUser = {
+            ...user,
+            // MemberResDto 실제 구조에 맞게 매핑
+            id: memberDetail.id,
+            name: memberDetail.name,
+            email: memberDetail.email,
+            createdAt: memberDetail.createdTime ? new Date(memberDetail.createdTime).toLocaleDateString() : '-',
+            lastLoginAt: memberDetail.lastLoginTime ? new Date(memberDetail.lastLoginTime).toLocaleString() : '-',
+            profileImage: memberDetail.profileImage || null
+          };
         }
-        
-        this.filterUsers();
-        this.isEditing = false;
       } catch (error) {
-        console.error('사용자 정보 저장 실패:', error);
-      }
-    },
-    
-    cancelEdit() {
-      this.isEditing = false;
-    },
-    
-    async activateUser(user) {
-      try {
-        // 실제 API 호출로 대체 필요
-        user.status = '활성';
-        
-        // 목록 업데이트
-        const index = this.users.findIndex(u => u.id === user.id);
-        if (index !== -1) {
-          this.users[index] = { ...user };
-        }
-        
-        this.filterUsers();
-      } catch (error) {
-        console.error('사용자 활성화 실패:', error);
-      }
-    },
-    
-    async deactivateUser(user) {
-      if (confirm('이 사용자를 비활성화하시겠습니까?')) {
-        try {
-          // 실제 API 호출로 대체 필요
-          user.status = '비활성';
-          
-          // 목록 업데이트
-          const index = this.users.findIndex(u => u.id === user.id);
-          if (index !== -1) {
-            this.users[index] = { ...user };
-          }
-          
-          this.filterUsers();
-        } catch (error) {
-          console.error('사용자 비활성화 실패:', error);
-        }
-      }
-    },
-    
-    async deleteUser(user) {
-      if (confirm('이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-        try {
-          // 실제 API 호출로 대체 필요
-          const index = this.users.findIndex(u => u.id === user.id);
-          if (index !== -1) {
-            this.users.splice(index, 1);
-          }
-          
-          this.filterUsers();
-          
-          if (this.selectedUser && this.selectedUser.id === user.id) {
-            this.closeModal();
-          }
-        } catch (error) {
-          console.error('사용자 삭제 실패:', error);
-        }
+        console.error('사용자 상세 정보 로드 실패:', error);
+        console.error('Error details:', error.response?.data);
+        this.selectedUser = user;
       }
     },
     
@@ -379,17 +247,11 @@ export default {
     
     closeModal() {
       this.selectedUser = null;
-      this.isEditing = false;
-      this.editForm = {
-        name: '',
-        email: '',
-        role: '',
-        status: ''
-      };
     },
     
     logout() {
       localStorage.clear();
+      this.$store.dispatch('user/logout');
       this.$router.push('/');
     }
   }

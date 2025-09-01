@@ -35,14 +35,11 @@ const user = {
                     throw new Error('No email found in token or localStorage');
                 }
                 
-                // 백엔드 API에서 사용자 정보를 가져오기 (이메일을 쿼리 파라미터로 전달)
+                // 백엔드 API에서 사용자 정보를 가져오기 (JWT 토큰으로 인증)
                 try {
                     console.log('🔍 Fetching user info for email:', email);
                     
                     const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/member/info`, {
-                        params: {
-                            email: email
-                        },
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -77,7 +74,8 @@ const user = {
                         email: email,
                         name: username,
                         profileImage: null,
-                        role: decodedToken.role || localStorage.getItem('role') || 'USER'
+                        role: decodedToken.role || localStorage.getItem('role') || 'USER',
+                        createdTime: null // 백엔드에서 createdTime 필드로 반환
                     };
                     
                     commit('SET_USER_INFO', fallbackUserInfo);

@@ -67,6 +67,22 @@
               <p><strong>작성일:</strong> {{ selectedInquiry.createdAt }}</p>
               <p><strong>내용:</strong></p>
               <div class="content">{{ selectedInquiry.content }}</div>
+              
+              <!-- 첨부 이미지 표시 -->
+              <div v-if="selectedInquiry.imageUrls && selectedInquiry.imageUrls.length > 0" class="inquiry-images">
+                <p><strong>첨부 이미지:</strong></p>
+                <div class="image-gallery">
+                  <div v-for="(imageUrl, index) in selectedInquiry.imageUrls" :key="index" class="image-item">
+                    <img 
+                      :src="imageUrl" 
+                      :alt="`문의 이미지 ${index + 1}`"
+                      @click="openImageModal(imageUrl)"
+                      @error="handleImageError"
+                      class="inquiry-image"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div v-if="selectedInquiry.reply" class="reply-detail">
@@ -86,11 +102,21 @@
           </div>
         </div>
       </div>
+      
+      <!-- 이미지 확대보기 모달 -->
+      <div v-if="selectedImage" class="image-modal" @click="closeImageModal">
+        <div class="image-modal-content" @click.stop>
+          <button @click="closeImageModal" class="image-close-btn">×</button>
+          <img :src="selectedImage" alt="확대 이미지" class="enlarged-image" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'InquiryList',
   data() {
@@ -100,7 +126,9 @@ export default {
       statusFilter: '',
       searchQuery: '',
       selectedInquiry: null,
-      replyContent: ''
+      replyContent: '',
+      loading: true,
+      selectedImage: null // 이미지 확대보기용
     }
   },
   mounted() {
@@ -109,15 +137,53 @@ export default {
   methods: {
     async loadInquiries() {
       try {
-        // 실제 API 호출로 대체 필요
-        this.inquiries = [
-          { id: 1, title: '로그인 문제', author: 'user1@email.com', status: '답변대기', createdAt: '2024-01-15', content: '로그인이 안됩니다.' },
-          { id: 2, title: '회원가입 오류', author: 'user2@email.com', status: '답변완료', createdAt: '2024-01-14', content: '회원가입 시 오류가 발생합니다.', reply: '확인해보겠습니다.', replyDate: '2024-01-14' },
-          { id: 3, title: '비밀번호 재설정', author: 'user3@email.com', status: '답변대기', createdAt: '2024-01-13', content: '비밀번호 재설정이 안됩니다.' }
-        ];
-        this.filteredInquiries = [...this.inquiries];
+        this.loading = true;
+        const response = await axios.get('http://localhost:8080/admin/inquiry/list');
+        
+        console.log('Admin Inquiry API Response:', response.data);
+        
+        if (response.data.status_code === 200) {
+          console.log('First inquiry item:', response.data.result[0]);
+          
+          this.inquiries = await Promise.all(response.data.result.map(async (inquiry) => {
+            // 작성자 정보 가져오기 시도
+            let authorInfo = `Member ID: ${inquiry.memberId}`;
+            try {
+              // memberId로 사용자 정보 조회 시도 (이 API가 있다면)
+              // const memberResponse = await axios.get(`http://localhost:8080/admin/member/detail/${inquiry.memberId}`);
+              // authorInfo = memberResponse.data.result?.memberEmail || authorInfo;
+            } catch (error) {
+              // 사용자 정보 조회 실패 시 Member ID로 표시
+            }
+            
+            return {
+              // InquiryResDto 구조에 맞게 수정
+              id: inquiry.inquiryId,
+              title: inquiry.title,
+              author: authorInfo,
+              status: inquiry.status === 'PENDING' ? '답변대기' : '답변완료',
+              createdAt: inquiry.createdAt ? new Date(inquiry.createdAt).toLocaleDateString() : '-',
+              content: inquiry.contents,
+              imageUrls: inquiry.imageUrls || [], // 이미지 URL 배열 추가
+              // comments 배열에서 답변 정보 추출 (첫 번째 댓글을 답변으로 가정)
+              reply: inquiry.comments && inquiry.comments.length > 0 ? 
+                    (inquiry.comments[0].commentContents || inquiry.comments[0].contents) : null,
+              replyDate: inquiry.comments && inquiry.comments.length > 0 && 
+                        (inquiry.comments[0].createdAt || inquiry.comments[0].createdTime) 
+                        ? new Date(inquiry.comments[0].createdAt || inquiry.comments[0].createdTime).toLocaleDateString() : null
+            };
+          }));
+          this.filteredInquiries = [...this.inquiries];
+        }
       } catch (error) {
         console.error('문의 목록 로드 실패:', error);
+        console.error('Error details:', error.response?.data);
+        this.$store.dispatch('showSnackbar', {
+          message: '문의 목록 로드에 실패했습니다.',
+          color: 'error'
+        });
+      } finally {
+        this.loading = false;
       }
     },
     
@@ -137,9 +203,38 @@ export default {
       this.filteredInquiries = filtered;
     },
     
-    viewInquiry(inquiry) {
-      this.selectedInquiry = inquiry;
-      this.replyContent = '';
+    async viewInquiry(inquiry) {
+      try {
+        const response = await axios.get(`http://localhost:8080/admin/inquiry/detail/${inquiry.id}`);
+        
+        console.log('Inquiry Detail API Response:', response.data);
+        
+        if (response.data.status_code === 200) {
+          const inquiryDetail = response.data.result;
+          this.selectedInquiry = {
+            ...inquiry,
+            content: inquiryDetail.contents,
+            title: inquiryDetail.title,
+            author: `Member ID: ${inquiryDetail.memberId}`,
+            createdAt: inquiryDetail.createdAt ? new Date(inquiryDetail.createdAt).toLocaleDateString() : '-',
+            imageUrls: inquiryDetail.imageUrls || [], // 이미지 URL 배열 추가
+            // comments 배열에서 답변 정보 추출
+            reply: inquiryDetail.comments && inquiryDetail.comments.length > 0 ? 
+                  (inquiryDetail.comments[0].commentContents || inquiryDetail.comments[0].contents) : null,
+            replyDate: inquiryDetail.comments && inquiryDetail.comments.length > 0 && 
+                      (inquiryDetail.comments[0].createdAt || inquiryDetail.comments[0].createdTime) 
+                      ? new Date(inquiryDetail.comments[0].createdAt || inquiryDetail.comments[0].createdTime).toLocaleDateString() : null
+          };
+        } else {
+          this.selectedInquiry = inquiry;
+        }
+        this.replyContent = '';
+      } catch (error) {
+        console.error('문의 상세 정보 로드 실패:', error);
+        console.error('Error details:', error.response?.data);
+        this.selectedInquiry = inquiry;
+        this.replyContent = '';
+      }
     },
     
     replyInquiry(inquiry) {
@@ -148,22 +243,44 @@ export default {
     },
     
     async submitReply() {
+      if (!this.replyContent.trim()) {
+        alert('답변 내용을 입력해주세요.');
+        return;
+      }
+      
       try {
-        // 실제 API 호출로 대체 필요
-        this.selectedInquiry.reply = this.replyContent;
-        this.selectedInquiry.replyDate = new Date().toISOString().split('T')[0];
-        this.selectedInquiry.status = '답변완료';
+        const response = await axios.post(
+          `http://localhost:8080/admin/inquiry/reply?inquiryId=${this.selectedInquiry.id}`,
+          {
+            commentContents: this.replyContent
+          }
+        );
         
-        // 목록 업데이트
-        const index = this.inquiries.findIndex(i => i.id === this.selectedInquiry.id);
-        if (index !== -1) {
-          this.inquiries[index] = { ...this.selectedInquiry };
+        if (response.data.status_code === 201) {
+          this.selectedInquiry.reply = this.replyContent;
+          this.selectedInquiry.replyDate = new Date().toLocaleDateString();
+          this.selectedInquiry.status = '답변완료';
+          
+          // 목록 업데이트
+          const index = this.inquiries.findIndex(i => i.id === this.selectedInquiry.id);
+          if (index !== -1) {
+            this.inquiries[index] = { ...this.selectedInquiry };
+          }
+          
+          this.filterInquiries();
+          this.closeModal();
+          
+          this.$store.dispatch('showSnackbar', {
+            message: '답변이 성공적으로 등록되었습니다.',
+            color: 'success'
+          });
         }
-        
-        this.filterInquiries();
-        this.closeModal();
       } catch (error) {
         console.error('답변 등록 실패:', error);
+        this.$store.dispatch('showSnackbar', {
+          message: '답변 등록에 실패했습니다.',
+          color: 'error'
+        });
       }
     },
     
@@ -172,8 +289,22 @@ export default {
       this.replyContent = '';
     },
     
+    openImageModal(imageUrl) {
+      this.selectedImage = imageUrl;
+    },
+    
+    closeImageModal() {
+      this.selectedImage = null;
+    },
+    
+    handleImageError(event) {
+      console.error('이미지 로드 실패:', event.target.src);
+      event.target.style.display = 'none';
+    },
+    
     logout() {
       localStorage.clear();
+      this.$store.dispatch('user/logout');
       this.$router.push('/');
     }
   }
@@ -369,5 +500,84 @@ export default {
 .cancel-btn {
   background: #6c757d;
   color: white;
+}
+
+/* 문의 이미지 스타일 */
+.inquiry-images {
+  margin: 20px 0;
+}
+
+.image-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.image-item {
+  position: relative;
+}
+
+.inquiry-image {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid #ddd;
+  transition: all 0.3s ease;
+}
+
+.inquiry-image:hover {
+  border-color: #007bff;
+  transform: scale(1.02);
+}
+
+/* 이미지 확대보기 모달 */
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.enlarged-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.image-close-btn {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #333;
+}
+
+.image-close-btn:hover {
+  background: white;
 }
 </style>
