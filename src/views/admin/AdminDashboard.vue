@@ -56,7 +56,7 @@ export default {
     async loadDashboardData() {
       try {
         this.loading = true;
-        const response = await axios.get('http://localhost:8080/admin/dashboard');
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/dashboard`);
         
         if (response.data.status_code === 200) {
           const data = response.data.result;

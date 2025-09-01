@@ -138,7 +138,7 @@ export default {
     async loadInquiries() {
       try {
         this.loading = true;
-        const response = await axios.get('http://localhost:8080/admin/inquiry/list');
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/list`);
         
         console.log('Admin Inquiry API Response:', response.data);
         
@@ -205,7 +205,7 @@ export default {
     
     async viewInquiry(inquiry) {
       try {
-        const response = await axios.get(`http://localhost:8080/admin/inquiry/detail/${inquiry.id}`);
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/detail/${inquiry.id}`);
         
         console.log('Inquiry Detail API Response:', response.data);
         
@@ -250,7 +250,7 @@ export default {
       
       try {
         const response = await axios.post(
-          `http://localhost:8080/admin/inquiry/reply?inquiryId=${this.selectedInquiry.id}`,
+          `${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/reply?inquiryId=${this.selectedInquiry.id}`,
           {
             commentContents: this.replyContent
           }

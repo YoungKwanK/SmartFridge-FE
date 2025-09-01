@@ -125,7 +125,7 @@ export default {
     async loadNotifications() {
       try {
         this.loading = true;
-        const response = await axios.get('http://localhost:8080/admin/notification/list');
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/notification/list`);
         
         if (response.data.status_code === 200) {
           this.notifications = response.data.result.map(notification => ({
@@ -192,7 +192,7 @@ export default {
     async markAsRead(notification) {
       try {
         // 백엔드 알림 읽음 처리 API 호출
-        const response = await axios.patch('http://localhost:8080/notification/isRead', [
+        const response = await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/notification/isRead`, [
           {
             notificationId: notification.id
           }
@@ -247,7 +247,7 @@ export default {
         }));
         
         // 백엔드 전체 읽음 처리 API 호출
-        const response = await axios.patch('http://localhost:8080/notification/isRead', notificationReadList);
+        const response = await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/notification/isRead`, notificationReadList);
         
         if (response.data.status_code === 200) {
           // 모든 알림을 읽음으로 변경
@@ -278,7 +278,7 @@ export default {
       if (confirm('이 알림을 삭제하시겠습니까?')) {
         try {
           // 백엔드 알림 삭제 API 호출
-          const response = await axios.delete(`http://localhost:8080/notification/delete/${notification.id}`);
+          const response = await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/notification/delete/${notification.id}`);
           
           if (response.data.status_code === 200) {
             // 목록에서 해당 알림 제거

@@ -120,7 +120,7 @@ export default {
     async loadUsers() {
       try {
         this.loading = true;
-        const response = await axios.get('http://localhost:8080/admin/member/list');
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/member/list`);
         
         console.log('Member List API Response:', response.data);
         
@@ -191,7 +191,7 @@ export default {
     
     async viewUser(user) {
       try {
-        const response = await axios.get(`http://localhost:8080/admin/member/detail/${user.email}`);
+        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/member/detail/${user.email}`);
         
         console.log('Member Detail API Response:', response.data);
         
