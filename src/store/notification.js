@@ -84,7 +84,7 @@ function createSSEConnection(store) {
     const notificationTypes = [
       'ADMIN_REPLY', 'NEW_FOOD', 'EXPIRATION_IMMINENT', 
       'NEW_ANNOUNCEMENT', 'NEW_COMMENT', 'NEW_INQUIRY', 'NEW_MEMBER',
-      'ADMIN_CHAT', 'GROUP_CHAT', 'INQUIRY_REPLY'
+      'ADMIN_CHAT', 'GROUP_CHAT', 'ROOM_FULL', 'INQUIRY_REPLY'
     ];
 
     notificationTypes.forEach(type => {
@@ -92,7 +92,10 @@ function createSSEConnection(store) {
         try {
           const data = JSON.parse(event.data);
           
-          store.commit('notification/addNotification', data);
+          // 서버가 준 type을 우선 사용, 없을 때만 이벤트명 사용
+          const finalType = data.type || type;
+          const notificationWithType = { ...data, type: finalType };
+          store.commit('notification/addNotification', notificationWithType);
         } catch (error) {
           console.error(`SSE [${type}] 메시지 파싱 오류:`, error);
         }
@@ -162,7 +165,6 @@ function startConnectionMonitoring(store) {
       }
     } else {
       if (sseState.isConnected) {
-        console.log('연결 재시도');
         sseState.isConnected = false;
         store.commit('notification/setSSEConnectionStatus', false);
         createSSEConnection(store);
@@ -191,7 +193,31 @@ function closeSSEConnection(store) {
   
   sseState.isConnected = false;
   store.commit('notification/setSSEConnectionStatus', false);
-  console.log('SSE 연결 수동 종료');
+}
+
+// 로컬 스토리지 키 생성
+function getTypeCountsStorageKey(fridgeId) {
+  const fid = typeof fridgeId === 'string' ? fridgeId : (fridgeId ?? localStorage.getItem('currentFridgeId'));
+  return `sf:typeCounts:${fid || 'default'}`;
+}
+
+function saveTypeCountsToStorage(fridgeId, typeCounts) {
+  try {
+    const key = getTypeCountsStorageKey(fridgeId);
+    localStorage.setItem(key, JSON.stringify(typeCounts));
+  } catch (e) {
+    // ignore storage errors
+  }
+}
+
+function loadTypeCountsFromStorage(fridgeId) {
+  try {
+    const key = getTypeCountsStorageKey(fridgeId);
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 export default {
@@ -215,6 +241,7 @@ export default {
       NEW_MEMBER: 0,
       ADMIN_CHAT: 0,
       GROUP_CHAT: 0,
+      ROOM_FULL: 0,
       INQUIRY_REPLY: 0
     }
   },
@@ -225,29 +252,32 @@ export default {
       if (state.notifications.length > 5) {
         state.notifications = state.notifications.slice(0, 5);
       }
-       
+      
       state.notificationCount = state.notifications.filter(n => !n.isRead).length;
-   
+  
       // typeCounts 업데이트 (사이드바 배지용)
       if (notification.type && notification.type in state.typeCounts) {
         state.typeCounts[notification.type]++;
+        // 변경사항 저장
+        const fid = notification.fridgeId ?? localStorage.getItem('currentFridgeId');
+        saveTypeCountsToStorage(fid, state.typeCounts);
       }
-  
+ 
       // 냉장고 알림 처리
       const fridgeId = notification.fridgeId;
       if (fridgeId !== undefined && fridgeId !== null) {
         const numericFridgeId = typeof fridgeId === 'string' ? parseInt(fridgeId, 10) : fridgeId;
-   
+ 
         if (!state.fridgeNotifications[numericFridgeId]) {
           state.fridgeNotifications[numericFridgeId] = [];
         }
-   
+ 
         // 냉장고별 알림 리스트에 추가 (최대 5개)
         state.fridgeNotifications[numericFridgeId].unshift(notification);
         if (state.fridgeNotifications[numericFridgeId].length > 5) {
           state.fridgeNotifications[numericFridgeId] = state.fridgeNotifications[numericFridgeId].slice(0, 5);
         }
-   
+ 
         // 읽지 않은 알림 카운트 증가
         if (!state.fridgeNotificationCounts[numericFridgeId]) {
           state.fridgeNotificationCounts[numericFridgeId] = 0;
@@ -259,7 +289,6 @@ export default {
           detail: notification
         });
         window.dispatchEvent(realtimeEvent);
-        console.log('실시간 알림 이벤트 발생:', notification);
       }
     },
     clearNotifications(state) {
@@ -268,6 +297,7 @@ export default {
       Object.keys(state.typeCounts).forEach(key => {
         state.typeCounts[key] = 0;
       });
+      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
     setSSEConnectionStatus(state, status) {
       state.isSSEConnected = status;
@@ -281,7 +311,7 @@ export default {
     // 냉장고별 알림 읽음 처리
     markFridgeNotificationAsRead(state, { fridgeId, notificationId }) {
       if (!fridgeId) return;
-   
+ 
       const numericFridgeId = typeof fridgeId === 'string' ? parseInt(fridgeId, 10) : fridgeId;
       const notification = state.fridgeNotifications[numericFridgeId]?.find(n => n.id === notificationId);
       if (notification && !notification.isRead) {
@@ -296,11 +326,52 @@ export default {
         state.fridgeNotificationCounts[fridgeId] = 0;
       }
     },
+
+    // 냉장고 변경 시 모든 알림 초기화
+    clearAllFridgeNotifications(state) {
+      state.fridgeNotifications = {};
+      state.fridgeNotificationCounts = {};
+      state.notifications = [];
+      state.notificationCount = 0;
+      Object.keys(state.typeCounts).forEach(key => {
+        state.typeCounts[key] = 0;
+      });
+      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
+    },
     // 냉장고별 알림 카운트 리셋
     resetFridgeNotificationCount(state, fridgeId) {
       if (state.fridgeNotificationCounts[fridgeId]) {
         state.fridgeNotificationCounts[fridgeId] = 0;
       }
+    },
+    
+    // 채팅 알림 제거
+    clearChatNotifications(state) {
+      state.typeCounts.GROUP_CHAT = 0;
+      state.typeCounts.ROOM_FULL = 0;
+      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
+    },
+    
+    // 문의 알림 제거
+    clearInquiryNotifications(state) {
+      state.typeCounts.NEW_INQUIRY = 0;
+      state.typeCounts.ADMIN_REPLY = 0;
+      state.typeCounts.INQUIRY_REPLY = 0;
+      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
+    },
+    
+    // 유저관리 페이지 진입 시 ADMIN_CHAT 알림 제거
+    clearAdminChatNotifications(state) {
+      state.typeCounts.ADMIN_CHAT = 0;
+      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
+    },
+
+    // 저장된 typeCounts 로드
+    setTypeCounts(state, payload) {
+      if (!payload || typeof payload !== 'object') return;
+      Object.keys(state.typeCounts).forEach(k => {
+        state.typeCounts[k] = payload[k] ?? 0;
+      });
     }
   },
   actions: {
@@ -324,6 +395,15 @@ export default {
 
       // 전역 연결 함수 호출
       createSSEConnection(targetStore);
+    },
+
+    // 저장된 배지 카운트 복원
+    hydrateTypeCounts({ commit }) {
+      const fid = localStorage.getItem('currentFridgeId');
+      const stored = loadTypeCountsFromStorage(fid);
+      if (stored) {
+        commit('setTypeCounts', stored);
+      }
     },
 
     closeSSE() {
@@ -355,6 +435,40 @@ export default {
         }
       }
     },
+
+    // 냉장고 변경 시 SSE 연결 재설정
+    refreshSSEOnFridgeChange({ commit, dispatch }, newFridgeId) {
+      if (newFridgeId) {
+        // 기존 알림 초기화
+        commit('clearAllFridgeNotifications');
+        
+        // 기존 연결 종료
+        if (globalEventSource) {
+          globalEventSource.close();
+          globalEventSource = null;
+        }
+        
+        // 새로운 냉장고로 재연결
+        setTimeout(() => {
+          dispatch('initSSE');
+        }, 100);
+      }
+    },
+    
+    // 채팅 페이지 진입 시 알림 제거
+    clearChatNotificationsOnEnter({ commit }) {
+      commit('clearChatNotifications');
+    },
+    
+    // 문의 페이지 진입 시 알림 제거
+    clearInquiryNotificationsOnEnter({ commit }) {
+      commit('clearInquiryNotifications');
+    },
+    
+    // 유저관리 페이지 진입 시 ADMIN_CHAT 알림 제거
+    clearAdminChatNotificationsOnEnter({ commit }) {
+      commit('clearAdminChatNotifications');
+    }
   },
   getters: {
     allNotifications: state => state.notifications,
@@ -392,6 +506,6 @@ export default {
         return state.typeCounts.ADMIN_REPLY || 0;
       }
     },
-    chatBadgeCount: state => state.typeCounts.ADMIN_CHAT + state.typeCounts.GROUP_CHAT
+    chatBadgeCount: state => state.typeCounts.ADMIN_CHAT + state.typeCounts.GROUP_CHAT + state.typeCounts.ROOM_FULL
   }
 };

@@ -54,7 +54,7 @@
               @mouseenter="hoveredRoomId = room.roomId"
             >
               <div v-if="hoveredRoomId !== room.roomId" class="d-flex align-center fill-height pa-3">
-                <div style="color: red; font-size: medium; margin-right: 15px; back">
+                <div style="color: red; font-size: medium; margin-right: 15px;">
                   {{ room.unReadCount }}
                 </div>
                 <div class="flex-grow-1 text-truncate">
@@ -251,20 +251,17 @@ const selectRoom = (room, roomType) => {
 };
 
 const startChat = (room) => {
-  console.log('채팅방 참여:', room.roomName);
   selectRoom(room, 'purchase');
 };
 
 // [수정] viewRoomInfo 함수가 모달을 열도록 수정합니다.
 const viewRoomInfo = (room, isParticipant) => {
-  console.log('정보 보기:', room.roomName);
   selectedRoomIdForModal.value = room.roomId; // 클릭된 방의 정보를 저장
   isModalOpen.value = true;           // 모달을 열도록 상태 변경
   isParticipantforModal.value = isParticipant; // 참여자 여부를 저장
 };
 
 const leaveRoom = async(room) => {
-  console.log('방 나가기:', room.title);
   try {
     await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
     alert('방에서 나갔습니다.');

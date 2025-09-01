@@ -65,7 +65,7 @@
 
     <!-- 댓글 섹션 -->
     <v-card class="comments-card">
-      <v-card-title class="comments-header">
+      <v-card-title class="comments-header" id="comments-section">
         <div class="comments-title-section">
           <v-icon color="primary" size="24" class="mr-2">mdi-comment-multiple</v-icon>
           <h3>댓글 ({{ postDetail?.commentCount || 0 }})</h3>
@@ -102,7 +102,7 @@
         </div>
 
         <div v-else-if="comments && comments.length > 0" class="comment-list">
-          <div v-for="comment in comments" :key="comment.id" class="comment-item">
+          <div v-for="comment in comments" :key="comment.id" class="comment-item" :id="`comment-${comment.id}`">
             <!-- 수정 모드가 아닐 때 -->
             <div v-if="editingCommentId !== comment.id">
               <div class="comment-header">
@@ -292,6 +292,9 @@ export default {
     await this.fetchComments();
   },
   methods: {
+    getFridgeId() {
+      return this.$store?.getters?.getCurrentFridgeId || localStorage.getItem('currentFridgeId');
+    },
     async fetchPostDetail() {
       try {
         this.isLoading = true;
@@ -312,7 +315,6 @@ export default {
         );
         
         this.postDetail = response.data.result;
-        console.log('게시글 상세 정보:', this.postDetail);
         
       } catch (error) {
         console.error('게시글 상세 정보 조회 실패:', error);
@@ -343,7 +345,25 @@ export default {
         this.comments = response.data.result.content || [];
         this.commentTotalPages = response.data.result.totalPages;
         this.commentTotalElements = response.data.result.totalElements;
-        console.log('댓글 목록:', this.comments);
+        
+        // 댓글 로드 후 스크롤 처리
+        this.$nextTick(() => {
+          const qCommentId = this.$route.query?.commentId;
+          const qScrollTo = this.$route.query?.scrollTo;
+          if (qCommentId) {
+            const el = document.getElementById(`comment-${qCommentId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.style.transition = 'background-color 0.8s ease';
+              const originalBg = el.style.backgroundColor;
+              el.style.backgroundColor = '#fff8e1';
+              setTimeout(() => { el.style.backgroundColor = originalBg || ''; }, 1200);
+            }
+          } else if (qScrollTo === 'comments') {
+            const section = document.getElementById('comments-section');
+            if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
         
       } catch (error) {
         console.error('댓글 목록 조회 실패:', error);

@@ -57,11 +57,7 @@
           <v-icon :icon="item.icon" :color="item.color"></v-icon>
         </template>
         <template v-slot:append v-if="item.badgeCount > 0">
-          <v-badge
-            :content="item.badgeCount"
-            color="error"
-            :model-value="item.badgeCount > 0"
-          ></v-badge>
+          <div class="notification-indicator"></div>
         </template>
       </v-list-item>
     </v-list>
@@ -142,27 +138,60 @@ const doLogout = () => {
   window.location.href = '/login';
 };
 
-// 컴포넌트 마운트 시 사용자 정보 로드
+// 컴포넌트 마운트 시 사용자 정보 로드 및 냉장고 ID 확인
 onMounted(async () => {
   const token = localStorage.getItem('accessToken');
   if (token && !userInfo.value) {
     try {
       await store.dispatch('fetchUserInfo');
-      console.log('User info loaded successfully:', userInfo.value);
     } catch (error) {
       console.error('Failed to load user info:', error);
       // 에러가 발생해도 기본값으로 표시되도록 함
     }
   }
+  
+  // 냉장고 ID가 없으면 냉장고 목록 페이지로 리다이렉트
+  const currentFridgeId = store.getters.getCurrentFridgeId;
+  if (!currentFridgeId && window.location.pathname !== '/fridge/list') {
+    window.location.href = '/fridge/list';
+  }
 });
 
 const menuItems = computed(() => {
-  // 디버깅: inquiryBadgeCount 계산 확인
   const inquiryBadgeCount = store.getters['notification/inquiryBadgeCount'];
   const chatBadgeCount = store.getters['notification/chatBadgeCount'];
-  console.log('Sidebar inquiryBadgeCount:', inquiryBadgeCount);
-  console.log('Sidebar chatBadgeCount:', chatBadgeCount);
-  console.log('Sidebar typeCounts:', store.state.notification.typeCounts);
+  const adminChatCount = store.getters['notification/typeCounts']?.ADMIN_CHAT || 0;
+  
+  const fridgeInfo = store.getters.getCurrentFridgeInfo;
+  
+  let isManager = false;
+  let isUser = false;
+  
+  if (fridgeInfo && fridgeInfo.type) {
+    isManager = fridgeInfo.type === 'MANAGER';
+    isUser = fridgeInfo.type === 'USER' || fridgeInfo.type === 'COMMON';
+  } else {
+    isUser = true;
+    isManager = false;
+  }
+  
+
+  
+  const userManagementBadgeCount = isManager && adminChatCount > 0 ? 1 : 0;
+  
+  let finalChatBadgeCount = 0;
+  if (isUser) {
+    finalChatBadgeCount = (adminChatCount > 0 ? 1 : 0) + 
+                         (store.getters['notification/typeCounts']?.GROUP_CHAT > 0 ? 1 : 0) + 
+                         (store.getters['notification/typeCounts']?.ROOM_FULL > 0 ? 1 : 0);
+  } else if (isManager) {
+    finalChatBadgeCount = (store.getters['notification/typeCounts']?.GROUP_CHAT > 0 ? 1 : 0) + 
+                         (store.getters['notification/typeCounts']?.ROOM_FULL > 0 ? 1 : 0);
+  } else {
+    finalChatBadgeCount = chatBadgeCount > 0 ? 1 : 0;
+  }
+  
+
   
   return [
     { 
@@ -175,14 +204,17 @@ const menuItems = computed(() => {
     { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: "/fridge/community" },
     { 
       title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: "/chatpage",  
-      badgeCount: chatBadgeCount // 채팅 관련 알림만
+      badgeCount: finalChatBadgeCount
     },
     { title: '마이페이지', icon: 'mdi-account', value: 'mypage', color: 'indigo-darken-1', to: "/mypage" },
-    { title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/fridge/member/list" },
+    { 
+      title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/fridge/member/list",
+      badgeCount: userManagementBadgeCount
+    },
     { 
       title: '문의하기', icon: 'mdi-email-outline', value: 'inquiry', color: 'cyan-darken-1', 
       to: "/inquiry", 
-      badgeCount: inquiryBadgeCount // 문의 관련 알림만
+      badgeCount: inquiryBadgeCount > 0 ? 1 : 0
     }
   ];
 });
@@ -324,6 +356,15 @@ const menuItems = computed(() => {
   font-size: 13px;
   font-weight: 400;
   text-transform: none;
+  flex-shrink: 0;
+}
+
+.notification-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #f44336;
+  box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
   flex-shrink: 0;
 }
 </style>

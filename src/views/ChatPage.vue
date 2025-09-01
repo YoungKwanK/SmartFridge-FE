@@ -17,9 +17,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 import ChatSidebar from '../components/chat/ChatSidebar.vue'; // 사이드바 컴포넌트 import
 import ChatWindow from '../components/chat/ChatWindow.vue';   // 채팅창 컴포넌트 import
+
+const store = useStore();
+const router = useRouter();
 
 // 선택된 채팅방 정보를 저장할 반응형 변수
 const selectedRoom = ref(null);
@@ -30,6 +35,19 @@ const handleRoomSelect = (room, roomType) => {
   selectedRoom.value = room;
   selectedRoomType.value = roomType;
 };
+
+// 페이지 진입 시 채팅 알림 제거 및 냉장고 ID 확인
+onMounted(() => {
+  store.dispatch('notification/clearChatNotificationsOnEnter');
+  
+  // 현재 냉장고 ID 확인
+  const currentFridgeId = store.getters.getCurrentFridgeId;
+  if (!currentFridgeId) {
+    // 냉장고 목록 페이지로 리다이렉트
+    router.push('/fridge/list');
+    return;
+  }
+});
 </script>
 
 <style scoped>

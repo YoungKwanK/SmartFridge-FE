@@ -10,7 +10,7 @@
 <script>
 import SidebarComponent from './components/common/SidebarComponent.vue'
 import { useStore } from 'vuex';
-import { onMounted, onUnmounted } from 'vue';
+import { onMounted, onUnmounted, watch } from 'vue';
 
 export default {
   name: 'App',
@@ -47,6 +47,9 @@ export default {
     onMounted(() => {
       // 초기 SSE 연결 (store 인스턴스 전달)
       store.dispatch('notification/initSSE', store);
+
+      // 배지 카운트 복원
+      store.dispatch('notification/hydrateTypeCounts');
       
       // 연결 상태 모니터링 (더 자주 확인)
       const checkConnection = setInterval(() => {
@@ -58,6 +61,13 @@ export default {
 
       // cleanup 함수 저장
       window.sseCheckInterval = checkConnection;
+    });
+
+    // 냉장고 변경 감지하여 알림 초기화
+    watch(() => store.getters.getCurrentFridgeId, (newFridgeId, oldFridgeId) => {
+      if (newFridgeId && oldFridgeId && newFridgeId !== oldFridgeId) {
+        store.dispatch('notification/refreshSSEOnFridgeChange', newFridgeId);
+      }
     });
 
     onUnmounted(() => {

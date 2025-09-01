@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, computed, ref } from 'vue';
+import { onMounted, onUnmounted, computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
@@ -269,6 +269,23 @@ onMounted(() => {
   
 });
 
+// fridgeId prop 변경 감지하여 알림 초기화
+watch(() => props.fridgeId, (newFridgeId, oldFridgeId) => {
+  if (newFridgeId && oldFridgeId && newFridgeId !== oldFridgeId) {
+    
+    // 기존 알림 초기화
+    initialNotifications.value = [];
+    realtimeNotifications.value = [];
+    
+    // 새로운 냉장고 정보와 알림 가져오기
+    fetchFridgeInfo();
+    fetchInitialNotifications();
+    
+    // SSE 연결 재설정
+    store.dispatch('notification/refreshSSEOnFridgeChange', newFridgeId);
+  }
+}, { immediate: false });
+
 // 컴포넌트 언마운트 시 이벤트 리스너 정리
 onUnmounted(() => {
   window.removeEventListener('realtime-notification', handleRealtimeNotificationEvent);
@@ -301,7 +318,7 @@ const getTypeText = (type) => {
   }
 };
 
-const handleNotificationClick = (notification) => {
+const handleNotificationClick = async (notification) => {
   // 알림 클릭 시 읽음 처리
   if (!notification.isRead) {
     // 초기 알림에서 제거
@@ -321,6 +338,73 @@ const handleNotificationClick = (notification) => {
       fridgeId: props.fridgeId,
       notificationId: notification.id
     });
+
+    // 서버에 단건 읽음 처리 반영 (실패해도 UI는 유지)
+    try {
+      if (notification.id) {
+        await axios.patch(
+          `${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/notification/isRead`,
+          [{ notificationId: notification.id }]
+        );
+      }
+    } catch (error) {
+      // 네트워크 오류 등은 무시 (필요 시 재시도 정책 추가 가능)
+    }
+  }
+
+  // 타입별 라우팅
+  const type = notification?.type;
+  const extractPostId = (n) => (
+    n?.targetId ?? n?.postId ?? n?.announceId ?? n?.announcementId ?? n?.boardId ?? n?.post?.id ?? n?.target?.id ?? null
+  );
+  const postId = extractPostId(notification);
+
+  if (type === 'NEW_FOOD' || type === 'EXPIRATION_IMMINENT') {
+    router.push('/fridge/food/shared');
+    showNotificationModal.value = false;
+    return;
+  }
+
+  if (type === 'NEW_MEMBER') {
+    router.push('/fridge/member/list');
+    showNotificationModal.value = false;
+    return;
+  }
+
+  if (type === 'INQUIRY_REPLY' || type === 'NEW_INQUIRY') {
+    router.push('/inquiry');
+    showNotificationModal.value = false;
+    return;
+  }
+
+  if (type === 'NEW_ANNOUNCEMENT' || type === 'NEW_COMMENT') {
+    if (postId) {
+      const commentId = notification?.commentId || notification?.targetCommentId || notification?.comment?.id;
+      if (type === 'NEW_COMMENT' && commentId) {
+        router.push({ path: `/fridge/post/${postId}`, query: { commentId } });
+      } else if (type === 'NEW_COMMENT') {
+        router.push({ path: `/fridge/post/${postId}`, query: { scrollTo: 'comments' } });
+      } else {
+        router.push(`/fridge/post/${postId}`);
+      }
+    } else {
+      router.push('/fridge/community');
+    }
+    showNotificationModal.value = false;
+    return;
+  }
+
+  // 기존 fallbacks
+  if (notification.targetType === 'ANNOUNCE') {
+    if (postId) router.push(`/fridge/post/${postId}`);
+    else router.push('/fridge/community');
+    showNotificationModal.value = false;
+    return;
+  }
+  if (notification.targetType === 'FOOD') {
+    router.push('/fridge/food/shared');
+    showNotificationModal.value = false;
+    return;
   }
 };
 

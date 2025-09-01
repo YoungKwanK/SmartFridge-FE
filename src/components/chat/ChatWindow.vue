@@ -296,6 +296,7 @@ const scrollToBottom = () => {
 
 const connectWebsocket = (roomId, roomType) => {
   if (stompClient.value?.connected || !roomType) return;
+  
   const sockJs = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/connect/chat`);
   stompClient.value = Stomp.over(sockJs);
   stompClient.value.connect({ Authorization: `Bearer ${token.value}` }, () => {
@@ -384,7 +385,7 @@ const sendMessage = async () => {
       senderEmail: senderEmail.value, 
       senderName: senderName.value,
       message: currentMessage, 
-      imageUrls 
+      imageUrls
     };
     if (stompClient.value?.connected) {
       stompClient.value.send(`/publish/chat/${props.selectedRoomType.toUpperCase()}/${props.selectedRoom.roomId}`, JSON.stringify(message));
