@@ -385,7 +385,7 @@ const sendMessage = async () => {
       senderEmail: senderEmail.value, 
       senderName: senderName.value,
       message: currentMessage, 
-      imageUrls,
+      imageUrls
     };
     if (stompClient.value?.connected) {
       stompClient.value.send(`/publish/chat/${props.selectedRoomType.toUpperCase()}/${props.selectedRoom.roomId}`, JSON.stringify(message));
