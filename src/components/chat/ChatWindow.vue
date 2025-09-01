@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onUnmounted, computed } from 'vue';
+import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue';
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
 import axios from 'axios';
@@ -358,6 +358,8 @@ const unsubscribe = (room, roomType) => {
   }
 };
 
+
+
 const changeImage = async (files) => {
   const formData = new FormData();
   files.forEach(file => formData.append("images", file));
@@ -428,9 +430,23 @@ const closeImageModal = () => {
   modalStartIndex.value = 0;
 };
 
-// [수정] 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제
+// beforeunload 이벤트 핸들러
+const handleBeforeUnload = () => {
+  // 현재 선택된 방이 있으면 연결 해제
+  if (props.selectedRoom && props.selectedRoomType) {
+    unsubscribe(props.selectedRoom, props.selectedRoomType);
+  }
+};
+
+// 컴포넌트 마운트 시 beforeunload 이벤트 리스너 등록
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+
+// [수정] 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제 및 이벤트 리스너 제거
 onUnmounted(() => {
   unsubscribe(props.selectedRoom, props.selectedRoomType);
+  window.removeEventListener('beforeunload', handleBeforeUnload);
 });
 </script>
 
