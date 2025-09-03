@@ -55,15 +55,24 @@
                   }"
                 >
                   <template v-slot:prepend>
-                    <v-avatar
-                      class="avatar-gradient"
-                      size="48"
-                      style="margin-right: 5px"
-                    >
-                      <span class="text-white font-weight-bold">{{
-                        user.initial
-                      }}</span>
-                    </v-avatar>
+                    <div class="avatar-container">
+                      <v-avatar
+                        class="avatar-gradient"
+                        size="48"
+                        style="margin-right: 5px"
+                      >
+                        <span class="text-white font-weight-bold">{{
+                          user.initial
+                        }}</span>
+                      </v-avatar>
+                      <!-- 안읽은 메시지 개수 배지 -->
+                      <div
+                        v-if="user.unReadCount > 0"
+                        class="unread-badge"
+                      >
+                        <span class="badge-content">{{ user.unReadCount }}</span>
+                      </div>
+                    </div>
                   </template>
 
                   <v-list-item-title class="font-weight-bold">{{
@@ -346,6 +355,7 @@ const chatContainerRef = ref(null);
 
 // WebSocket 관련 상태
 const stompClient = ref(null);
+const subscription = ref(null); // 구독 객체 저장
 const token = ref(localStorage.getItem("accessToken"));
 const senderEmail = ref(localStorage.getItem("email"));
 const senderName = ref(localStorage.getItem("name"));
@@ -385,7 +395,9 @@ const fetchUsers = async () => {
       role: user.type,
       initial: (user.memberName || user.nickname || "이름 없음").charAt(0),
       roomId: user.roomId,
+      unReadCount: user.unReadCount,
     }));
+    console.log("unReadCount"+users.value[1].unReadCount);
   } catch (error) {
     console.error("사용자 목록 조회 실패:", getErrorMessage(error));
   }
@@ -424,12 +436,13 @@ onMounted(async () => {
   
   // 사용자 목록 로드
   await fetchUsers();
+  window.addEventListener('beforeunload', handleBeforeUnload);
 });
 
 // --- Watcher ---
 watch(selectedUser, async (newUser, oldUser) => {
   if (oldUser) {
-    disconnectWebSocket();
+    unsubscribe(oldUser);
   }
   if (newUser) {
     chatMessages.value = [];
@@ -445,6 +458,7 @@ watch(selectedUser, async (newUser, oldUser) => {
           headers: { Authorization: `Bearer ${token.value}` },
         }
       );
+      await axios.post(`${process.env.VUE_APP_API_BASE_URL}/manager/chat/${newUser.roomId}/read`);
       const chatData = getResultData(response);
       if (Array.isArray(chatData)) {
         chatMessages.value = chatData.map((msg) => ({
@@ -454,6 +468,11 @@ watch(selectedUser, async (newUser, oldUser) => {
           timestamp: msg.timestamp,
           imageUrls: msg.imageUrls || [],
         }));
+      }
+      // 선택된 사용자의 안읽은 메시지 개수 초기화
+      const userIndex = users.value.findIndex(u => u.email === newUser.email);
+      if (userIndex !== -1) {
+        users.value[userIndex].unReadCount = 0;
       }
       scrollToBottom();
       connectWebSocket(newUser.roomId);
@@ -529,7 +548,8 @@ const connectWebSocket = (roomId) => {
     stompClient.value.connect(
       { Authorization: `Bearer ${token.value}` },
       () => {
-        stompClient.value.subscribe(
+        // 구독 객체를 저장
+        subscription.value = stompClient.value.subscribe(
           `/topic/chat/MANAGER/${roomId}`,
           (message) => {
             const receivedMessage = JSON.parse(message.body);
@@ -568,10 +588,47 @@ const connectWebSocket = (roomId) => {
   }
 };
 
+// 구독 해제 로직
+const unsubscribe = (user) => {
+  if (!user) {
+    console.warn('unsubscribe: user가 없습니다.');
+    return;
+  }
+
+  console.log(`사용자 ${user.name || user.email} 구독 해제 시작`);
+  
+  try {
+    // 1. 먼저 구독 해제
+    if (subscription.value) {
+      const id = { roomId: user.roomId, roomType: 'manager' };
+      subscription.value.unsubscribe(id);
+      subscription.value = null;
+      console.log('구독이 해제되었습니다.');
+    }
+    
+    // 2. 그 다음 연결 해제
+    if (stompClient.value?.connected) {
+      stompClient.value.disconnect(() => {
+        console.log('WebSocket 연결이 정상적으로 해제되었습니다 (disconnected)');
+      });
+      stompClient.value = null;
+      console.log('WebSocket 연결 해제 완료');
+    }
+  } catch (error) {
+    console.error('구독 해제 중 오류 발생:', error);
+    // 오류 발생 시에도 상태 정리
+    subscription.value = null;
+    stompClient.value = null;
+  }
+};
+
 const disconnectWebSocket = () => {
-  if (stompClient.value?.connected) {
+  if (selectedUser.value) {
+    unsubscribe(selectedUser.value);
+  } else if (stompClient.value?.connected) {
     stompClient.value.disconnect();
     stompClient.value = null;
+    subscription.value = null;
   }
 };
 
@@ -728,10 +785,19 @@ const removeUser = async (user) => {
   }
 };
 
-// --- 생명주기 훅 ---
-onMounted(fetchUsers);
+// beforeunload 이벤트 핸들러
+const handleBeforeUnload = () => {
+  // 현재 선택된 사용자가 있으면 WebSocket 연결 해제
+  if (selectedUser.value) {
+    unsubscribe(selectedUser.value);
+  }
+};
 
-onUnmounted(disconnectWebSocket);
+// --- 생명주기 훅 ---
+onUnmounted(() => {
+  disconnectWebSocket();
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+});
 </script>
 
 <style scoped>
@@ -740,6 +806,36 @@ onUnmounted(disconnectWebSocket);
 }
 .avatar-gradient {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* 아바타 컨테이너와 배지 스타일 */
+.avatar-container {
+  position: relative;
+  display: inline-block;
+}
+
+.unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  z-index: 10;
+  background-color: #f44336;
+  color: white;
+  border-radius: 12px;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.badge-content {
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0 4px;
 }
 .user-list-item {
   background-color: #f8f9fa;
