@@ -313,7 +313,6 @@ export default {
 <style scoped>
 .community-container {
   padding: 32px;
-  margin-left: 16px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   position: relative;
@@ -601,7 +600,6 @@ export default {
 @media (max-width: 960px) {
   .community-container {
     padding: 24px;
-    margin-left: 8px;
   }
   
   .page-header {
@@ -622,7 +620,6 @@ export default {
 @media (max-width: 600px) {
   .community-container {
     padding: 16px;
-    margin-left: 4px;
   }
 
   .page-header {
