@@ -773,14 +773,13 @@ onUnmounted(() => {
 
 /* 이미지 클릭 가능 스타일 */
 .chat-image.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.chat-image.clickable:hover {
   transform: scale(1.05) translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
   border-color: rgba(255, 255, 255, 0.5);
-}
-
-.chat-image.clickable:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 
