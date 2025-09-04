@@ -123,8 +123,6 @@
       :images="modalImages" 
       :start-index="modalStartIndex" 
     />
-
-
   </v-card>
 </template>
 
@@ -390,8 +388,6 @@ const unsubscribe = (room, roomType) => {
   }
 };
 
-
-
 const changeImage = async (files) => {
   const formData = new FormData();
   files.forEach(file => formData.append("images", file));
@@ -461,12 +457,10 @@ const closeImageModal = () => {
   modalImages.value = [];
   modalStartIndex.value = 0;
 };
-
 // 참여자 수 업데이트 함수
 const updateParticipantCount = (count) => {
   participantCount.value = count;
 };
-
 // beforeunload 이벤트 핸들러
 const handleBeforeUnload = () => {
   // 현재 선택된 방이 있으면 연결 해제
@@ -474,12 +468,10 @@ const handleBeforeUnload = () => {
     unsubscribe(props.selectedRoom, props.selectedRoomType);
   }
 };
-
 // 컴포넌트 마운트 시 beforeunload 이벤트 리스너 등록
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload);
 });
-
 // [수정] 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제 및 이벤트 리스너 제거
 onUnmounted(() => {
   unsubscribe(props.selectedRoom, props.selectedRoomType);
@@ -504,7 +496,6 @@ onUnmounted(() => {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   position: relative;
 }
-
 .chat-box::before {
   content: '';
   position: absolute;
@@ -515,7 +506,6 @@ onUnmounted(() => {
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(148, 163, 184, 0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
   z-index: 0;
 }
-
 .message-wrapper { 
   margin: 12px 16px; 
   display: flex; 
@@ -524,7 +514,6 @@ onUnmounted(() => {
   z-index: 1;
   animation: fadeInUp 0.3s ease-out;
 }
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -535,7 +524,6 @@ onUnmounted(() => {
     transform: translateY(0);
   }
 }
-
 .message-bubble { 
   max-width: 75%; 
   padding: 14px 18px; 
@@ -547,12 +535,10 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
-
 .message-bubble:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
-
 .sent { 
   align-items: flex-end;
   margin-right: 8px;
@@ -564,13 +550,11 @@ onUnmounted(() => {
   box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
-
 .sent .message-bubble:hover {
   background: #1557b0;
   box-shadow: 0 6px 20px rgba(26, 115, 232, 0.35);
   transform: translateY(-1px);
 }
-
 .received { 
   align-items: flex-start;
   margin-left: 8px;
@@ -582,13 +566,11 @@ onUnmounted(() => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #e8eaed;
 }
-
 .received .message-bubble:hover {
   background: #f8f9fa;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
-
 .sender-name { 
   font-size: 0.75rem; 
   margin-bottom: 6px; 
@@ -597,7 +579,6 @@ onUnmounted(() => {
   letter-spacing: 0.025em;
   color: #666666;
 }
-
 .message-text { 
   font-size: 0.95rem; 
   line-height: 1.5; 
@@ -605,30 +586,25 @@ onUnmounted(() => {
   letter-spacing: 0.01em;
   word-break: break-word;
 }
-
 .sent .message-text {
   color: #ffffff;
   font-weight: 500;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
-
 .received .message-text {
   color: #2c2c2c;
   font-weight: 400;
 }
-
 .message-time { 
   font-size: 0.7rem; 
   margin-top: 6px; 
   opacity: 0.8; 
   font-weight: 500;
 }
-
 .sent .message-time {
   color: rgba(255, 255, 255, 0.9);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
-
 .received .message-time {
   color: #5f6368;
 }
@@ -735,9 +711,8 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  animation: bounceIn 0.4s ease-out;
+   animation: bounceIn 0.4s ease-out;
 }
-
 @keyframes bounceIn {
   0% { 
     opacity: 0; 
@@ -752,7 +727,6 @@ onUnmounted(() => {
     transform: translateX(-50%) scale(1);
   }
 }
-
 .new-message-indicator .v-btn {
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px);
@@ -770,7 +744,7 @@ onUnmounted(() => {
 .date-divider {
   display: flex;
   align-items: center;
-  margin: 20px 0 12px 0;
+   margin: 20px 0 12px 0;
   text-align: center;
   position: relative;
   z-index: 1;
@@ -802,7 +776,6 @@ onUnmounted(() => {
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
 .chat-image.clickable:hover {
   transform: scale(1.05) translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);

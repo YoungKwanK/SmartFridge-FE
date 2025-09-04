@@ -64,21 +64,24 @@
                   }"
                 >
                   <template v-slot:prepend>
-                    <v-avatar
-                      class="user-avatar"
-                      size="48"
-                    >
-                      <v-img
-                        v-if="user.profileImage"
-                        :src="user.profileImage"
-                        :alt="user.name"
-                        cover
-                        class="profile-image"
-                      />
-                      <span v-else class="avatar-text">{{
-                        user.initial
-                      }}</span>
-                    </v-avatar>
+                    <div class="avatar-container">
+                      <v-avatar
+                        class="avatar-gradient"
+                        size="48"
+                        style="margin-right: 5px"
+                      >
+                        <span class="text-white font-weight-bold">{{
+                          user.initial
+                        }}</span>
+                      </v-avatar>
+                      <!-- 안읽은 메시지 개수 배지 -->
+                      <div
+                        v-if="user.unReadCount > 0"
+                        class="unread-badge"
+                      >
+                        <span class="badge-content">{{ user.unReadCount }}</span>
+                      </div>
+                    </div>
                   </template>
 
                   <v-list-item-title class="user-name">{{
@@ -181,42 +184,70 @@
                   </div>
                 </div>
 
-                <div
-                  v-else
-                  class="chat-messages-container"
-                  ref="chatContainerRef"
-                >
+                <div v-else class="chat-container">
                   <div
-                    v-for="(message, index) in chatMessages"
-                    :key="index"
-                    :class="[
-                      'message-wrapper',
-                      message.senderEmail === senderEmail ? 'sent' : 'received',
-                    ]"
+                    class="chat-messages-container"
+                    ref="chatContainerRef"
+                    @scroll="handleScroll"
                   >
-                    <div class="message-bubble">
+                    <template v-for="(message, index) in chatMessages" :key="index">
+                      <!-- 날짜 구분선 -->
                       <div
-                        v-if="message.senderEmail !== senderEmail"
-                        class="sender-name"
+                        v-if="shouldShowDateSeparator(message, chatMessages[index - 1])"
+                        class="date-separator"
                       >
-                        {{ message.senderName }}
+                        <div class="date-separator-line"></div>
+                        <span class="date-separator-text">{{ formatDate(message.timestamp) }}</span>
+                        <div class="date-separator-line"></div>
                       </div>
+                      
+                      <!-- 메시지 -->
                       <div
-                        v-if="message.imageUrls && message.imageUrls.length > 0"
-                        class="image-container"
+                        :class="[
+                          'message-wrapper',
+                          message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail ? 'sent' : 'received',
+                        ]"
                       >
-                        <img
-                          v-for="(url, imgIndex) in message.imageUrls"
-                          :key="imgIndex"
-                          :src="url"
-                          alt="이미지"
-                          class="chat-image"
-                        />
+                        <div class="message-bubble">
+                          <div
+                            v-if="message.senderEmail !== senderEmail"
+                            class="sender-name"
+                          >
+                            {{ message.senderName }}
+                          </div>
+                          <div
+                            v-if="message.imageUrls && message.imageUrls.length > 0"
+                            :class="['image-container', `image-count-${message.imageUrls.length}`]"
+                          >
+                            <div 
+                              v-for="(url, imgIndex) in message.imageUrls" 
+                              :key="imgIndex" 
+                              class="image-wrapper"
+                            >
+                              <img 
+                                :src="url" 
+                                alt="이미지" 
+                                class="chat-image clickable" 
+                                @click="openImageModal(message.imageUrls, imgIndex)"
+                              />
+                            </div>
+                          </div>
+                          <div class="message-text">{{ message.message }}</div>
+                          <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+                        </div>
                       </div>
-                      <div class="message-text">{{ message.message }}</div>
-                      <div class="message-time">{{ message.timestamp }}</div>
-                    </div>
+                    </template>
                   </div>
+
+                  <!-- 새로운 메시지 표시기 -->
+                  <v-fade-transition>
+                    <div v-if="showNewMessageIndicator" class="new-message-indicator">
+                      <v-btn small rounded color="primary" @click="scrollToBottom">
+                        <v-icon left>mdi-arrow-down</v-icon>
+                        새로운 메시지
+                      </v-btn>
+                    </div>
+                  </v-fade-transition>
                 </div>
               </div>
 
@@ -309,6 +340,13 @@
         </v-card>
       </v-container>
     </v-main>
+
+    <!-- 이미지 모달 -->
+    <ImageModal 
+      v-model="showImageModal" 
+      :images="modalImages" 
+      :start-index="modalStartIndex" 
+    />
   </v-app>
 </template>
 
@@ -324,6 +362,7 @@ import {
 } from "@/utils/commonDataHandler";
 import { useStore } from "vuex";
 import router from "@/router";
+import ImageModal from "@/components/chat/ImageModal.vue";
 
 // --- 상태 변수 ---
 const store = useStore();
@@ -336,6 +375,7 @@ const chatContainerRef = ref(null);
 
 // WebSocket 관련 상태
 const stompClient = ref(null);
+const subscription = ref(null); // 구독 객체 저장
 const token = ref(localStorage.getItem("accessToken"));
 const senderEmail = ref(localStorage.getItem("email"));
 const senderName = ref(localStorage.getItem("name"));
@@ -345,6 +385,14 @@ const newImages = ref([]);
 const imagePreview = ref([]);
 const fileInput = ref(null);
 const currentUserRole = ref("MANAGER");
+
+// 새로운 메시지 표시기 상태
+const showNewMessageIndicator = ref(false);
+
+// 이미지 모달 관련 상태
+const showImageModal = ref(false);
+const modalImages = ref([]);
+const modalStartIndex = ref(0);
 
 // --- 데이터 ---
 const users = ref([]);
@@ -365,24 +413,15 @@ const fetchUsers = async () => {
       `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/members`,
       { headers: { Authorization: `Bearer ${token.value}` } }
     );
-    
-    console.log("API 호출 성공");
-    const memberList = getResultData(response);
-    console.log("멤버 목록:", memberList);
-    
-    // 백엔드에서 memberProfileImage 필드를 제공하고 있음
-    users.value = memberList.map((user) => {
-      return {
-        name: user.memberName || user.nickname || "이름 없음",
-        email: user.memberEmail,
-        role: user.type,
-        initial: (user.memberName || user.nickname || "이름 없음").charAt(0),
-        roomId: user.roomId,
-        profileImage: user.memberProfileImage || null, // 백엔드에서 제공하는 프로필 이미지
-      };
-    });
-    
-    console.log("최종 사용자 목록:", users.value);
+    users.value = getResultData(response).map((user) => ({
+      name: user.memberName || user.nickname || "이름 없음",
+      email: user.memberEmail,
+      role: user.type,
+      initial: (user.memberName || user.nickname || "이름 없음").charAt(0),
+      roomId: user.roomId,
+      unReadCount: user.unReadCount,
+    }));
+    console.log("unReadCount"+users.value[1].unReadCount);
   } catch (error) {
     console.error("사용자 목록 조회 실패:", getErrorMessage(error));
   }
@@ -425,19 +464,21 @@ onMounted(async () => {
   // 사용자 목록 로드
   console.log("사용자 목록 로드 시작");
   await fetchUsers();
-  console.log("사용자 목록 로드 완료");
+  window.addEventListener('beforeunload', handleBeforeUnload);
 });
 
 // --- Watcher ---
 watch(selectedUser, async (newUser, oldUser) => {
   if (oldUser) {
-    disconnectWebSocket();
+    unsubscribe(oldUser);
   }
   if (newUser) {
     chatMessages.value = [];
     newMessage.value = "";
     imagePreview.value = [];
     newImages.value = [];
+    showNewMessageIndicator.value = false; // 새로운 메시지 표시기 초기화
+    closeImageModal(); // 이미지 모달도 초기화
     try {
       const response = await axios.get(
         `${process.env.VUE_APP_API_BASE_URL}/manager/chat/history/room/${newUser.roomId}`,
@@ -445,6 +486,7 @@ watch(selectedUser, async (newUser, oldUser) => {
           headers: { Authorization: `Bearer ${token.value}` },
         }
       );
+      await axios.post(`${process.env.VUE_APP_API_BASE_URL}/manager/chat/${newUser.roomId}/read`);
       const chatData = getResultData(response);
       if (Array.isArray(chatData)) {
         chatMessages.value = chatData.map((msg) => ({
@@ -453,7 +495,13 @@ watch(selectedUser, async (newUser, oldUser) => {
           message: msg.message,
           timestamp: msg.timestamp,
           imageUrls: msg.imageUrls || [],
+          receiverEmail: msg.receiverEmail,
         }));
+      }
+      // 선택된 사용자의 안읽은 메시지 개수 초기화
+      const userIndex = users.value.findIndex(u => u.email === newUser.email);
+      if (userIndex !== -1) {
+        users.value[userIndex].unReadCount = 0;
       }
       scrollToBottom();
       connectWebSocket(newUser.roomId);
@@ -463,11 +511,54 @@ watch(selectedUser, async (newUser, oldUser) => {
     }
   } else {
     chatMessages.value = [];
+    showNewMessageIndicator.value = false; // 새로운 메시지 표시기 초기화
+    closeImageModal(); // 이미지 모달도 초기화
   }
 });
 
 // --- 헬퍼 함수 ---
 const getRoleChipColor = (role) => (role === "MANAGER" ? "red" : "green");
+
+// 날짜와 시간 포맷팅 함수들
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const isToday = date.toDateString() === today.toDateString();
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+  
+  if (isToday) {
+    return '오늘';
+  } else if (isYesterday) {
+    return '어제';
+  } else {
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+};
+
+const formatTime = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleTimeString('ko-KR', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
+const shouldShowDateSeparator = (currentMessage, previousMessage) => {
+  if (!previousMessage) return true;
+  
+  const currentDate = new Date(currentMessage.timestamp).toDateString();
+  const previousDate = new Date(previousMessage.timestamp).toDateString();
+  
+  return currentDate !== previousDate;
+};
 
 const selectUser = (user) => {
   if (user.role !== "MANAGER") {
@@ -486,7 +577,8 @@ const connectWebSocket = (roomId) => {
     stompClient.value.connect(
       { Authorization: `Bearer ${token.value}` },
       () => {
-        stompClient.value.subscribe(
+        // 구독 객체를 저장
+        subscription.value = stompClient.value.subscribe(
           `/topic/chat/MANAGER/${roomId}`,
           (message) => {
             const receivedMessage = JSON.parse(message.body);
@@ -498,7 +590,22 @@ const connectWebSocket = (roomId) => {
                 timestamp: receivedMessage.timestamp,
                 imageUrls: receivedMessage.imageUrls || [],
               });
-              scrollToBottom();
+              
+              // 내가 보낸 메시지라면 무조건 스크롤을 아래로 이동
+              if (receivedMessage.senderEmail === senderEmail.value) {
+                scrollToBottom();
+                return;
+              }
+              
+              // 다른 사람이 보낸 메시지의 경우, 사용자가 하단에 거의 스크롤되었는지 확인
+              const el = chatContainerRef.value;
+              const isAtBottom = el ? el.scrollHeight - el.clientHeight <= el.scrollTop + 20 : true;
+
+              if (isAtBottom) {
+                scrollToBottom();
+              } else {
+                showNewMessageIndicator.value = true;
+              }
             }
           },
           { Authorization: `Bearer ${token.value}` }
@@ -510,10 +617,47 @@ const connectWebSocket = (roomId) => {
   }
 };
 
+// 구독 해제 로직
+const unsubscribe = (user) => {
+  if (!user) {
+    console.warn('unsubscribe: user가 없습니다.');
+    return;
+  }
+
+  console.log(`사용자 ${user.name || user.email} 구독 해제 시작`);
+  
+  try {
+    // 1. 먼저 구독 해제
+    if (subscription.value) {
+      const id = { roomId: user.roomId, roomType: 'manager' };
+      subscription.value.unsubscribe(id);
+      subscription.value = null;
+      console.log('구독이 해제되었습니다.');
+    }
+    
+    // 2. 그 다음 연결 해제
+    if (stompClient.value?.connected) {
+      stompClient.value.disconnect(() => {
+        console.log('WebSocket 연결이 정상적으로 해제되었습니다 (disconnected)');
+      });
+      stompClient.value = null;
+      console.log('WebSocket 연결 해제 완료');
+    }
+  } catch (error) {
+    console.error('구독 해제 중 오류 발생:', error);
+    // 오류 발생 시에도 상태 정리
+    subscription.value = null;
+    stompClient.value = null;
+  }
+};
+
 const disconnectWebSocket = () => {
-  if (stompClient.value?.connected) {
+  if (selectedUser.value) {
+    unsubscribe(selectedUser.value);
+  } else if (stompClient.value?.connected) {
     stompClient.value.disconnect();
     stompClient.value = null;
+    subscription.value = null;
   }
 };
 
@@ -588,7 +732,18 @@ const sendMessage = async () => {
   }
 };
 
+const handleScroll = () => {
+  const el = chatContainerRef.value;
+  if (!el) return;
+  
+  // 사용자가 수동으로 맨 아래로 스크롤하면 새 메시지 표시기를 숨깁니다.
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 1) {
+    showNewMessageIndicator.value = false;
+  }
+};
+
 const scrollToBottom = () => {
+  showNewMessageIndicator.value = false;
   nextTick(() => {
     if (chatContainerRef.value) {
       chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight;
@@ -615,13 +770,26 @@ const removeImage = (index) => {
   newImages.value.splice(index, 1);
 };
 
+// 이미지 모달 관련 함수들
+const openImageModal = (imageUrls, startIndex = 0) => {
+  modalImages.value = imageUrls;
+  modalStartIndex.value = startIndex;
+  showImageModal.value = true;
+};
+
+const closeImageModal = () => {
+  showImageModal.value = false;
+  modalImages.value = [];
+  modalStartIndex.value = 0;
+};
+
 // --- 관리자 기능 ---
 const promoteToAdmin = async (user) => {
   if (confirm(`${user.name}님을 관리자로 승격하시겠습니까?`)) {
     try {
       await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`);
       alert(`${user.name}님을 관리자로 승격하였습니다.`);
-      router.push('/fridge/dashboard');
+      router.push('/fridge/list');
     } catch (error) {
       console.error("관리자 승격 실패:", getErrorMessage(error));
       alert("관리자 승격에 실패했습니다.");
@@ -646,10 +814,19 @@ const removeUser = async (user) => {
   }
 };
 
-// --- 생명주기 훅 ---
-onMounted(fetchUsers);
+// beforeunload 이벤트 핸들러
+const handleBeforeUnload = () => {
+  // 현재 선택된 사용자가 있으면 WebSocket 연결 해제
+  if (selectedUser.value) {
+    unsubscribe(selectedUser.value);
+  }
+};
 
-onUnmounted(disconnectWebSocket);
+// --- 생명주기 훅 ---
+onUnmounted(() => {
+  disconnectWebSocket();
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+});
 </script>
 
 <style scoped>
@@ -668,122 +845,37 @@ onUnmounted(disconnectWebSocket);
   right: 0;
   bottom: 0;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.1;
-  z-index: -1;
 }
 
-.member-list-container {
-  padding: 32px;
+/* 아바타 컨테이너와 배지 스타일 */
+.avatar-container {
+  position: relative;
+  display: inline-block;
 }
 
-/* 헤더 스타일 */
-.page-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin-bottom: 24px;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.header-info {
-  flex: 1;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 8px 0;
+.unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  z-index: 10;
+  background-color: #f44336;
+  color: white;
+  border-radius: 12px;
+  min-width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
-.title-icon {
-  font-size: 32px !important;
+.badge-content {
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 0 4px;
 }
-
-.page-subtitle {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
-}
-
-/* 사용자 목록 카드 */
-.user-list-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  height: 100%;
-}
-
-.card-header {
-  padding: 20px 24px 16px;
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-icon {
-  font-size: 20px !important;
-}
-
-.search-section {
-  padding: 16px 24px 0;
-}
-
-.search-field {
-  width: 100%;
-}
-
-.search-icon {
-  font-size: 20px !important;
-}
-
-/* 사용자 목록 컨테이너 */
-.user-list-container {
-  height: 400px;
-  overflow-y: auto;
-  padding: 8px;
-  background: transparent;
-}
-
-.user-list-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.user-list-container::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 3px;
-}
-
-.user-list-container::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.3);
-  border-radius: 3px;
-}
-
-.user-list-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(102, 126, 234, 0.5);
-}
-
-/* 사용자 아이템 */
 .user-list-item {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(5px);
@@ -986,7 +1078,10 @@ onUnmounted(disconnectWebSocket);
   height: 400px;
   overflow: hidden;
 }
-
+.chat-container {
+  position: relative;
+  height: 400px;
+}
 .chat-messages-container {
   height: 400px;
   overflow-y: auto;
@@ -1124,52 +1219,79 @@ onUnmounted(disconnectWebSocket);
 .received .message-time {
   color: #5f6368;
 }
-
-/* 이미지 */
-.chat-image {
-  max-width: 200px;
-  border-radius: 12px;
-  margin: 4px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+/* 이미지 컨테이너 스타일 */
+.image-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+  max-width: 420px; /* 2열로 배치할 때 적절한 크기 */
 }
 
-/* 입력 영역 */
-.input-area {
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(226, 232, 240, 0.5);
-  border-radius: 0 0 16px 16px;
+.image-wrapper {
+  flex: 0 0 auto;
 }
 
-.message-input {
-  width: 100%;
+.chat-image { 
+  width: 200px; 
+  height: 150px; 
+  object-fit: cover; 
+  border-radius: 12px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: block;
 }
 
-.input-btn {
-  color: #667eea;
-  transition: all 0.2s ease;
+/* 이미지 개수별 크기 조정 */
+.image-container.image-count-1 .chat-image {
+  width: 250px;
+  height: 180px;
 }
 
-.input-btn:hover {
-  color: #5a6fd8;
-  background: rgba(102, 126, 234, 0.1);
+.image-container.image-count-2 .chat-image {
+  width: 180px;
+  height: 135px;
 }
 
-.send-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white !important;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+.image-container.image-count-3 .chat-image,
+.image-container.image-count-4 .chat-image {
+  width: 130px;
+  height: 100px;
 }
 
-.send-btn:hover {
-  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-  transform: scale(1.05);
+/* 5개 이상일 때는 더 작게 */
+.image-container[class*="image-count-"]:not(.image-count-1):not(.image-count-2):not(.image-count-3):not(.image-count-4) .chat-image {
+  width: 100px;
+  height: 80px;
 }
 
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .image-container {
+    max-width: 300px;
+  }
+  
+  .image-container.image-count-1 .chat-image {
+    width: 200px;
+    height: 150px;
+  }
+  
+  .image-container.image-count-2 .chat-image {
+    width: 140px;
+    height: 105px;
+  }
+  
+  .image-container.image-count-3 .chat-image,
+  .image-container.image-count-4 .chat-image {
+    width: 90px;
+    height: 70px;
+  }
+  
+  .image-container[class*="image-count-"]:not(.image-count-1):not(.image-count-2):not(.image-count-3):not(.image-count-4) .chat-image {
+    width: 70px;
+    height: 55px;
+  }
+}
 .image-preview-container {
   display: flex;
   flex-wrap: wrap;
@@ -1205,95 +1327,47 @@ onUnmounted(disconnectWebSocket);
   color: white !important;
 }
 
-/* 가이드 카드 */
-.guide-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin-top: 24px;
+/* 날짜 구분선 스타일 */
+.date-separator {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  padding: 0 20px;
 }
 
-.guide-header {
-  padding: 20px 24px 16px;
+.date-separator-line {
+  flex: 1;
+  height: 1px;
+  background-color: #e0e0e0;
 }
 
-.guide-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.guide-list {
-  background: transparent;
-  padding: 0 24px 20px;
-}
-
-.guide-item {
-  border-radius: 8px;
-  margin: 4px 0;
-  padding: 8px 12px;
-  transition: all 0.2s ease;
-}
-
-.guide-item:hover {
-  background: rgba(102, 126, 234, 0.05);
-}
-
-.guide-icon {
-  margin-right: 12px;
-  font-size: 18px !important;
-}
-
-.guide-text {
-  font-size: 14px;
+.date-separator-text {
+  padding: 0 16px;
+  font-size: 0.75rem;
   color: #666;
-  font-weight: 500;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
-/* 반응형 디자인 */
-@media (max-width: 960px) {
-  .member-list-container {
-    padding: 24px;
-  }
-  
-  .page-header {
-    padding: 20px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  
-  .page-title {
-    font-size: 24px;
-  }
+/* 새로운 메시지 표시기 스타일 */
+.new-message-indicator {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  opacity: 0.9;
 }
 
-@media (max-width: 600px) {
-  .member-list-container {
-    padding: 16px;
-  }
+/* 이미지 클릭 가능 스타일 */
+.chat-image.clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
-  .page-header {
-    padding: 16px;
-  }
-
-  .page-title {
-    font-size: 20px;
-  }
-
-  .user-list-container,
-  .chat-messages-container {
-    height: 300px;
-  }
-
-  .message-bubble {
-    max-width: 85%;
-  }
+.chat-image.clickable:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 </style>
