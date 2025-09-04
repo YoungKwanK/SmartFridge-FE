@@ -205,7 +205,7 @@
                       <div
                         :class="[
                           'message-wrapper',
-                          message.senderEmail === senderEmail ? 'sent' : 'received',
+                          message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail ? 'sent' : 'received',
                         ]"
                       >
                         <div class="message-bubble">
@@ -495,6 +495,7 @@ watch(selectedUser, async (newUser, oldUser) => {
           message: msg.message,
           timestamp: msg.timestamp,
           imageUrls: msg.imageUrls || [],
+          receiverEmail: msg.receiverEmail,
         }));
       }
       // 선택된 사용자의 안읽은 메시지 개수 초기화

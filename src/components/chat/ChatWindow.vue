@@ -1,5 +1,5 @@
 <template>
-  <v-card class="d-flex flex-column chat-window-full" rounded="xl">
+  <v-card class="d-flex flex-column" style="height: 100vh;" rounded="xl">
     <div v-if="!selectedRoom" class="d-flex justify-center align-center flex-grow-1 text-center text-grey">
       <div>
         <p class="text-h6">채팅을 선택해주세요.</p>
@@ -10,32 +10,6 @@
     <template v-else>
       <v-toolbar density="compact">
         <v-toolbar-title class="font-weight-bold">{{ selectedRoom.roomName }}</v-toolbar-title>
-        <v-spacer></v-spacer>
-        <ParticipantsModal
-          v-model="showParticipantsModal"
-          v-if="selectedRoom?.roomName !== '관리자와의 채팅'"
-          :room-id="selectedRoom?.roomId"
-          :room-type="selectedRoomType"
-          :room-name="selectedRoom?.roomName"
-          @participants-count-updated="updateParticipantCount"
-        >
-          <template v-slot:activator="{ props: menuProps }">
-            <v-btn 
-              v-bind="menuProps"
-              icon="mdi-account-group" 
-              variant="text" 
-              :title="`참여자 목록 (${participantCount}명)`"
-            >
-              <v-badge 
-                :content="participantCount" 
-                color="primary" 
-                :model-value="participantCount > 0"
-              >
-                <v-icon>mdi-account-group</v-icon>
-              </v-badge>
-            </v-btn>
-          </template>
-        </ParticipantsModal>
       </v-toolbar>
       <v-divider />
 
@@ -123,19 +97,16 @@
       :images="modalImages" 
       :start-index="modalStartIndex" 
     />
-
-
   </v-card>
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue';
+import { ref, watch, nextTick, onUnmounted, computed } from 'vue';
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
 import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
 import ImageModal from './ImageModal.vue';
-import ParticipantsModal from './ParticipantsModal.vue';
 
 const props = defineProps({
   selectedRoom: { type: Object, default: null },
@@ -158,8 +129,6 @@ const showNewMessageIndicator = ref(false);
 const showImageModal = ref(false);
 const modalImages = ref([]);
 const modalStartIndex = ref(0);
-const showParticipantsModal = ref(false);
-const participantCount = ref(0);
 
 // timestamp를 Date 객체로 변환하는 함수
 const parseTimestamp = (timestamp) => {
@@ -289,7 +258,6 @@ const resetChatState = () => {
   imagePreview.value = [];
   newImages.value = [];
   showNewMessageIndicator.value = false;
-  participantCount.value = 0; // 참여자 수도 초기화
   closeImageModal(); // 이미지 모달도 닫기
   
   // 구독 상태도 초기화
@@ -390,8 +358,6 @@ const unsubscribe = (room, roomType) => {
   }
 };
 
-
-
 const changeImage = async (files) => {
   const formData = new FormData();
   files.forEach(file => formData.append("images", file));
@@ -462,36 +428,14 @@ const closeImageModal = () => {
   modalStartIndex.value = 0;
 };
 
-// 참여자 수 업데이트 함수
-const updateParticipantCount = (count) => {
-  participantCount.value = count;
-};
-
-// beforeunload 이벤트 핸들러
-const handleBeforeUnload = () => {
-  // 현재 선택된 방이 있으면 연결 해제
-  if (props.selectedRoom && props.selectedRoomType) {
-    unsubscribe(props.selectedRoom, props.selectedRoomType);
-  }
-};
-
-// 컴포넌트 마운트 시 beforeunload 이벤트 리스너 등록
-onMounted(() => {
-  window.addEventListener('beforeunload', handleBeforeUnload);
-});
-
-// [수정] 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제 및 이벤트 리스너 제거
+// [수정] 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제
 onUnmounted(() => {
   unsubscribe(props.selectedRoom, props.selectedRoomType);
-  window.removeEventListener('beforeunload', handleBeforeUnload);
 });
 </script>
 
 <style scoped>
-.chat-window-full { 
-  height: calc(100vh - 32px);
-  min-height: calc(100vh - 32px);
-}
+.chat-window-card { height: 100vh; }
 .chat-container {
   position: relative;
   flex: 1 1 auto;
@@ -500,138 +444,18 @@ onUnmounted(() => {
 .chat-box { 
   height: 100%;
   overflow-y: auto; 
-  padding: 24px; 
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  position: relative;
+  padding: 20px; 
+  background: #f8f9fa; 
 }
-
-.chat-box::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(148, 163, 184, 0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
-  z-index: 0;
-}
-
-.message-wrapper { 
-  margin: 12px 16px; 
-  display: flex; 
-  flex-direction: column; 
-  position: relative;
-  z-index: 1;
-  animation: fadeInUp 0.3s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.message-bubble { 
-  max-width: 75%; 
-  padding: 14px 18px; 
-  border-radius: 20px; 
-  word-break: break-word;
-  backdrop-filter: blur(10px);
-  position: relative;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.message-bubble:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-
-.sent { 
-  align-items: flex-end;
-  margin-right: 8px;
-}
-.sent .message-bubble { 
-  background: #1a73e8;
-  color: #ffffff;
-  border-bottom-right-radius: 8px;
-  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.sent .message-bubble:hover {
-  background: #1557b0;
-  box-shadow: 0 6px 20px rgba(26, 115, 232, 0.35);
-  transform: translateY(-1px);
-}
-
-.received { 
-  align-items: flex-start;
-  margin-left: 8px;
-}
-.received .message-bubble { 
-  background: #ffffff;
-  color: #2c2c2c;
-  border-bottom-left-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8eaed;
-}
-
-.received .message-bubble:hover {
-  background: #f8f9fa;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
-}
-
-.sender-name { 
-  font-size: 0.75rem; 
-  margin-bottom: 6px; 
-  opacity: 0.9; 
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  color: #666666;
-}
-
-.message-text { 
-  font-size: 0.95rem; 
-  line-height: 1.5; 
-  font-weight: 400;
-  letter-spacing: 0.01em;
-  word-break: break-word;
-}
-
-.sent .message-text {
-  color: #ffffff;
-  font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.received .message-text {
-  color: #2c2c2c;
-  font-weight: 400;
-}
-
-.message-time { 
-  font-size: 0.7rem; 
-  margin-top: 6px; 
-  opacity: 0.8; 
-  font-weight: 500;
-}
-
-.sent .message-time {
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.received .message-time {
-  color: #5f6368;
-}
+.message-wrapper { margin: 8px 0; display: flex; flex-direction: column; }
+.message-bubble { max-width: 70%; padding: 12px 16px; border-radius: 12px; word-break: break-word; }
+.sent { align-items: flex-end; }
+.sent .message-bubble { background: #1976D2; color: white; border-bottom-right-radius: 4px; }
+.received { align-items: flex-start; }
+.received .message-bubble { background: white; color: #333; border-bottom-left-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.sender-name { font-size: 0.75rem; margin-bottom: 4px; opacity: 0.8; }
+.message-text { font-size: 0.95rem; line-height: 1.4; }
+.message-time { font-size: 0.7rem; margin-top: 4px; opacity: 0.7; }
 /* 이미지 컨테이너 스타일 */
 .image-container {
   display: flex;
@@ -649,11 +473,10 @@ onUnmounted(() => {
   width: 200px; 
   height: 150px; 
   object-fit: cover; 
-  border-radius: 16px; 
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  transition: all 0.3s ease;
+  border-radius: 12px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   display: block;
-  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 /* 이미지 개수별 크기 조정 */
@@ -706,13 +529,7 @@ onUnmounted(() => {
     height: 55px;
   }
 }
-.input-area { 
-  padding: 16px; 
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(226, 232, 240, 0.5);
-  border-radius: 0 0 24px 24px;
-}
+.input-area { padding: 12px; background: white; border-top: 1px solid #eee; }
 .image-preview-container { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 4px 12px; }
 .image-preview-item { position: relative; width: 60px; height: 60px; }
 .preview-image { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
@@ -731,35 +548,11 @@ onUnmounted(() => {
 }
 .new-message-indicator {
   position: absolute;
-  bottom: 20px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  animation: bounceIn 0.4s ease-out;
-}
-
-@keyframes bounceIn {
-  0% { 
-    opacity: 0; 
-    transform: translateX(-50%) scale(0.3);
-  }
-  50% { 
-    opacity: 1; 
-    transform: translateX(-50%) scale(1.05);
-  }
-  100% { 
-    opacity: 1; 
-    transform: translateX(-50%) scale(1);
-  }
-}
-
-.new-message-indicator .v-btn {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3) !important;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  color: #667eea !important;
-  font-weight: 600;
+  opacity: 0.9;
 }
 
 /* 날짜별 메시지 그룹 스타일 */
@@ -770,31 +563,26 @@ onUnmounted(() => {
 .date-divider {
   display: flex;
   align-items: center;
-  margin: 20px 0 12px 0;
+  margin: 24px 0 16px 0;
   text-align: center;
-  position: relative;
-  z-index: 1;
 }
 
 .date-line {
   flex: 1;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.4), transparent);
+  background: linear-gradient(to right, transparent, #e0e0e0, transparent);
 }
 
 .date-text {
   padding: 0 16px;
-  font-size: 0.75rem;
-  color: #64748b;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 8px 16px;
-  font-weight: 600;
+  font-size: 0.8rem;
+  color: #666;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-weight: 500;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.025em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 /* 이미지 클릭 가능 스타일 */
@@ -804,9 +592,8 @@ onUnmounted(() => {
 }
 
 .chat-image.clickable:hover {
-  transform: scale(1.05) translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 
