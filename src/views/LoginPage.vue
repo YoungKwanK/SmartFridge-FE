@@ -46,7 +46,7 @@
                 </div>
                 <div class="feature-card">
                   <v-icon class="feature-icon" color="white" size="24">mdi-heart-outline</v-icon>
-                  <span class="feature-text">사랑과 보살</span>
+                  <span class="feature-text">함께 나누어 더 즐거운 식생활</span>
                 </div>
               </div>
             </div>
