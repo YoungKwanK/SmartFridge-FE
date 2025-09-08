@@ -12,7 +12,6 @@
         <v-toolbar-title class="font-weight-bold">{{ selectedRoom.roomName }}</v-toolbar-title>
         <v-spacer></v-spacer>
         
-        <!-- 주문 완료 버튼 (공동구매 채팅방 개설자만, 방이 열린 상태일 때만) -->
         <v-btn
           v-if="selectedRoomType === 'purchase' && isRoomCreator && isRoomOpen"
           color="success"
@@ -47,8 +46,7 @@
       <v-divider />
 
       <div class="chat-container">
-        <v-card-text ref="chatBox" class="flex-grow-1 pa-0 chat-box" @scroll="handleScroll">
-          <!-- 로딩 화면 -->
+        <v-card-text ref="chatBox" class="flex-grow-1 pa-0 chat-box">
           <div v-if="isLoadingMessages" class="loading-container">
             <div class="loading-content">
               <v-progress-circular
@@ -62,7 +60,6 @@
             </div>
           </div>
           
-          <!-- 더 많은 메시지 로딩 인디케이터 -->
           <div v-if="isLoadingMoreMessages" class="load-more-container">
             <div class="load-more-content">
               <v-progress-circular
@@ -76,7 +73,6 @@
             </div>
           </div>
           
-          <!-- 메시지가 없을 때 안내 UI -->
           <div v-else-if="groupedMessages.length === 0" class="empty-chat-container">
             <div class="empty-chat-content">
               <v-icon size="64" color="grey-lighten-1" class="empty-chat-icon">
@@ -89,7 +85,6 @@
             </div>
           </div>
           
-          <!-- 더 이상 로드할 메시지가 없을 때 표시 -->
           <div v-if="!hasMoreMessages && groupedMessages.length > 0" class="no-more-messages">
             <div class="no-more-content">
               <v-icon size="24" color="grey-lighten-1">mdi-check-circle-outline</v-icon>
@@ -98,14 +93,12 @@
           </div>
           
           <div v-for="(group, groupIndex) in groupedMessages" :key="groupIndex" class="message-group">
-            <!-- 날짜 구분선 -->
             <div class="date-divider">
               <div class="date-line"></div>
               <div class="date-text">{{ formatDate(group.date) }}</div>
               <div class="date-line"></div>
             </div>
             
-            <!-- 해당 날짜의 메시지들 -->
             <div
               v-for="(msg, msgIndex) in group.messages"
               :key="`${msg.senderEmail}-${msg.timestamp}-${msgIndex}`"
@@ -173,7 +166,6 @@
       </div>
     </template>
 
-    <!-- 이미지 모달 -->
     <ImageModal 
       v-model="showImageModal" 
       :images="modalImages" 
@@ -200,10 +192,10 @@ const props = defineProps({
 const messages = ref([]);
 const newMessage = ref("");
 const stompClient = ref(null);
-const subscription = ref(null); // 구독 객체 저장
+const subscription = ref(null);
 const token = ref(localStorage.getItem("accessToken"));
 const senderEmail = ref(localStorage.getItem("email"));
-const senderName = ref(localStorage.getItem("name")); // [개선] senderName 추가
+const senderName = ref(localStorage.getItem("name"));
 const newImages = ref([]);
 const imagePreview = ref([]);
 const chatBox = ref(null);
@@ -224,42 +216,27 @@ const currentPage = ref(0);
 const pageSize = ref(40);
 const isInitialLoad = ref(true);
 
-// 방장 여부를 확인하는 computed 속성
+// [개선 1] 디바운싱을 위한 타이머 변수
+let debounceTimer;
+
 const isRoomCreator = computed(() => {
   if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') {
     return false;
   }
-  
-  // ChatSidebar에서 전달받은 isCreator 정보를 직접 사용
-  const isCreator = props.selectedRoom.isCreator || false;
-  
-  return isCreator;
+  return props.selectedRoom.isCreator || false;
 });
 
-// 방이 열린 상태인지 확인하는 computed 속성
 const isRoomOpen = computed(() => {
   if (!props.selectedRoom) {
     return true;
   }
-  
-  // ChatSidebar에서 전달받은 isOpen 정보를 직접 사용
-  const isOpen = props.selectedRoom.isOpen !== undefined ? props.selectedRoom.isOpen : true;
-  
-  return isOpen;
+  return props.selectedRoom.isOpen !== undefined ? props.selectedRoom.isOpen : true;
 });
 
-// timestamp를 Date 객체로 변환하는 함수
 const parseTimestamp = (timestamp) => {
-  
-  // 다양한 형식의 timestamp를 처리
   if (!timestamp) return new Date();
-  
-  // 이미 Date 객체인 경우
   if (timestamp instanceof Date) return timestamp;
-  
-  // 문자열인 경우 다양한 형식 처리
   if (typeof timestamp === 'string') {
-    // "2025-08-31 16시 57분" 같은 형식 처리
     if (timestamp.includes('시') && timestamp.includes('분')) {
       const match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2})시\s+(\d{1,2})분/);
       if (match) {
@@ -267,52 +244,32 @@ const parseTimestamp = (timestamp) => {
         return new Date(year, month - 1, day, hour, minute);
       }
     }
-    
-    // "2025-08-31T16:57:00" 같은 ISO 형식 처리
     if (timestamp.includes('T')) {
       const date = new Date(timestamp);
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
+      if (!isNaN(date.getTime())) return date;
     }
-    
-    // "2025-08-31 16:57:00" 같은 형식 처리
     if (timestamp.match(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/)) {
       const date = new Date(timestamp.replace(' ', 'T'));
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
+      if (!isNaN(date.getTime())) return date;
     }
-    
-    // 기본 Date 생성자로 시도
     const date = new Date(timestamp);
-    if (!isNaN(date.getTime())) {
-      return date;
-    }
+    if (!isNaN(date.getTime())) return date;
   }
-  
-  // 숫자인 경우 (timestamp)
   if (typeof timestamp === 'number') {
     return new Date(timestamp);
   }
-  
   console.warn('알 수 없는 timestamp 형식:', timestamp);
-  return new Date(); // 기본값으로 현재 시간 반환
+  return new Date();
 };
 
-// 메시지를 날짜별로 그룹화
 const groupedMessages = computed(() => {
-  // messages.value가 배열이 아닌 경우 빈 배열로 처리
   if (!Array.isArray(messages.value)) {
     return [];
   }
-  
   const groups = {};
-  
   messages.value.forEach(msg => {
     const date = parseTimestamp(msg.timestamp);
-    const dateKey = date.toDateString(); // "Mon Oct 23 2023" 형식
-    
+    const dateKey = date.toDateString();
     if (!groups[dateKey]) {
       groups[dateKey] = {
         date: date,
@@ -321,19 +278,14 @@ const groupedMessages = computed(() => {
     }
     groups[dateKey].messages.push(msg);
   });
-  
-  // 날짜순으로 정렬된 배열로 변환
   return Object.values(groups).sort((a, b) => a.date - b.date);
 });
 
-// 날짜를 예쁘게 포맷팅하는 함수
 const formatDate = (date) => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
   const msgDate = new Date(date);
-  
   if (msgDate.toDateString() === today.toDateString()) {
     return '오늘';
   } else if (msgDate.toDateString() === yesterday.toDateString()) {
@@ -347,7 +299,6 @@ const formatDate = (date) => {
   }
 };
 
-// 메시지 시간을 포맷팅하는 함수
 const formatMessageTime = (timestamp) => {
   const date = parseTimestamp(timestamp);
   return date.toLocaleTimeString('ko-KR', {
@@ -368,16 +319,17 @@ watch(
 
     if (newRoom && newRoom.roomId) {
       await loadChatHistory(newRoom, newRoomType);
-      isInitialLoad.value = false; // 초기 로드 완료 후 false로 설정
+      isInitialLoad.value = false;
       connectWebsocket(newRoom.roomId, newRoomType);
       
-      // 스크롤 이벤트 리스너 등록 (방 변경 시마다)
       nextTick(() => {
         if (chatBox.value) {
-          const element = chatBox.value.$el || chatBox.value;
-          // 기존 이벤트 리스너 제거 후 새로 등록
-          element.removeEventListener('scroll', handleScroll);
-          element.addEventListener('scroll', handleScroll);
+          const element = chatBox.value.$el || chatBox.value; // Vue 컴포넌트인 경우 $el 사용
+          // [개선 1] 디바운스 적용된 핸들러로 등록
+          if (element && typeof element.removeEventListener === 'function') {
+            element.removeEventListener('scroll', debouncedHandleScroll);
+            element.addEventListener('scroll', debouncedHandleScroll);
+          }
         }
       });
     }
@@ -385,23 +337,18 @@ watch(
   { deep: true }
 );
 
-// --- 함수 (Functions) ---
 const resetChatState = () => {
   messages.value = [];
   newMessage.value = "";
   imagePreview.value = [];
   newImages.value = [];
   showNewMessageIndicator.value = false;
-  participantCount.value = 0; // 참여자 수도 초기화
-  closeImageModal(); // 이미지 모달도 닫기
-  
-  // 페이징 상태 초기화
+  participantCount.value = 0;
+  closeImageModal();
   isLoadingMoreMessages.value = false;
   hasMoreMessages.value = true;
   currentPage.value = 0;
   isInitialLoad.value = true;
-  
-  // 구독 상태도 초기화
   subscription.value = null;
 };
 
@@ -418,22 +365,17 @@ const loadChatHistory = async (room, roomType, isLoadMore = false) => {
   try {
     const url = `${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/history/${room.roomId}?page=${currentPage.value}&size=${pageSize.value}`;
     const response = await axios.get(url);
-    
-    // Page<ChatMessageDto> 구조에서 content 필드 추출
     const pageData = getResultData(response);
     const chatMessages = pageData?.content || [];
-    
-    // 배열이 아닌 경우 빈 배열로 처리
     const safeNewMessages = Array.isArray(chatMessages) ? chatMessages : [];
     
     if (isLoadMore) {
-      // 더 많은 메시지를 로드할 때는 기존 메시지 앞에 추가
-      messages.value = [...safeNewMessages, ...messages.value];
+      // 더 많은 메시지를 로드할 때는 기존 메시지 앞에 추가 (DESC로 받은 데이터를 역순으로 정렬)
+      const reversedMessages = safeNewMessages.reverse();
+      messages.value = [...reversedMessages, ...messages.value];
     } else {
-      // 초기 로드일 때는 메시지 교체
-      messages.value = safeNewMessages;
-      
-      // 읽음 처리
+      // 초기 로드일 때는 DESC로 받은 데이터를 ASC로 정렬 (오래된 것부터 최신 순)
+      messages.value = safeNewMessages.reverse();
       try {
         await axios.post(`${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/${room.roomId}/read`);
       } catch (readError) {
@@ -441,19 +383,16 @@ const loadChatHistory = async (room, roomType, isLoadMore = false) => {
       }
     }
 
-    // 더 이상 로드할 메시지가 없는지 확인
     hasMoreMessages.value = !pageData?.last;
     
     if (isLoadMore) {
       currentPage.value++;
     } else {
-      currentPage.value = 1; // 초기 로드 후 다음 페이지는 1부터
+      currentPage.value = 1;
       scrollToBottom();
     }
   } catch (error) {
     console.error("채팅 내역 로딩 실패:", error);
-    
-    // 에러 발생 시 빈 배열로 설정 (초기 로드인 경우만)
     if (!isLoadMore) {
       messages.value = [];
     }
@@ -468,17 +407,14 @@ const handleScroll = async () => {
   const el = chatBox.value?.$el || chatBox.value;
   if (!el) return;
   
-  // 사용자가 수동으로 맨 아래로 스크롤하면 새 메시지 표시기를 숨깁니다.
   if (el.scrollHeight - el.scrollTop - el.clientHeight < 1) {
     showNewMessageIndicator.value = false;
   }
   
-  // 위로 스크롤하여 과거 메시지 로드
   if (el.scrollTop < 200 && hasMoreMessages.value && !isLoadingMoreMessages.value && !isInitialLoad.value) {
     const previousScrollHeight = el.scrollHeight;
     await loadMoreMessages();
     
-    // 스크롤 위치 유지 (새로 로드된 메시지로 인한 높이 변화 보정)
     nextTick(() => {
       const newScrollHeight = el.scrollHeight;
       el.scrollTop = newScrollHeight - previousScrollHeight;
@@ -486,11 +422,18 @@ const handleScroll = async () => {
   }
 };
 
+// [개선 1] 디바운스 핸들러 함수
+const debouncedHandleScroll = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    handleScroll();
+  }, 200); // 200ms 후에 handleScroll 실행
+};
+
 const loadMoreMessages = async () => {
   if (!props.selectedRoom || !props.selectedRoomType || isLoadingMoreMessages.value || !hasMoreMessages.value) {
     return;
   }
-  
   await loadChatHistory(props.selectedRoom, props.selectedRoomType, true);
 };
 
@@ -499,7 +442,9 @@ const scrollToBottom = () => {
   nextTick(() => {
     if (chatBox.value) {
       const element = chatBox.value.$el || chatBox.value;
-      element.scrollTop = element.scrollHeight;
+      if (element && typeof element.scrollTop !== 'undefined') {
+        element.scrollTop = element.scrollHeight;
+      }
     }
   });
 };
@@ -510,25 +455,21 @@ const connectWebsocket = (roomId, roomType) => {
   const sockJs = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/connect/chat`);
   stompClient.value = Stomp.over(sockJs);
   stompClient.value.connect({ Authorization: `Bearer ${token.value}` }, () => {
-    // 구독 객체를 저장
     subscription.value = stompClient.value.subscribe(`/topic/chat/${roomType.toUpperCase()}/${roomId}`, (message) => {
       const newMessage = JSON.parse(message.body);
       
-      // messages.value가 배열이 아닌 경우 빈 배열로 초기화
       if (!Array.isArray(messages.value)) {
         messages.value = [];
       }
       
       messages.value.push(newMessage);
       
-      // 내가 보낸 메시지라면 무조건 스크롤을 아래로 이동
       if (newMessage.senderEmail === senderEmail.value) {
         scrollToBottom();
         return;
       }
       
-      const el = chatBox.value;
-      // 다른 사람이 보낸 메시지의 경우, 사용자가 하단에 거의 스크롤되었는지 확인합니다.
+      const el = chatBox.value?.$el || chatBox.value;
       const isAtBottom = el ? el.scrollHeight - el.clientHeight <= el.scrollTop + 20 : true;
 
       if (isAtBottom) {
@@ -540,35 +481,20 @@ const connectWebsocket = (roomId, roomType) => {
   });
 };
 
-// 구독 해제 로직
 const unsubscribe = (room, roomType) => {
-  if (!room || !roomType) {
-    console.warn('unsubscribe: room 또는 roomType이 없습니다.');
-    return;
-  }
-
-  console.log(`채팅방 ${room.roomName || room.roomId} 구독 해제 시작`);
-  
+  if (!room || !roomType) return;
   try {
-    // 1. 먼저 구독 해제
     if (subscription.value) {
       const id = { roomId: room.roomId, roomType };
       subscription.value.unsubscribe(id);
       subscription.value = null;
-      console.log('구독이 해제되었습니다.');
     }
-    
-    // 2. 그 다음 연결 해제
     if (stompClient.value?.connected) {
-      stompClient.value.disconnect(() => {
-        console.log('WebSocket 연결이 정상적으로 해제되었습니다 (disconnected)');
-      });
+      stompClient.value.disconnect(() => {});
       stompClient.value = null;
-      console.log('WebSocket 연결 해제 완료');
     }
   } catch (error) {
     console.error('구독 해제 중 오류 발생:', error);
-    // 오류 발생 시에도 상태 정리
     subscription.value = null;
     stompClient.value = null;
   }
@@ -596,7 +522,6 @@ const sendMessage = async () => {
 
   try {
     const imageUrls = currentImages.length > 0 ? await changeImage(currentImages) : [];
-    // [개선] message 객체에 senderName 추가
     const message = { 
       senderEmail: senderEmail.value, 
       senderName: senderName.value,
@@ -631,7 +556,6 @@ const removeImage = (index) => {
   newImages.value.splice(index, 1);
 };
 
-// 이미지 모달 관련 함수들
 const openImageModal = (imageUrls, startIndex = 0) => {
   modalImages.value = imageUrls;
   modalStartIndex.value = startIndex;
@@ -643,20 +567,13 @@ const closeImageModal = () => {
   modalImages.value = [];
   modalStartIndex.value = 0;
 };
-// 참여자 수 업데이트 함수
+
 const updateParticipantCount = (count) => {
   participantCount.value = count;
 };
 
-// 주문 완료 함수
 const completeOrder = async () => {
-  if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') return;
-  
-  // 방이 닫힌 상태라면 실행하지 않음
-  if (!isRoomOpen.value) {
-    alert('방이 닫힌 상태에서는 주문을 완료할 수 없습니다.');
-    return;
-  }
+  if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase' || !isRoomOpen.value) return;
 
   const confirmed = confirm('정말로 주문을 완료하시겠습니까? 완료 후에는 취소할 수 없습니다.');
   if (!confirmed) return;
@@ -664,9 +581,9 @@ const completeOrder = async () => {
   isCompletingOrder.value = true;
 
   try {
+    // [개선 2] axios.delete 파라미터 구조 수정
     await axios.delete(
       `${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${props.selectedRoom.roomId}/complete`,
-      {},
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
     alert('공동 구매가 완료되었습니다.');
@@ -677,26 +594,27 @@ const completeOrder = async () => {
     isCompletingOrder.value = false;
   }
 };
-// beforeunload 이벤트 핸들러
+
 const handleBeforeUnload = () => {
-  // 현재 선택된 방이 있으면 연결 해제
   if (props.selectedRoom && props.selectedRoomType) {
     unsubscribe(props.selectedRoom, props.selectedRoomType);
   }
 };
-// 컴포넌트 마운트 시 beforeunload 이벤트 리스너 등록
+
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload);
 });
-// 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제 및 이벤트 리스너 제거
+
 onUnmounted(() => {
   unsubscribe(props.selectedRoom, props.selectedRoomType);
   window.removeEventListener('beforeunload', handleBeforeUnload);
   
-  // 스크롤 이벤트 리스너 제거
   if (chatBox.value) {
     const element = chatBox.value.$el || chatBox.value;
-    element.removeEventListener('scroll', handleScroll);
+    // [개선 1] 디바운스 적용된 핸들러 제거
+    if (element && typeof element.removeEventListener === 'function') {
+      element.removeEventListener('scroll', debouncedHandleScroll);
+    }
   }
 });
 </script>
@@ -933,7 +851,7 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-   animation: bounceIn 0.4s ease-out;
+    animation: bounceIn 0.4s ease-out;
 }
 @keyframes bounceIn {
   0% { 
@@ -966,7 +884,7 @@ onUnmounted(() => {
 .date-divider {
   display: flex;
   align-items: center;
-   margin: 20px 0 12px 0;
+    margin: 20px 0 12px 0;
   text-align: center;
   position: relative;
   z-index: 1;
@@ -1225,5 +1143,4 @@ onUnmounted(() => {
     color: #9ca3af;
   }
 }
-
 </style>
