@@ -11,9 +11,23 @@
       <v-toolbar density="compact">
         <v-toolbar-title class="font-weight-bold">{{ selectedRoom.roomName }}</v-toolbar-title>
         <v-spacer></v-spacer>
+        
+        <!-- 주문 완료 버튼 (공동구매 채팅방 개설자만, 방이 열린 상태일 때만) -->
+        <v-btn
+          v-if="selectedRoomType === 'purchase' && isRoomCreator && isRoomOpen"
+          color="success"
+          variant="elevated"
+          class="order-complete-btn mr-2"
+          @click="completeOrder"
+          :loading="isCompletingOrder"
+        >
+          <v-icon left>mdi-check-circle</v-icon>
+          구매 완료
+        </v-btn>
+        
         <ParticipantsModal
           v-model="showParticipantsModal"
-          v-if="selectedRoom?.roomName !== '관리자와의 채팅'"
+          v-if="selectedRoomType !== 'manager'"
           :room-id="selectedRoom?.roomId"
           :room-type="selectedRoomType"
           :room-name="selectedRoom?.roomName"
@@ -26,13 +40,6 @@
               variant="text" 
               :title="`참여자 목록 (${participantCount}명)`"
             >
-              <v-badge 
-                :content="participantCount" 
-                color="primary" 
-                :model-value="participantCount > 0"
-              >
-                <v-icon>mdi-account-group</v-icon>
-              </v-badge>
             </v-btn>
           </template>
         </ParticipantsModal>
@@ -41,6 +48,55 @@
 
       <div class="chat-container">
         <v-card-text ref="chatBox" class="flex-grow-1 pa-0 chat-box" @scroll="handleScroll">
+          <!-- 로딩 화면 -->
+          <div v-if="isLoadingMessages" class="loading-container">
+            <div class="loading-content">
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                size="48"
+                width="4"
+                class="loading-spinner"
+              ></v-progress-circular>
+              <p class="loading-text">채팅 내역을 불러오는 중...</p>
+            </div>
+          </div>
+          
+          <!-- 더 많은 메시지 로딩 인디케이터 -->
+          <div v-if="isLoadingMoreMessages" class="load-more-container">
+            <div class="load-more-content">
+              <v-progress-circular
+                indeterminate
+                color="primary"
+                size="32"
+                width="3"
+                class="load-more-spinner"
+              ></v-progress-circular>
+              <p class="load-more-text">과거 메시지를 불러오는 중...</p>
+            </div>
+          </div>
+          
+          <!-- 메시지가 없을 때 안내 UI -->
+          <div v-else-if="groupedMessages.length === 0" class="empty-chat-container">
+            <div class="empty-chat-content">
+              <v-icon size="64" color="grey-lighten-1" class="empty-chat-icon">
+                mdi-chat-outline
+              </v-icon>
+              <h3 class="empty-chat-title">채팅을 시작해보세요!</h3>
+              <p class="empty-chat-description">
+                첫 번째 메시지를 작성하여 대화를 시작할 수 있습니다.
+              </p>
+            </div>
+          </div>
+          
+          <!-- 더 이상 로드할 메시지가 없을 때 표시 -->
+          <div v-if="!hasMoreMessages && groupedMessages.length > 0" class="no-more-messages">
+            <div class="no-more-content">
+              <v-icon size="24" color="grey-lighten-1">mdi-check-circle-outline</v-icon>
+              <span class="no-more-text">모든 메시지를 불러왔습니다</span>
+            </div>
+          </div>
+          
           <div v-for="(group, groupIndex) in groupedMessages" :key="groupIndex" class="message-group">
             <!-- 날짜 구분선 -->
             <div class="date-divider">
@@ -158,6 +214,39 @@ const modalImages = ref([]);
 const modalStartIndex = ref(0);
 const showParticipantsModal = ref(false);
 const participantCount = ref(0);
+const isCompletingOrder = ref(false);
+const isLoadingMessages = ref(false);
+
+// 페이징 관련 상태
+const isLoadingMoreMessages = ref(false);
+const hasMoreMessages = ref(true);
+const currentPage = ref(0);
+const pageSize = ref(40);
+const isInitialLoad = ref(true);
+
+// 방장 여부를 확인하는 computed 속성
+const isRoomCreator = computed(() => {
+  if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') {
+    return false;
+  }
+  
+  // ChatSidebar에서 전달받은 isCreator 정보를 직접 사용
+  const isCreator = props.selectedRoom.isCreator || false;
+  
+  return isCreator;
+});
+
+// 방이 열린 상태인지 확인하는 computed 속성
+const isRoomOpen = computed(() => {
+  if (!props.selectedRoom) {
+    return true;
+  }
+  
+  // ChatSidebar에서 전달받은 isOpen 정보를 직접 사용
+  const isOpen = props.selectedRoom.isOpen !== undefined ? props.selectedRoom.isOpen : true;
+  
+  return isOpen;
+});
 
 // timestamp를 Date 객체로 변환하는 함수
 const parseTimestamp = (timestamp) => {
@@ -213,6 +302,11 @@ const parseTimestamp = (timestamp) => {
 
 // 메시지를 날짜별로 그룹화
 const groupedMessages = computed(() => {
+  // messages.value가 배열이 아닌 경우 빈 배열로 처리
+  if (!Array.isArray(messages.value)) {
+    return [];
+  }
+  
   const groups = {};
   
   messages.value.forEach(msg => {
@@ -274,7 +368,18 @@ watch(
 
     if (newRoom && newRoom.roomId) {
       await loadChatHistory(newRoom, newRoomType);
+      isInitialLoad.value = false; // 초기 로드 완료 후 false로 설정
       connectWebsocket(newRoom.roomId, newRoomType);
+      
+      // 스크롤 이벤트 리스너 등록 (방 변경 시마다)
+      nextTick(() => {
+        if (chatBox.value) {
+          const element = chatBox.value.$el || chatBox.value;
+          // 기존 이벤트 리스너 제거 후 새로 등록
+          element.removeEventListener('scroll', handleScroll);
+          element.addEventListener('scroll', handleScroll);
+        }
+      });
     }
   },
   { deep: true }
@@ -290,28 +395,103 @@ const resetChatState = () => {
   participantCount.value = 0; // 참여자 수도 초기화
   closeImageModal(); // 이미지 모달도 닫기
   
+  // 페이징 상태 초기화
+  isLoadingMoreMessages.value = false;
+  hasMoreMessages.value = true;
+  currentPage.value = 0;
+  isInitialLoad.value = true;
+  
   // 구독 상태도 초기화
   subscription.value = null;
 };
 
-const loadChatHistory = async (room, roomType) => {
+const loadChatHistory = async (room, roomType, isLoadMore = false) => {
+  if (isLoadMore) {
+    isLoadingMoreMessages.value = true;
+  } else {
+    isLoadingMessages.value = true;
+    isInitialLoad.value = true;
+    currentPage.value = 0;
+    hasMoreMessages.value = true;
+  }
+
   try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/history/${room.roomId}`);
-    messages.value = getResultData(response);
-    await axios.post(`${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/${room.roomId}/read`);
-    scrollToBottom();
+    const url = `${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/history/${room.roomId}?page=${currentPage.value}&size=${pageSize.value}`;
+    const response = await axios.get(url);
+    
+    // Page<ChatMessageDto> 구조에서 content 필드 추출
+    const pageData = getResultData(response);
+    const chatMessages = pageData?.content || [];
+    
+    // 배열이 아닌 경우 빈 배열로 처리
+    const safeNewMessages = Array.isArray(chatMessages) ? chatMessages : [];
+    
+    if (isLoadMore) {
+      // 더 많은 메시지를 로드할 때는 기존 메시지 앞에 추가
+      messages.value = [...safeNewMessages, ...messages.value];
+    } else {
+      // 초기 로드일 때는 메시지 교체
+      messages.value = safeNewMessages;
+      
+      // 읽음 처리
+      try {
+        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/${room.roomId}/read`);
+      } catch (readError) {
+        console.warn('읽음 처리 실패:', readError);
+      }
+    }
+
+    // 더 이상 로드할 메시지가 없는지 확인
+    hasMoreMessages.value = !pageData?.last;
+    
+    if (isLoadMore) {
+      currentPage.value++;
+    } else {
+      currentPage.value = 1; // 초기 로드 후 다음 페이지는 1부터
+      scrollToBottom();
+    }
   } catch (error) {
     console.error("채팅 내역 로딩 실패:", error);
+    
+    // 에러 발생 시 빈 배열로 설정 (초기 로드인 경우만)
+    if (!isLoadMore) {
+      messages.value = [];
+    }
+  } finally {
+    isLoadingMessages.value = false;
+    isLoadingMoreMessages.value = false;
+    isInitialLoad.value = false;
   }
 };
 
-const handleScroll = () => {
-  const el = chatBox.value;
+const handleScroll = async () => {
+  const el = chatBox.value?.$el || chatBox.value;
   if (!el) return;
+  
   // 사용자가 수동으로 맨 아래로 스크롤하면 새 메시지 표시기를 숨깁니다.
   if (el.scrollHeight - el.scrollTop - el.clientHeight < 1) {
     showNewMessageIndicator.value = false;
   }
+  
+  // 위로 스크롤하여 과거 메시지 로드
+  if (el.scrollTop < 200 && hasMoreMessages.value && !isLoadingMoreMessages.value && !isInitialLoad.value) {
+    const previousScrollHeight = el.scrollHeight;
+    await loadMoreMessages();
+    
+    // 스크롤 위치 유지 (새로 로드된 메시지로 인한 높이 변화 보정)
+    nextTick(() => {
+      const newScrollHeight = el.scrollHeight;
+      el.scrollTop = newScrollHeight - previousScrollHeight;
+    });
+  }
+};
+
+const loadMoreMessages = async () => {
+  if (!props.selectedRoom || !props.selectedRoomType || isLoadingMoreMessages.value || !hasMoreMessages.value) {
+    return;
+  }
+  
+  await loadChatHistory(props.selectedRoom, props.selectedRoomType, true);
 };
 
 const scrollToBottom = () => {
@@ -333,6 +513,12 @@ const connectWebsocket = (roomId, roomType) => {
     // 구독 객체를 저장
     subscription.value = stompClient.value.subscribe(`/topic/chat/${roomType.toUpperCase()}/${roomId}`, (message) => {
       const newMessage = JSON.parse(message.body);
+      
+      // messages.value가 배열이 아닌 경우 빈 배열로 초기화
+      if (!Array.isArray(messages.value)) {
+        messages.value = [];
+      }
+      
       messages.value.push(newMessage);
       
       // 내가 보낸 메시지라면 무조건 스크롤을 아래로 이동
@@ -461,6 +647,36 @@ const closeImageModal = () => {
 const updateParticipantCount = (count) => {
   participantCount.value = count;
 };
+
+// 주문 완료 함수
+const completeOrder = async () => {
+  if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') return;
+  
+  // 방이 닫힌 상태라면 실행하지 않음
+  if (!isRoomOpen.value) {
+    alert('방이 닫힌 상태에서는 주문을 완료할 수 없습니다.');
+    return;
+  }
+
+  const confirmed = confirm('정말로 주문을 완료하시겠습니까? 완료 후에는 취소할 수 없습니다.');
+  if (!confirmed) return;
+
+  isCompletingOrder.value = true;
+
+  try {
+    await axios.delete(
+      `${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${props.selectedRoom.roomId}/complete`,
+      {},
+      { headers: { 'Authorization': `Bearer ${token.value}` } }
+    );
+    alert('공동 구매가 완료되었습니다.');
+  } catch (error) {
+    console.error("요청 실패:", error);
+    alert('요청에 실패했습니다. 다시 시도해주세요.');
+  } finally {
+    isCompletingOrder.value = false;
+  }
+};
 // beforeunload 이벤트 핸들러
 const handleBeforeUnload = () => {
   // 현재 선택된 방이 있으면 연결 해제
@@ -472,10 +688,16 @@ const handleBeforeUnload = () => {
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload);
 });
-// [수정] 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제 및 이벤트 리스너 제거
+// 컴포넌트가 사라질 때 현재 방 정보를 사용하여 연결 해제 및 이벤트 리스너 제거
 onUnmounted(() => {
   unsubscribe(props.selectedRoom, props.selectedRoomType);
   window.removeEventListener('beforeunload', handleBeforeUnload);
+  
+  // 스크롤 이벤트 리스너 제거
+  if (chatBox.value) {
+    const element = chatBox.value.$el || chatBox.value;
+    element.removeEventListener('scroll', handleScroll);
+  }
 });
 </script>
 
@@ -782,5 +1004,226 @@ onUnmounted(() => {
   border-color: rgba(255, 255, 255, 0.5);
 }
 
+/* 주문 완료 버튼 스타일 */
+.order-complete-btn {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%) !important;
+  color: white !important;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.order-complete-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.order-complete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4) !important;
+  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%) !important;
+}
+
+.order-complete-btn:hover::before {
+  left: 100%;
+}
+
+.order-complete-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
+}
+
+.order-complete-btn .v-icon {
+  animation: pulse-icon 2s infinite;
+}
+
+@keyframes pulse-icon {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* 로딩 상태 스타일 */
+.order-complete-btn.v-btn--loading {
+  background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%) !important;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2) !important;
+}
+
+.order-complete-btn.v-btn--loading .v-icon {
+  animation: none;
+}
+
+/* 로딩 화면 스타일 */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  padding: 40px 20px;
+}
+
+.loading-content {
+  text-align: center;
+  max-width: 300px;
+}
+
+.loading-spinner {
+  margin-bottom: 16px;
+}
+
+.loading-text {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* 더 많은 메시지 로딩 인디케이터 스타일 */
+.load-more-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  margin: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.load-more-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.load-more-spinner {
+  margin: 0;
+}
+
+.load-more-text {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* 더 이상 로드할 메시지가 없을 때 스타일 */
+.no-more-messages {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  margin: 16px;
+}
+
+.no-more-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.no-more-text {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+/* 빈 채팅방 안내 UI 스타일 */
+.empty-chat-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 300px;
+  padding: 40px 20px;
+}
+
+.empty-chat-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.empty-chat-icon {
+  margin-bottom: 24px;
+  opacity: 0.6;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.empty-chat-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.empty-chat-description {
+  font-size: 1rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 다크모드에서 로딩 화면 */
+@media (prefers-color-scheme: dark) {
+  .loading-text {
+    color: #9ca3af;
+  }
+  
+  .load-more-container {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .load-more-text {
+    color: #9ca3af;
+  }
+  
+  .no-more-content {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .no-more-text {
+    color: #6b7280;
+  }
+}
+
+/* 다크모드에서 빈 채팅방 안내 UI */
+@media (prefers-color-scheme: dark) {
+  .empty-chat-title {
+    color: #f3f4f6;
+  }
+  
+  .empty-chat-description {
+    color: #9ca3af;
+  }
+}
 
 </style>
