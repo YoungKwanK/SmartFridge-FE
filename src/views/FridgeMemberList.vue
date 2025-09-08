@@ -628,7 +628,7 @@ const loadChatHistory = async (user, isLoadMore = false) => {
     const safeNewMessages = Array.isArray(chatData) ? chatData : [];
     
     if (isLoadMore) {
-      // 더 많은 메시지를 로드할 때는 기존 메시지 앞에 추가
+      // 더 많은 메시지를 로드할 때는 기존 메시지 앞에 추가 (DESC로 받은 데이터를 역순으로 정렬)
       const newMessages = safeNewMessages.map((msg) => ({
         senderEmail: msg.senderEmail,
         senderName: msg.senderName,
@@ -637,10 +637,12 @@ const loadChatHistory = async (user, isLoadMore = false) => {
         imageUrls: msg.imageUrls || [],
         receiverEmail: msg.receiverEmail,
       }));
-      chatMessages.value = [...newMessages, ...chatMessages.value];
+      // DESC로 받은 데이터를 ASC로 정렬 (오래된 것부터 최신 순)
+      const reversedMessages = newMessages.reverse();
+      chatMessages.value = [...reversedMessages, ...chatMessages.value];
     } else {
-      // 초기 로드일 때는 메시지 교체
-      chatMessages.value = safeNewMessages.map((msg) => ({
+      // 초기 로드일 때는 메시지 교체 (백엔드에서 DESC로 정렬해서 보내주므로 역순으로 정렬)
+      const messages = safeNewMessages.map((msg) => ({
         senderEmail: msg.senderEmail,
         senderName: msg.senderName,
         message: msg.message,
@@ -648,6 +650,8 @@ const loadChatHistory = async (user, isLoadMore = false) => {
         imageUrls: msg.imageUrls || [],
         receiverEmail: msg.receiverEmail,
       }));
+      // DESC로 받은 데이터를 ASC로 정렬 (오래된 것부터 최신 순)
+      chatMessages.value = messages.reverse();
       
       // 읽음 처리
       try {
