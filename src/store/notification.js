@@ -345,6 +345,14 @@ export default {
       saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
 
+    // 채팅 알림 제거
+    clearChatNotifications(state) {
+      state.typeCounts.MANAGER_CHAT = 0;
+      state.typeCounts.GROUP_CHAT = 0;
+      state.typeCounts.ROOM_FULL = 0;
+      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
+    },
+
     // 채팅 배지 상태 직접 설정 (방 목록의 미읽음 합계를 반영)
     setAdminChatCount(state, count) {
       state.typeCounts.MANAGER_CHAT = count > 0 ? 1 : 0;
@@ -437,6 +445,38 @@ export default {
     updateChatBadgePresence({ commit }, { adminHasUnread, groupHasUnread }) {
       commit('setAdminChatCount', adminHasUnread ? 1 : 0);
       commit('setGroupChatCount', groupHasUnread ? 1 : 0);
+    },
+
+    // 냉장고 진입 시 채팅 목록 조회하여 배지 상태 업데이트
+    async updateChatBadgesOnFridgeEnter({ commit }, fridgeId) {
+      try {
+        // 일반 채팅방 목록 조회
+        const chatResponse = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        let allRooms = [];
+        if (chatResponse.ok) {
+          const chatData = await chatResponse.json();
+          allRooms = chatData.result || [];
+          
+          // 첫 번째 방은 관리자 채팅, 나머지는 그룹 채팅
+          const [, ...groupRooms] = allRooms;
+          
+          // 그룹 채팅 미읽음 확인
+          const groupHasUnread = groupRooms?.some(room => (room.unReadCount || 0) > 0);
+          commit('setGroupChatCount', groupHasUnread ? 1 : 0);
+        }
+
+        // 관리자 채팅 미읽음 확인 (채팅방 목록의 첫 번째 방이 관리자 채팅방)
+        const adminHasUnread = allRooms.length > 0 && (allRooms[0]?.unReadCount || 0) > 0;
+        commit('setAdminChatCount', adminHasUnread ? 1 : 0);
+        
+      } catch (error) {
+        console.error('채팅 배지 상태 업데이트 실패:', error);
+      }
     }
   },
   getters: {

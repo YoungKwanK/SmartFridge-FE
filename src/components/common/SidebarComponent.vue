@@ -198,16 +198,25 @@ const menuItems = computed(() => {
   
 
   
-  const userManagementBadgeCount = isManager && adminChatCount > 0 ? 1 : 0;
+  // 유저 관리 탭 배지
+  let userManagementBadgeCount = 0;
+  if (isManager) {
+    const hasAdminChat = adminChatCount > 0;
+    const hasGroupChat = store.getters['notification/typeCounts']?.GROUP_CHAT > 0;
+    const hasRoomFull = store.getters['notification/typeCounts']?.ROOM_FULL > 0;
+    userManagementBadgeCount = (hasAdminChat || hasGroupChat || hasRoomFull) ? 1 : 0;
+  }
   
   let finalChatBadgeCount = 0;
   if (isUser) {
-    finalChatBadgeCount = (adminChatCount > 0 ? 1 : 0) + 
-                         (store.getters['notification/typeCounts']?.GROUP_CHAT > 0 ? 1 : 0) + 
-                         (store.getters['notification/typeCounts']?.ROOM_FULL > 0 ? 1 : 0);
+    const hasAdminChat = adminChatCount > 0;
+    const hasGroupChat = store.getters['notification/typeCounts']?.GROUP_CHAT > 0;
+    const hasRoomFull = store.getters['notification/typeCounts']?.ROOM_FULL > 0;
+    finalChatBadgeCount = (hasAdminChat || hasGroupChat || hasRoomFull) ? 1 : 0;
   } else if (isManager) {
-    finalChatBadgeCount = (store.getters['notification/typeCounts']?.GROUP_CHAT > 0 ? 1 : 0) + 
-                         (store.getters['notification/typeCounts']?.ROOM_FULL > 0 ? 1 : 0);
+    const hasGroupChat = store.getters['notification/typeCounts']?.GROUP_CHAT > 0;
+    const hasRoomFull = store.getters['notification/typeCounts']?.ROOM_FULL > 0;
+    finalChatBadgeCount = (hasGroupChat || hasRoomFull) ? 1 : 0;
   } else {
     finalChatBadgeCount = chatBadgeCount > 0 ? 1 : 0;
   }
