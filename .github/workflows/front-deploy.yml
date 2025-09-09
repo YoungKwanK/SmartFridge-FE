@@ -25,7 +25,8 @@ jobs:
       - name: .env setting
         run: |
           echo "VUE_APP_API_BASE_URL=${{ secrets.VUE_APP_API_BASE_URL }}" >> .env
-      
+          echo "VUE_APP_OAUTH_URL=${{ secrets.VUE_OAUTH_URL }}" >> .env
+
       - name : npm build
         working-directory: .
         run: npm run build

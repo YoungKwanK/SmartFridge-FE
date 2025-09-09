@@ -315,16 +315,16 @@ export default {
       // OAuth 설정 (로그인 페이지와 동일)
       googleUrl: "https://accounts.google.com/o/oauth2/auth",
       googleClientId: "374485739574-jumcdbdoujbiibr15dhncieme5t1n3vb.apps.googleusercontent.com",
-      googleRedirectUrl: "https://smartfridge.cloud/oauth/google/redirect",
+      googleRedirectUrl: `${process.env.VUE_OAUTH_URL}/oauth/google/redirect`,
       googleScope: "openid email profile",
       
       kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
       kakaoClientId: "1db026f5c4d2e11d7e597cdd4488d193",
-      kakaoRedirectUrl: "https://smartfridge.cloud/oauth/kakao/redirect",
+      kakaoRedirectUrl: `${process.env.VUE_OAUTH_URL}/oauth/kakao/redirect`,
       
       naverUrl: "https://nid.naver.com/oauth2.0/authorize",
       naverClientId: "GbQ_01jKVCMgOVze1pio",
-      naverRedirectUrl: "https://smartfridge.cloud/oauth/naver/redirect",
+      naverRedirectUrl: `${process.env.VUE_OAUTH_URL}/oauth/naver/redirect`,
     }
   },
   
