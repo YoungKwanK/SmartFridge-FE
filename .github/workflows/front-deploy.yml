@@ -36,4 +36,4 @@ jobs:
       - name: deploy to s3
         run: aws s3 cp ./dist s3://www.smartfridge.cloud/ --recursive
       - name: invalidate cloudfront
-        run: aws cloudfront create-invalidation --distribution-id E1EAYZ6WRNPMBN --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id EYDLID2ODD275 --paths "/*"
