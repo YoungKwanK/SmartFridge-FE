@@ -260,32 +260,79 @@
                           message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail ? 'sent' : 'received',
                         ]"
                       >
-                        <div class="message-bubble">
-                          <div
-                            v-if="message.senderEmail !== senderEmail"
-                            class="sender-name"
-                          >
-                            {{ message.senderName }}
-                          </div>
-                          <div
-                            v-if="message.imageUrls && message.imageUrls.length > 0"
-                            :class="['image-container', `image-count-${message.imageUrls.length}`]"
-                          >
-                            <div 
-                              v-for="(url, imgIndex) in message.imageUrls" 
-                              :key="imgIndex" 
-                              class="image-wrapper"
-                            >
-                              <img 
-                                :src="url" 
-                                alt="이미지" 
-                                class="chat-image clickable" 
-                                @click="openImageModal(message.imageUrls, imgIndex)"
-                              />
+                        <!-- 보낸 메시지 레이아웃: [메시지] [시간] -->
+                        <div v-if="message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail" class="sent-message-layout">
+                          <div class="sent-message-container">
+                            <div class="message-content-container">
+                              <!-- 이미지 -->
+                              <div
+                                v-if="message.imageUrls && message.imageUrls.length > 0"
+                                :class="['image-container', `image-count-${message.imageUrls.length}`]"
+                              >
+                                <div 
+                                  v-for="(url, imgIndex) in message.imageUrls" 
+                                  :key="imgIndex" 
+                                  class="image-wrapper"
+                                >
+                                  <img 
+                                    :src="url" 
+                                    alt="이미지" 
+                                    class="chat-image clickable" 
+                                    @click="openImageModal(message.imageUrls, imgIndex)"
+                                  />
+                                </div>
+                              </div>
+                              <!-- 메시지 버블 -->
+                              <div class="message-bubble">
+                                <div class="message-text">{{ message.message }}</div>
+                              </div>
+                            </div>
+                            
+                            <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
+                            <div v-if="shouldShowSentMessageTime(chatMessages, index, senderEmail)" class="message-time-bottom-sent">
+                              {{ formatTime(message.timestamp) }}
                             </div>
                           </div>
-                          <div class="message-text">{{ message.message }}</div>
-                          <div class="message-time">{{ formatTime(message.timestamp) }}</div>
+                        </div>
+                        
+                        <!-- 받은 메시지 레이아웃: [이름] [메시지] [시간] -->
+                        <div v-else class="received-message-layout">
+                          <div class="received-message-container">
+                            <!-- 이름은 첫 번째 메시지이거나 이전 메시지와 발신자가 다를 때만 표시 -->
+                            <div v-if="shouldShowSenderName(chatMessages, index, senderEmail)" class="sender-name-top">
+                              {{ message.senderName }}
+                            </div>
+                            
+                            <div class="message-content-container">
+                              <!-- 이미지 -->
+                              <div
+                                v-if="message.imageUrls && message.imageUrls.length > 0"
+                                :class="['image-container', `image-count-${message.imageUrls.length}`]"
+                              >
+                                <div 
+                                  v-for="(url, imgIndex) in message.imageUrls" 
+                                  :key="imgIndex" 
+                                  class="image-wrapper"
+                                >
+                                  <img 
+                                    :src="url" 
+                                    alt="이미지" 
+                                    class="chat-image clickable" 
+                                    @click="openImageModal(message.imageUrls, imgIndex)"
+                                  />
+                                </div>
+                              </div>
+                              <!-- 메시지 버블 -->
+                              <div class="message-bubble">
+                                <div class="message-text">{{ message.message }}</div>
+                              </div>
+                            </div>
+                            
+                            <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
+                            <div v-if="shouldShowMessageTime(chatMessages, index, senderEmail)" class="message-time-bottom">
+                              {{ formatTime(message.timestamp) }}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </template>
@@ -734,6 +781,67 @@ const formatTime = (dateString) => {
     minute: '2-digit',
     hour12: true
   });
+};
+
+// 메시지 시간 그룹핑을 위한 함수들
+const getMessageMinute = (timestamp) => {
+  const date = new Date(timestamp);
+  return `${date.getHours()}:${date.getMinutes()}`;
+};
+
+
+const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
+  const currentMsg = messages[currentIndex];
+  
+  // 현재 사용자가 보낸 메시지는 이름 표시 안함
+  if (currentMsg.senderEmail === currentUserEmail || currentMsg.senderEmail !== currentMsg.receiverEmail) return false;
+  
+  // 첫 번째 메시지는 항상 이름 표시
+  if (currentIndex === 0) return true;
+  
+  const prevMsg = messages[currentIndex - 1];
+  
+  // 이전 메시지 발신자가 다르면 이름 표시
+  if (currentMsg.senderEmail !== prevMsg.senderEmail) return true;
+  
+  // 같은 발신자인 경우 시간이 다르면 이름 표시
+  return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(prevMsg.timestamp);
+};
+
+const shouldShowMessageTime = (messages, currentIndex, currentUserEmail) => {
+  const currentMsg = messages[currentIndex];
+  
+  // 현재 사용자가 보낸 메시지는 시간 표시 안함 (아래쪽에 별도로 표시)
+  if (currentMsg.senderEmail === currentUserEmail || currentMsg.senderEmail !== currentMsg.receiverEmail) return false;
+  
+  // 마지막 메시지는 항상 시간 표시
+  if (currentIndex === messages.length - 1) return true;
+  
+  const nextMsg = messages[currentIndex + 1];
+  
+  // 다음 메시지 발신자가 다르면 시간 표시
+  if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
+  
+  // 같은 발신자인 경우 시간이 다르면 시간 표시
+  return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
+};
+
+const shouldShowSentMessageTime = (messages, currentIndex, currentUserEmail) => {
+  const currentMsg = messages[currentIndex];
+  
+  // 현재 사용자가 보낸 메시지가 아니면 시간 표시 안함
+  if (!(currentMsg.senderEmail === currentUserEmail || currentMsg.senderEmail !== currentMsg.receiverEmail)) return false;
+  
+  // 마지막 메시지는 항상 시간 표시
+  if (currentIndex === messages.length - 1) return true;
+  
+  const nextMsg = messages[currentIndex + 1];
+  
+  // 다음 메시지 발신자가 다르면 시간 표시
+  if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
+  
+  // 같은 발신자인 경우 시간이 다르면 시간 표시
+  return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
 };
 
 const shouldShowDateSeparator = (currentMessage, previousMessage) => {
@@ -1588,12 +1696,13 @@ onUnmounted(() => {
 }
 
 .message-wrapper {
-  margin: 12px 16px;
+  margin: 8px 16px;
   display: flex;
   flex-direction: column;
   position: relative;
   z-index: 1;
   animation: fadeInUp 0.3s ease-out;
+  gap: 4px;
 }
 
 @keyframes fadeInUp {
@@ -1607,16 +1716,63 @@ onUnmounted(() => {
   }
 }
 
-.message-bubble {
+/* 보낸 메시지 레이아웃 */
+.sent-message-layout {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 보낸 메시지 컨테이너 */
+.sent-message-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   max-width: 75%;
-  padding: 16px 20px;
-  border-radius: 24px;
+}
+
+/* 받은 메시지 레이아웃 */
+.received-message-layout {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* 받은 메시지 컨테이너 */
+.received-message-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  max-width: 75%;
+}
+
+/* 메시지 컨텐츠 컨테이너 */
+.message-content-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.sent-message-layout .message-content-container {
+  align-items: flex-end;
+}
+
+.received-message-layout .message-content-container {
+  align-items: flex-start;
+}
+
+/* 메시지 버블 */
+.message-bubble {
+  padding: 12px 16px;
+  border-radius: 18px;
   word-break: break-word;
   backdrop-filter: blur(10px);
   position: relative;
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 60px;
 }
 
 .message-bubble:hover {
@@ -1624,87 +1780,119 @@ onUnmounted(() => {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
-.sent {
-  align-items: flex-end;
-  margin-right: 8px;
+/* 보낸 메시지 하단 시간 */
+.message-time-bottom-sent {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  color: rgba(26, 115, 232, 0.8);
+  background: rgba(26, 115, 232, 0.1);
+  backdrop-filter: blur(5px);
+  padding: 1px 6px;
+  border-radius: 8px;
+  display: inline-block;
+  white-space: nowrap;
+  margin-top: 2px;
+  align-self: flex-end;
+  border: 1px solid rgba(26, 115, 232, 0.2);
 }
 
-.sent .message-bubble {
-  background: #1a73e8;
+/* 받은 메시지 상단 이름 */
+.sender-name-top {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  color: #5f6368;
+  margin-bottom: 4px;
+  align-self: flex-start;
+}
+
+/* 받은 메시지 하단 시간 */
+.message-time-bottom {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  color: #5f6368;
+  background: rgba(95, 99, 104, 0.1);
+  backdrop-filter: blur(5px);
+  padding: 1px 6px;
+  border-radius: 8px;
+  display: inline-block;
+  white-space: nowrap;
+  margin-top: 2px;
+  align-self: flex-start;
+}
+
+/* 보낸 메시지 버블 스타일 */
+.sent-message-layout .message-bubble {
+  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
   color: #ffffff;
   border-bottom-right-radius: 6px;
   box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-.sent .message-bubble:hover {
-  background: #1557b0;
+.sent-message-layout .message-bubble:hover {
+  background: linear-gradient(135deg, #1557b0 0%, #1248a0 100%);
   box-shadow: 0 6px 20px rgba(26, 115, 232, 0.35);
   transform: translateY(-1px);
 }
 
-.received {
-  align-items: flex-start;
-  margin-left: 8px;
-}
-
-.received .message-bubble {
-  background: #ffffff;
-  color: #1a1a1a;
+/* 받은 메시지 버블 스타일 */
+.received-message-layout .message-bubble {
+  background: rgba(255, 255, 255, 0.95);
+  color: #2c2c2c;
   border-bottom-left-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid #e8eaed;
 }
 
-.received .message-bubble:hover {
-  background: #f8f9fa;
+.received-message-layout .message-bubble:hover {
+  background: rgba(248, 249, 250, 0.95);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
 }
 
-.sender-name {
-  font-size: 0.75rem;
-  margin-bottom: 6px;
-  opacity: 0.9;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  color: #666666;
-}
 
+/* 메시지 텍스트 스타일 */
 .message-text {
   font-size: 0.95rem;
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: 0.01em;
   word-break: break-word;
+  margin: 0;
 }
 
-.sent .message-text {
+.sent-message-layout .message-text {
   color: #ffffff;
   font-weight: 500;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.received .message-text {
+.received-message-layout .message-text {
   color: #2c2c2c;
   font-weight: 400;
 }
 
+/* 메시지 시간 스타일 */
 .message-time {
-  font-size: 0.7rem;
-  margin-top: 6px;
-  opacity: 0.8;
+  font-size: 0.65rem;
+  opacity: 0.7;
   font-weight: 500;
+  letter-spacing: 0.025em;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(5px);
+  padding: 1px 6px;
+  border-radius: 8px;
+  display: inline-block;
+  white-space: nowrap;
 }
 
-.sent .message-time {
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
 
-.received .message-time {
-  color: #5f6368;
-}
 /* 이미지 컨테이너 스타일 */
 .image-container {
   display: flex;
