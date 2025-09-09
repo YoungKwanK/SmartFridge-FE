@@ -216,7 +216,7 @@ export default {
       // OAuth 설정
       googleUrl: "https://accounts.google.com/o/oauth2/auth",
       googleClientId: "374485739574-jumcdbdoujbiibr15dhncieme5t1n3vb.apps.googleusercontent.com",
-      googleRedirectUrl: "http://www.smartfridge.cloud/oauth/google/redirect",
+      googleRedirectUrl: "https://www.smartfridge.cloud/oauth/google/redirect",
       googleScope: "openid email profile",
       
       kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
