@@ -21,6 +21,10 @@ jobs:
       - name: npm install
         working-directory: .
         run: npm install
+
+      - name: .env setting
+        run: |
+          echo "VUE_APP_API_BASE_URL=${{ secrets.VUE_APP_API_BASE_URL }}" >> .env
       
       - name : npm build
         working-directory: .
@@ -37,6 +41,3 @@ jobs:
         run: aws s3 cp ./dist s3://www.smartfridge.cloud/ --recursive
       - name: invalidate cloudfront
         run: aws cloudfront create-invalidation --distribution-id EYDLID2ODD275 --paths "/*"
-      - name: .env setting
-        run: |
-          echo "VUE_APP_API_BASE_URL=${{ secrets.VUE_APP_API_BASE_URL }}" >> .env
