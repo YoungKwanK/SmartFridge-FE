@@ -190,30 +190,6 @@ function startConnectionMonitoring(store) {
 // 전역 SSE 연결 종료
 // (삭제됨) 외부에서 강제 종료하는 함수는 현재 사용하지 않음
 
-// 로컬 스토리지 키 생성
-function getTypeCountsStorageKey(fridgeId) {
-  const fid = typeof fridgeId === 'string' ? fridgeId : (fridgeId ?? localStorage.getItem('currentFridgeId'));
-  return `sf:typeCounts:${fid || 'default'}`;
-}
-
-function saveTypeCountsToStorage(fridgeId, typeCounts) {
-  try {
-    const key = getTypeCountsStorageKey(fridgeId);
-    localStorage.setItem(key, JSON.stringify(typeCounts));
-  } catch (e) {
-    // ignore storage errors
-  }
-}
-
-function loadTypeCountsFromStorage(fridgeId) {
-  try {
-    const key = getTypeCountsStorageKey(fridgeId);
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
-}
 
 export default {
   namespaced: true,
@@ -253,9 +229,6 @@ export default {
       // typeCounts 업데이트 (사이드바 배지용)
       if (notification.type && notification.type in state.typeCounts) {
         state.typeCounts[notification.type]++;
-        // 변경사항 저장
-        const fid = notification.fridgeId ?? localStorage.getItem('currentFridgeId');
-        saveTypeCountsToStorage(fid, state.typeCounts);
       }
  
       // 냉장고 알림 처리
@@ -336,13 +309,11 @@ export default {
       state.typeCounts.NEW_INQUIRY = 0;
       state.typeCounts.ADMIN_REPLY = 0;
       state.typeCounts.INQUIRY_REPLY = 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
     
     // 유저관리 페이지 진입 시 MANAGER_CHAT 알림 제거
     clearAdminChatNotifications(state) {
       state.typeCounts.MANAGER_CHAT = 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
 
     // 채팅 알림 제거
@@ -350,17 +321,14 @@ export default {
       state.typeCounts.MANAGER_CHAT = 0;
       state.typeCounts.GROUP_CHAT = 0;
       state.typeCounts.ROOM_FULL = 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
 
     // 채팅 배지 상태 직접 설정 (방 목록의 미읽음 합계를 반영)
     setAdminChatCount(state, count) {
       state.typeCounts.MANAGER_CHAT = count > 0 ? 1 : 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
     setGroupChatCount(state, count) {
       state.typeCounts.GROUP_CHAT = count > 0 ? 1 : 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
 
     // 저장된 typeCounts 로드
@@ -394,14 +362,14 @@ export default {
       createSSEConnection(targetStore);
     },
 
-    // 저장된 배지 카운트 복원
-    hydrateTypeCounts({ commit }) {
-      const fid = localStorage.getItem('currentFridgeId');
-      const stored = loadTypeCountsFromStorage(fid);
-      if (stored) {
-        commit('setTypeCounts', stored);
-      }
-    },
+    // 저장된 배지 카운트 복원 (로컬 스토리지 사용 중단으로 제거)
+    // hydrateTypeCounts({ commit }) {
+    //   const fid = localStorage.getItem('currentFridgeId');
+    //   const stored = loadTypeCountsFromStorage(fid);
+    //   if (stored) {
+    //     commit('setTypeCounts', stored);
+    //   }
+    // },
 
     // (삭제됨) 연결 종료/유지/강제 확인 액션
 
@@ -420,8 +388,7 @@ export default {
         // 새로운 냉장고로 재연결
         setTimeout(() => {
           dispatch('initSSE');
-          // 새 냉장고의 저장된 배지 카운트 복원
-          dispatch('hydrateTypeCounts');
+          // 새 냉장고의 배지 카운트는 스토어에서 관리됨
         }, 100);
       }
     },
