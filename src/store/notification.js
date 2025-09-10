@@ -187,34 +187,6 @@ function startConnectionMonitoring(store) {
   }, 30000);
 }
 
-// 전역 SSE 연결 종료
-// (삭제됨) 외부에서 강제 종료하는 함수는 현재 사용하지 않음
-
-// 로컬 스토리지 키 생성
-function getTypeCountsStorageKey(fridgeId) {
-  const fid = typeof fridgeId === 'string' ? fridgeId : (fridgeId ?? localStorage.getItem('currentFridgeId'));
-  return `sf:typeCounts:${fid || 'default'}`;
-}
-
-function saveTypeCountsToStorage(fridgeId, typeCounts) {
-  try {
-    const key = getTypeCountsStorageKey(fridgeId);
-    localStorage.setItem(key, JSON.stringify(typeCounts));
-  } catch (e) {
-    // ignore storage errors
-  }
-}
-
-function loadTypeCountsFromStorage(fridgeId) {
-  try {
-    const key = getTypeCountsStorageKey(fridgeId);
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
-}
-
 export default {
   namespaced: true,
   state: {
@@ -253,9 +225,6 @@ export default {
       // typeCounts 업데이트 (사이드바 배지용)
       if (notification.type && notification.type in state.typeCounts) {
         state.typeCounts[notification.type]++;
-        // 변경사항 저장
-        const fid = notification.fridgeId ?? localStorage.getItem('currentFridgeId');
-        saveTypeCountsToStorage(fid, state.typeCounts);
       }
  
       // 냉장고 알림 처리
@@ -329,30 +298,30 @@ export default {
       }
     },
     
-    // (삭제됨) 채팅 알림 일괄 제거
-    
     // 문의 알림 제거
     clearInquiryNotifications(state) {
       state.typeCounts.NEW_INQUIRY = 0;
       state.typeCounts.ADMIN_REPLY = 0;
       state.typeCounts.INQUIRY_REPLY = 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
     
     // 유저관리 페이지 진입 시 MANAGER_CHAT 알림 제거
     clearAdminChatNotifications(state) {
       state.typeCounts.MANAGER_CHAT = 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
+    },
+
+    // 채팅 알림 제거
+    clearChatNotifications(state) {
+      state.typeCounts.GROUP_CHAT = 0;
+      state.typeCounts.ROOM_FULL = 0;
     },
 
     // 채팅 배지 상태 직접 설정 (방 목록의 미읽음 합계를 반영)
     setAdminChatCount(state, count) {
       state.typeCounts.MANAGER_CHAT = count > 0 ? 1 : 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
     setGroupChatCount(state, count) {
       state.typeCounts.GROUP_CHAT = count > 0 ? 1 : 0;
-      saveTypeCountsToStorage(localStorage.getItem('currentFridgeId'), state.typeCounts);
     },
 
     // 저장된 typeCounts 로드
@@ -386,17 +355,6 @@ export default {
       createSSEConnection(targetStore);
     },
 
-    // 저장된 배지 카운트 복원
-    hydrateTypeCounts({ commit }) {
-      const fid = localStorage.getItem('currentFridgeId');
-      const stored = loadTypeCountsFromStorage(fid);
-      if (stored) {
-        commit('setTypeCounts', stored);
-      }
-    },
-
-    // (삭제됨) 연결 종료/유지/강제 확인 액션
-
     // 냉장고 변경 시 SSE 연결 재설정
     refreshSSEOnFridgeChange({ commit, dispatch }, newFridgeId) {
       if (newFridgeId) {
@@ -412,8 +370,8 @@ export default {
         // 새로운 냉장고로 재연결
         setTimeout(() => {
           dispatch('initSSE');
-          // 새 냉장고의 저장된 배지 카운트 복원
-          dispatch('hydrateTypeCounts');
+          // 새 냉장고의 채팅 배지 상태 동기화
+          dispatch('updateChatBadgesOnFridgeEnter', newFridgeId);
         }, 100);
       }
     },
@@ -437,6 +395,38 @@ export default {
     updateChatBadgePresence({ commit }, { adminHasUnread, groupHasUnread }) {
       commit('setAdminChatCount', adminHasUnread ? 1 : 0);
       commit('setGroupChatCount', groupHasUnread ? 1 : 0);
+    },
+
+    // 냉장고 진입 시 채팅 목록 조회하여 배지 상태 업데이트
+    async updateChatBadgesOnFridgeEnter({ commit }, fridgeId) {
+      try {
+        // 일반 채팅방 목록 조회
+        const chatResponse = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        });
+        
+        let allRooms = [];
+        if (chatResponse.ok) {
+          const chatData = await chatResponse.json();
+          allRooms = chatData.result || [];
+          
+          // 첫 번째 방은 관리자 채팅, 나머지는 그룹 채팅
+          const [, ...groupRooms] = allRooms;
+          
+          // 그룹 채팅 미읽음 확인
+          const groupHasUnread = groupRooms?.some(room => (room.unReadCount || 0) > 0);
+          commit('setGroupChatCount', groupHasUnread ? 1 : 0);
+        }
+
+        // 관리자 채팅 미읽음 확인 (채팅방 목록의 첫 번째 방이 관리자 채팅방)
+        const adminHasUnread = allRooms.length > 0 && (allRooms[0]?.unReadCount || 0) > 0;
+        commit('setAdminChatCount', adminHasUnread ? 1 : 0);
+        
+      } catch (error) {
+        console.error('채팅 배지 상태 업데이트 실패:', error);
+      }
     }
   },
   getters: {
@@ -474,6 +464,10 @@ export default {
         return state.typeCounts.ADMIN_REPLY || 0;
       }
     },
-    chatBadgeCount: state => state.typeCounts.MANAGER_CHAT + state.typeCounts.GROUP_CHAT + state.typeCounts.ROOM_FULL
+    chatBadgeCount: (state) => {
+      // MANAGER_CHAT은 채팅 배지에 포함하지 않음 (유저 관리 탭에서 별도 관리됨)
+      // GROUP_CHAT과 ROOM_FULL만 채팅 배지에 포함
+      return state.typeCounts.GROUP_CHAT + state.typeCounts.ROOM_FULL;
+    }
   }
 };

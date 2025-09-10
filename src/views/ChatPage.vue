@@ -56,8 +56,6 @@ const handleRoomLeft = () => {
 
 // 페이지 진입 시 채팅 알림 제거 및 냉장고 ID 확인
 onMounted(() => {
-  // 페이지 진입 시 알림 카운트를 초기화하지 않음 (배지 유지)
-  
   // 현재 냉장고 ID 확인
   const currentFridgeId = store.getters.getCurrentFridgeId;
   if (!currentFridgeId) {
@@ -65,6 +63,9 @@ onMounted(() => {
     router.push('/fridge/list');
     return;
   }
+  
+  // 채팅 페이지 진입 시 알림 제거 (배지 초기화)
+  store.dispatch('notification/clearChatNotificationsOnEnter');
 });
 </script>
 

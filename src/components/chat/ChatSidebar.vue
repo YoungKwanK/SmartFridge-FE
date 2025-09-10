@@ -354,6 +354,34 @@ onMounted(async () => {
   // 초기 데이터 로드
   await refreshMyChatRooms();
   await refreshPurchaseRooms();
+  try {
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
+    const allRooms = getResultData(response); // 서버에서 받은 채팅방 배열
+
+    const [first, ...rest] = allRooms;
+    managerRoom.value = first;
+    myPurchaseRooms.value = rest;
+
+    // 배지 동기화: 그룹 채팅만 관리 (MANAGER_CHAT은 유저 관리 탭에서 별도 관리)
+    const groupHasUnread = rest?.some(r => (r.unReadCount || 0) > 0);
+    store.commit('notification/setGroupChatCount', groupHasUnread ? 1 : 0);
+  } catch (error) {
+    console.error("API 호출 에러:", error);
+  } finally {
+    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
+    isLoading.value = false;
+  }
+
+  try {
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
+    purchaseRooms.value = getResultData(response); // 서버에서 받은 채팅방 배열
+  } catch (error) {
+    console.error("API 호출 에러:", error);
+    alert(getErrorMessage(error));
+  } finally {
+    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
+    isLoading.value = false;
+  }
 
   // 전역 SSE로부터 전달되는 실시간 알림 수신 시작
   window.addEventListener('realtime-notification', handleRealtimeNotification);
@@ -463,13 +491,19 @@ const selectRoom = (room, roomType) => {
   emit('select-room', roomWithInfo, roomType);
   selectedRoomId.value = room.roomId;
   emit('select-room', room, roomType);
-  // 선택 시 해당 방의 미읽음 카운트 초기화 (GROUP_CHAT만, ADMIN_CHAT은 FridgeMemberList에서 관리)
-  if (roomType !== 'manager') {
+  // 선택 시 해당 방의 미읽음 카운트만 초기화 (배지는 서버 상태 기반으로 유지)
+  if (roomType === 'manager') {
+    // 관리자 채팅 선택 시
+    if (managerRoom.value && managerRoom.value.roomId === room.roomId) {
+      managerRoom.value.unReadCount = 0;
+    }
+  } else {
+    // 그룹 채팅 선택 시
     const target = myPurchaseRooms.value.find(r => r.roomId === room.roomId);
     if (target) target.unReadCount = 0;
   }
 
-  // 배지 동기화: GROUP_CHAT만 관리 (ADMIN_CHAT은 FridgeMemberList에서 별도 관리)
+  // 배지 동기화: 그룹 채팅만 관리 (MANAGER_CHAT은 유저 관리 탭에서 별도 관리)
   const groupHasUnread = myPurchaseRooms.value?.some(r => (r.unReadCount || 0) > 0);
   store.commit('notification/setGroupChatCount', groupHasUnread ? 1 : 0);
 };
@@ -557,7 +591,7 @@ function handleRealtimeNotification(evt) {
   // 내 메시지는 무시
   if (n.senderEmail && n.senderEmail === myEmail.value) return;
   const rid = extractRoomIdFromNotification(n);
-  const isChatType = n.type === 'ADMIN_CHAT' || n.type === 'GROUP_CHAT' || n.type === 'ROOM_FULL';
+  const isChatType = n.type === 'MANAGER_CHAT' || n.type === 'GROUP_CHAT' || n.type === 'ROOM_FULL';
   if (!isChatType) return;
 
   // 방 ID가 있으면 해당 방만 증분
@@ -565,8 +599,11 @@ function handleRealtimeNotification(evt) {
     // 현재 열려있는 방이면 증가하지 않음
     if (selectedRoomId.value === rid) return;
 
-    if (n.type === 'ADMIN_CHAT') {
-      // ADMIN_CHAT은 FridgeMemberList에서 관리하므로 여기서는 처리하지 않음
+    if (n.type === 'MANAGER_CHAT') {
+      // 관리자 채팅의 unReadCount 업데이트 (배지는 유저 관리 탭에서 관리)
+      if (managerRoom.value && managerRoom.value.roomId === rid) {
+        managerRoom.value.unReadCount = (managerRoom.value.unReadCount || 0) + 1;
+      }
       return;
     }
 
@@ -581,7 +618,7 @@ function handleRealtimeNotification(evt) {
   // 방 ID를 알 수 없거나 목록에 없다면 전체 카운트를 서버에서 동기화
   refreshUnreadCounts();
 
-  // 배지도 함께 동기화: GROUP_CHAT만 관리 (ADMIN_CHAT은 FridgeMemberList에서 별도 관리)
+  // 배지 동기화: 그룹 채팅만 관리 (MANAGER_CHAT은 유저 관리 탭에서 별도 관리)
   const groupHasUnread = myPurchaseRooms.value?.some(r => (r.unReadCount || 0) > 0);
   store.commit('notification/setGroupChatCount', groupHasUnread ? 1 : 0);
 }
@@ -605,7 +642,7 @@ async function refreshUnreadCounts() {
       if (found) room.unReadCount = found.unReadCount || 0;
     });
 
-    // 배지 동기화: GROUP_CHAT만 관리 (MANAGER_CHAT은 FridgeMemberList에서 별도 관리)
+    // 배지 동기화: 그룹 채팅만 관리 (MANAGER_CHAT은 유저 관리 탭에서 별도 관리)
     const groupHasUnread = rest?.some(r => (r.unReadCount || 0) > 0);
     store.commit('notification/setGroupChatCount', groupHasUnread ? 1 : 0);
   } catch (e) {

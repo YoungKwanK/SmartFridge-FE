@@ -154,17 +154,31 @@ const handleRealtimeNotificationEvent = (event) => {
   }
 };
 
-// Props로 받은 fridgeId 사용하여 알림 개수 계산
+// Props로 받은 fridgeId 사용하여 알림 개수 계산 (채팅 알림 제외)
 const notificationCount = computed(() => {
-  return initialNotifications.value.length + realtimeNotifications.value.length;
+  const allNotifications = [...initialNotifications.value, ...realtimeNotifications.value];
+  
+  // 채팅 관련 알림 필터링
+  const filteredNotifications = allNotifications.filter(notification => {
+    const chatTypes = ['MANAGER_CHAT', 'GROUP_CHAT', 'ROOM_FULL'];
+    return !chatTypes.includes(notification.type);
+  });
+  
+  return filteredNotifications.length;
 });
 
 // 최근 알림 목록 (초기값 + 실시간, 최대 5개)
 const recentNotifications = computed(() => {
   const allNotifications = [...initialNotifications.value, ...realtimeNotifications.value];
   
+  // 채팅 관련 알림 필터링 (Dashboard에서는 채팅 알림 제외)
+  const filteredNotifications = allNotifications.filter(notification => {
+    const chatTypes = ['MANAGER_CHAT', 'GROUP_CHAT', 'ROOM_FULL'];
+    return !chatTypes.includes(notification.type);
+  });
+  
   // 데이터 구조 통일: createdAt과 timestamp를 모두 사용
-  const normalizedNotifications = allNotifications.map(notification => ({
+  const normalizedNotifications = filteredNotifications.map(notification => ({
     ...notification,
     // createdAt이 없으면 timestamp 사용, 둘 다 없으면 현재 시간 사용
     normalizedTime: notification.createdAt || notification.timestamp || new Date().toISOString()

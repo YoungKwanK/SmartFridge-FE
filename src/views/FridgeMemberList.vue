@@ -620,8 +620,14 @@ onMounted(async () => {
   // 전역 SSE 이벤트 리스너 등록
   setupAdminChatListener();
   
-  // 초기 배지 상태 설정
+  // 초기 배지 상태 설정 (사용자 목록의 실제 unReadCount 기반)
   updateAdminChatBadge();
+  
+  // 냉장고 진입 시 채팅 배지 상태 동기화 (사이드바 배지 업데이트)
+  const currentFridgeId = store.getters.getCurrentFridgeId;
+  if (currentFridgeId) {
+    await store.dispatch('notification/updateChatBadgesOnFridgeEnter', currentFridgeId);
+  }
 });
 
 // --- Watcher ---
@@ -716,6 +722,9 @@ const loadChatHistory = async (user, isLoadMore = false) => {
       const userIndex = users.value.findIndex(u => u.email === user.email);
       if (userIndex !== -1) {
         users.value[userIndex].unReadCount = 0;
+        
+        // 사이드바 배지 상태도 함께 업데이트
+        updateAdminChatBadge();
       }
     }
 
