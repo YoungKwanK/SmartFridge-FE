@@ -43,7 +43,13 @@
             variant="outlined"
             density="compact"
             type="number"
-            :rules="[v => v > 1 || '최소 2명 이상이어야 합니다.']"
+            min="2"
+            max="20"
+            :rules="[
+              v => v >= 2 || '최소 2명 이상이어야 합니다.',
+              v => v <= 20 || '최대 20명까지만 가능합니다.'
+            ]"
+            @input="validateParticipants"
           ></v-text-field>
         </v-form>
       </v-card-text>
@@ -93,11 +99,23 @@ const closeModal = () => {
   newRoomData.value = { title: '', contents: '', maxParticipants: 2, productUrl: '' };
 };
 
+const validateParticipants = () => {
+  // 입력 값이 범위를 벗어나면 자동으로 보정
+  if (newRoomData.value.maxParticipants < 2) {
+    newRoomData.value.maxParticipants = 2;
+  } else if (newRoomData.value.maxParticipants > 20) {
+    newRoomData.value.maxParticipants = 20;
+  }
+};
+
 const handleCreateRoom = async () => {
-  if (!newRoomData.value.title || newRoomData.value.maxParticipants <= 1) {
-    alert('방 제목과 참여 인원을 올바르게 입력해주세요.');
+  if (!newRoomData.value.title) {
+    alert('방 제목을 입력해주세요.');
     return;
   }
+  
+  // 최종 검증 (혹시 모르는 경우를 대비)
+  validateParticipants();
   
   isCreating.value = true;
   try {
