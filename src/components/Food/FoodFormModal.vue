@@ -105,7 +105,7 @@
                <div class="form-section">
                  <label class="form-label">
                    <v-icon size="18" color="warning" class="mr-2">mdi-calendar</v-icon>
-                   유통기한 날짜
+                   유통기한 날짜{{ isTempMode ? ' (선택사항)' : ' *' }}
                  </label>
                  <v-text-field
                    v-model="formData.expirationDate"
@@ -116,7 +116,7 @@
                    class="custom-input"
                    placeholder="날짜를 선택하세요"
                    :min="getTodayDate()"
-                   :rules="[v => !v || new Date(v) >= new Date(getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다']"
+                   :rules="getExpirationRules()"
                    :disabled="readOnly"
                  ></v-text-field>
                </div>
@@ -286,7 +286,8 @@ export default {
       },
       storageTypes: [],
       categories: [],
-      isLoading: false
+      isLoading: false,
+      isTempMode: false // 임시등록 모드 여부
     }
   },
   created() {
@@ -372,7 +373,21 @@ export default {
       const day = String(today.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     },
+    getExpirationRules() {
+      // 임시등록인 경우 유통기한 선택사항, 일반 등록인 경우 필수
+      if (this.isTempMode) {
+        return [v => !v || new Date(v) >= new Date(this.getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다'];
+      } else {
+        return [
+          v => !!v || '유통기한 날짜를 선택해주세요',
+          v => !v || new Date(v) >= new Date(this.getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다'
+        ];
+      }
+    },
     async save(isTemp) {
+      // 임시등록 모드 설정
+      this.isTempMode = isTemp;
+      
       // 필수 필드 검증
       if (!this.formData.name.trim()) {
         this.$refs.snackbar.showWarning("식품명을 입력해주세요.");
@@ -386,6 +401,12 @@ export default {
       
       if (!this.formData.storageType) {
         this.$refs.snackbar.showWarning("보관위치를 선택해주세요.");
+        return;
+      }
+      
+      // 일반 등록인 경우 유통기한 필수 검증
+      if (!isTemp && !this.formData.expirationDate) {
+        this.$refs.snackbar.showWarning("유통기한 날짜를 선택해주세요.");
         return;
       }
       
