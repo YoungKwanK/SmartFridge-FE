@@ -84,10 +84,23 @@
                 <v-avatar 
                   :color="participant.profileImage ? undefined : getAvatarColor(index)" 
                   size="48"
-                  :image="participant.profileImage"
                   class="participant-avatar"
                 >
-                  <span v-if="!participant.profileImage" class="avatar-text">
+                  <v-img
+                    v-if="participant.profileImage && participant.profileImage.startsWith('http')"
+                    :src="participant.profileImage"
+                    :alt="participant.name || participant.userName"
+                    cover
+                    class="profile-image"
+                    @error="handleImageError(participant)"
+                  />
+                  <img
+                    v-else-if="participant.profileImage && participant.profileImage.startsWith('data:')"
+                    :src="participant.profileImage"
+                    :alt="participant.name || participant.userName"
+                    class="profile-image"
+                  />
+                  <span v-else class="avatar-text">
                     {{ getInitial(participant.name || participant.userName) }}
                   </span>
                 </v-avatar>
@@ -189,6 +202,13 @@ const getAvatarColor = (index) => {
   return colors[index % colors.length];
 };
 
+// 이미지 로딩 오류 처리
+const handleImageError = (participant) => {
+  console.log('프로필 이미지 로딩 실패:', participant.profileImage);
+  // 이미지 로딩 실패 시 profileImage를 null로 설정하여 초기값으로 대체
+  participant.profileImage = null;
+};
+
 // API 호출 함수 - 공동구매 채팅방만 처리
 const fetchParticipants = async () => {
   if (!props.roomId || !props.roomType || props.roomType !== 'purchase') return;
@@ -205,13 +225,24 @@ const fetchParticipants = async () => {
 
     if (participantsData) {
       // map을 사용해 participantsData 배열을 새로운 형식의 배열로 변환한 뒤 한 번에 할당
-      participants.value = participantsData.map(participant => ({
-        name: participant.memberName,
-        email: participant.memberEmail,
-        isCreator: participant.isCreator,
-        isOnline: participant.isOnline,
-        profileImage: participant.profileImage
-      }));
+      participants.value = participantsData.map(participant => {
+        // 프로필 이미지 유효성 검사
+        let profileImage = null;
+        if (participant.profileImage && participant.profileImage.trim() !== '') {
+          // URL이 유효한지 확인
+          if (participant.profileImage.startsWith('http') || participant.profileImage.startsWith('data:')) {
+            profileImage = participant.profileImage;
+          }
+        }
+        
+        return {
+          name: participant.memberName,
+          email: participant.memberEmail,
+          isCreator: participant.isCreator,
+          isOnline: participant.isOnline,
+          profileImage: profileImage
+        };
+      });
     }
   } catch (err) {
     console.error("참여자 목록 조회 실패:", err);
@@ -419,6 +450,13 @@ const closeModal = () => {
   font-size: 1.1rem;
   font-weight: 600;
   color: white;
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .online-indicator {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authService from './authService.js';
 
-const API_BASE_URL = process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.VUE_APP_API_BASE_URL;
 
 // 토큰 갱신 중인지 확인하는 플래그
 let isRefreshing = false;
