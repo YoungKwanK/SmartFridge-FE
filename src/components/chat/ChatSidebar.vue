@@ -1,5 +1,5 @@
 <template>
-  <v-container class="chat-sidebar-container">
+  <v-container class="chat-sidebar-container" style="padding: 0px 10px 0px 0px !important;">
     <v-card class="d-flex flex-column chat-sidebar-card" rounded="xl">
       <v-list-item class="pa-4">
         <template v-slot:prepend>
