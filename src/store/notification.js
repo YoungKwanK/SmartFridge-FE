@@ -187,10 +187,6 @@ function startConnectionMonitoring(store) {
   }, 30000);
 }
 
-// 전역 SSE 연결 종료
-// (삭제됨) 외부에서 강제 종료하는 함수는 현재 사용하지 않음
-
-
 export default {
   namespaced: true,
   state: {
@@ -302,8 +298,6 @@ export default {
       }
     },
     
-    // (삭제됨) 채팅 알림 일괄 제거
-    
     // 문의 알림 제거
     clearInquiryNotifications(state) {
       state.typeCounts.NEW_INQUIRY = 0;
@@ -318,7 +312,6 @@ export default {
 
     // 채팅 알림 제거
     clearChatNotifications(state) {
-      state.typeCounts.MANAGER_CHAT = 0;
       state.typeCounts.GROUP_CHAT = 0;
       state.typeCounts.ROOM_FULL = 0;
     },
@@ -362,17 +355,6 @@ export default {
       createSSEConnection(targetStore);
     },
 
-    // 저장된 배지 카운트 복원 (로컬 스토리지 사용 중단으로 제거)
-    // hydrateTypeCounts({ commit }) {
-    //   const fid = localStorage.getItem('currentFridgeId');
-    //   const stored = loadTypeCountsFromStorage(fid);
-    //   if (stored) {
-    //     commit('setTypeCounts', stored);
-    //   }
-    // },
-
-    // (삭제됨) 연결 종료/유지/강제 확인 액션
-
     // 냉장고 변경 시 SSE 연결 재설정
     refreshSSEOnFridgeChange({ commit, dispatch }, newFridgeId) {
       if (newFridgeId) {
@@ -388,7 +370,8 @@ export default {
         // 새로운 냉장고로 재연결
         setTimeout(() => {
           dispatch('initSSE');
-          // 새 냉장고의 배지 카운트는 스토어에서 관리됨
+          // 새 냉장고의 채팅 배지 상태 동기화
+          dispatch('updateChatBadgesOnFridgeEnter', newFridgeId);
         }, 100);
       }
     },
@@ -481,6 +464,10 @@ export default {
         return state.typeCounts.ADMIN_REPLY || 0;
       }
     },
-    chatBadgeCount: state => state.typeCounts.MANAGER_CHAT + state.typeCounts.GROUP_CHAT + state.typeCounts.ROOM_FULL
+    chatBadgeCount: (state) => {
+      // MANAGER_CHAT은 채팅 배지에 포함하지 않음 (유저 관리 탭에서 별도 관리됨)
+      // GROUP_CHAT과 ROOM_FULL만 채팅 배지에 포함
+      return state.typeCounts.GROUP_CHAT + state.typeCounts.ROOM_FULL;
+    }
   }
 };
