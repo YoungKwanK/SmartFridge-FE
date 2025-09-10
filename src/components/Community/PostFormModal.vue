@@ -409,6 +409,10 @@ export default {
         
         console.log('전송할 게시글 데이터:', postData); // 디버깅용
         this.$emit('save', postData);
+        
+        // 게시글 저장 성공 후 폼 초기화
+        this.resetForm();
+        this.fileInputKey = 0; // 파일 입력 키 초기화
       } catch (error) {
         console.error('게시글 저장 실패:', error);
       } finally {

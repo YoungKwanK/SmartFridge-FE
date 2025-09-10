@@ -105,7 +105,7 @@
                <div class="form-section">
                  <label class="form-label">
                    <v-icon size="18" color="warning" class="mr-2">mdi-calendar</v-icon>
-                   유통기한 날짜 *
+                   유통기한 날짜
                  </label>
                  <v-text-field
                    v-model="formData.expirationDate"
@@ -116,7 +116,7 @@
                    class="custom-input"
                    placeholder="날짜를 선택하세요"
                    :min="getTodayDate()"
-                   :rules="[v => !!v || '유통기한 날짜를 선택해주세요', v => !v || new Date(v) >= new Date(getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다']"
+                   :rules="[v => !v || new Date(v) >= new Date(getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다']"
                    :disabled="readOnly"
                  ></v-text-field>
                </div>
@@ -389,12 +389,8 @@ export default {
         return;
       }
       
-      if (!this.formData.expirationDate) {
-        this.$refs.snackbar.showWarning("유통기한 날짜를 선택해주세요.");
-        return;
-      }
-      
-      if (new Date(this.formData.expirationDate) < new Date(this.getTodayDate())) {
+      // 유통기한이 입력된 경우에만 날짜 검증
+      if (this.formData.expirationDate && new Date(this.formData.expirationDate) < new Date(this.getTodayDate())) {
         this.$refs.snackbar.showWarning("유통기한은 오늘 날짜 이후여야 합니다.");
         return;
       }
