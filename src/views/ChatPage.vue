@@ -4,13 +4,14 @@
       <v-container fluid class="chat-padding fill-height">
         <v-row no-gutters class="fill-height">
           <v-col cols="12" md="4" lg="3" xl="2">
-            <ChatSidebar @select-room="handleRoomSelect" />
+            <ChatSidebar ref="chatSidebar" @select-room="handleRoomSelect" />
           </v-col>
           
           <v-col cols="12" md="8" lg="9" xl="10">
             <ChatWindow 
               :selected-room="selectedRoom" 
-              :selected-roomType="selectedRoomType" 
+              :selected-roomType="selectedRoomType"
+              @order-completed="handleOrderCompleted" 
             />
           </v-col>
         </v-row>
@@ -32,11 +33,19 @@ const router = useRouter();
 // 선택된 채팅방 정보를 저장할 반응형 변수
 const selectedRoom = ref(null);
 const selectedRoomType = ref(null);
+const chatSidebar = ref(null);
 
 // 사이드바에서 채팅방을 선택했을 때 호출될 함수
 const handleRoomSelect = (room, roomType) => {
   selectedRoom.value = room;
   selectedRoomType.value = roomType;
+};
+
+// 구매 완료 이벤트를 받아서 사이드바 새로고침
+const handleOrderCompleted = () => {
+  if (chatSidebar.value) {
+    chatSidebar.value.handleRoomCreated();
+  }
 };
 
 // 페이지 진입 시 채팅 알림 제거 및 냉장고 ID 확인

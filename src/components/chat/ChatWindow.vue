@@ -237,6 +237,8 @@ const props = defineProps({
   selectedRoomType: { type: String, default: null }
 });
 
+const emit = defineEmits(['order-completed']);
+
 // --- 상태 (State) ---
 const messages = ref([]);
 const newMessage = ref("");
@@ -697,6 +699,7 @@ const completeOrder = async () => {
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
     alert('공동 구매가 완료되었습니다.');
+    emit('order-completed');
   } catch (error) {
     console.error("요청 실패:", error);
     alert('요청에 실패했습니다. 다시 시도해주세요.');
