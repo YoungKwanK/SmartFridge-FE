@@ -22,9 +22,10 @@
             variant="outlined"
             density="compact"
             :rules="titleRules"
-            :counter="50"
-            :maxlength="50"
+            :counter="20"
+            :maxlength="20"
             placeholder="예: 맛있는 과자 공동구매"
+            class="mb-4"
           ></v-text-field>
           
           <v-textarea
@@ -34,9 +35,11 @@
             density="compact"
             rows="4"
             no-resize
-            :counter="500"
-            :maxlength="500"
+            :counter="30"
+            :maxlength="30"
+            :rules="contentsRules"
             placeholder="공동구매에 대한 자세한 설명을 입력해주세요"
+            class="mb-4"
           ></v-textarea>
           
           <v-text-field
@@ -47,6 +50,7 @@
             placeholder="https://example.com/product"
             :rules="urlRules"
             prepend-inner-icon="mdi-link"
+            class="mb-4"
           ></v-text-field>
           
           <v-text-field
@@ -106,9 +110,12 @@ const newRoomData = ref({
 
 // 유효성 검사 규칙들
 const titleRules = [
-  v => !!v || '방 제목은 필수입니다.',
   v => (v && v.length >= 2) || '방 제목은 최소 2글자 이상이어야 합니다.',
-  v => (v && v.length <= 50) || '방 제목은 최대 50글자까지 가능합니다.'
+  v => (v && v.length <= 20) || '방 제목은 최대 20글자까지 가능합니다.'
+];
+
+const contentsRules = [
+  v => !v || v.length <= 30 || '설명은 최대 30글자까지 가능합니다.'
 ];
 
 const urlRules = [
