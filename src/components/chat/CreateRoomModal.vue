@@ -35,8 +35,8 @@
             density="compact"
             rows="4"
             no-resize
-            :counter="30"
-            :maxlength="30"
+            :counter="100"
+            :maxlength="100"
             :rules="contentsRules"
             placeholder="공동구매에 대한 자세한 설명을 입력해주세요"
             class="mb-4"
@@ -115,7 +115,7 @@ const titleRules = [
 ];
 
 const contentsRules = [
-  v => !v || v.length <= 30 || '설명은 최대 30글자까지 가능합니다.'
+  v => !v || v.length <= 100 || '설명은 최대 100글자까지 가능합니다.'
 ];
 
 const urlRules = [
