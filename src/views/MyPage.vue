@@ -596,9 +596,20 @@ export default {
 
     viewPost(post) {
       // 게시글 상세 페이지로 이동
-      // fridgeId가 있으면 해당 냉장고의 게시글로, 없으면 현재 라우트의 fridgeId 사용
-      const fridgeId = post.fridgeId || this.$route.params.fridgeId || 'default'
-      this.$router.push(`/fridge/${fridgeId}/post/${post.id}`)
+      // post.fridgeId를 사용하여 해당 게시글이 속한 냉장고로 이동
+      const fridgeId = post.fridgeId
+      
+      if (!fridgeId) {
+        console.error('게시글에 냉장고 ID가 없습니다:', post)
+        alert('게시글 정보를 불러올 수 없습니다.')
+        return
+      }
+      
+      // store에 해당 게시글의 냉장고 ID를 설정
+      this.$store.commit('setCurrentFridgeId', fridgeId)
+      
+      // 게시글 상세 페이지로 이동 (냉장고 ID는 store에서 관리)
+      this.$router.push(`/fridge/post/${post.id}`)
     },
 
 
