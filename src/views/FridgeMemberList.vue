@@ -287,8 +287,8 @@
                                   />
                                 </div>
                               </div>
-                              <!-- 메시지 버블 -->
-                              <div class="message-bubble">
+                              <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
+                              <div v-if="message.message && message.message.trim()" class="message-bubble">
                                 <div class="message-text">{{ message.message }}</div>
                               </div>
                             </div>
@@ -327,8 +327,8 @@
                                   />
                                 </div>
                               </div>
-                              <!-- 메시지 버블 -->
-                              <div class="message-bubble">
+                              <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
+                              <div v-if="message.message && message.message.trim()" class="message-bubble">
                                 <div class="message-text">{{ message.message }}</div>
                               </div>
                             </div>

@@ -37,7 +37,13 @@
 
       <v-window v-model="tab" class="flex-grow-1" style="overflow-y: auto;">
         <v-window-item value="chat">
-          <v-list @mouseleave="hoveredRoomId = null">
+          <!-- 로딩 상태 표시 -->
+          <div v-if="isLoading" class="loading-container">
+            <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
+            <p class="loading-text">채팅방 목록을 불러오는 중...</p>
+          </div>
+          
+          <v-list v-else @mouseleave="hoveredRoomId = null">
              <div
                v-if="managerRoom && managerRoom.isManager===false"
                @click="selectRoom(managerRoom, 'manager')"
@@ -183,9 +189,9 @@
                  
                  <div class="action-button leave" @click.stop="leaveRoom(room)">
                    <div class="action-icon">
-                     <v-icon size="18">mdi-exit-to-app</v-icon>
+                     <v-icon size="18">{{ room.isCreator ? 'mdi-delete' : 'mdi-exit-to-app' }}</v-icon>
                    </div>
-                   <div class="action-text">나가기</div>
+                   <div class="action-text">{{ room.isCreator ? '삭제' : '나가기' }}</div>
                  </div>
                </div>
              </div>
@@ -193,7 +199,13 @@
         </v-window-item>
 
         <v-window-item value="groupbuy">
-          <v-list @mouseleave="hoveredRoomId = null">
+          <!-- 로딩 상태 표시 -->
+          <div v-if="isLoading" class="loading-container">
+            <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
+            <p class="loading-text">공동구매 목록을 불러오는 중...</p>
+          </div>
+          
+          <v-list v-else @mouseleave="hoveredRoomId = null">
             
             <div class="unified-action-bar-container">
               <div class="unified-action-bar">
@@ -283,10 +295,12 @@
        v-model="isModalOpen"
        :roomId="selectedRoomIdForModal"
        :isParticipant="isParticipantforModal"
+       @room-joined="handleRoomJoined"
      />
      <CreateRoomModal
        v-model="isCreateModalOpen"
        :fridge-id="fridgeId"
+       @room-created="handleRoomCreated"
      />
   </v-container>
 </template>
@@ -307,7 +321,7 @@ const isCreateModalOpen = ref(false);
 const tab = ref('chat');
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
-const emit = defineEmits(['select-room', 'select-roomType']);
+const emit = defineEmits(['select-room', 'select-roomType', 'room-left']);
 const isParticipantforModal = ref(false); // 사용자가 해당 방의 참여자인지 여부를 추적하는 ref 추가
 
 // [추가] 모달의 상태를 관리할 ref들을 추가합니다.
@@ -337,35 +351,9 @@ const sortedMyPurchaseRooms = computed(() => {
 });
 
 onMounted(async () => {
-  try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
-    const allRooms = getResultData(response); // 서버에서 받은 채팅방 배열
-
-    const [first, ...rest] = allRooms;
-    managerRoom.value = first;
-    myPurchaseRooms.value = rest;
-
-    // 배지 동기화: GROUP_CHAT만 관리 (MANAGER_CHAT은 FridgeMemberList에서 별도 관리)
-    const groupHasUnread = rest?.some(r => (r.unReadCount || 0) > 0);
-    store.commit('notification/setGroupChatCount', groupHasUnread ? 1 : 0);
-  } catch (error) {
-    console.error("API 호출 에러:", error);
-    alert(getErrorMessage(error));
-  } finally {
-    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
-    isLoading.value = false;
-  }
-
-  try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
-    purchaseRooms.value = getResultData(response); // 서버에서 받은 채팅방 배열
-  } catch (error) {
-    console.error("API 호출 에러:", error);
-    alert(getErrorMessage(error));
-  } finally {
-    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
-    isLoading.value = false;
-  }
+  // 초기 데이터 로드
+  await refreshMyChatRooms();
+  await refreshPurchaseRooms();
 
   // 전역 SSE로부터 전달되는 실시간 알림 수신 시작
   window.addEventListener('realtime-notification', handleRealtimeNotification);
@@ -393,6 +381,44 @@ const refreshPurchaseRooms = async () => {
     isLoading.value = false;
   }
 };
+
+// 나의 채팅방 목록 새로고침 함수
+const refreshMyChatRooms = async () => {
+  try {
+    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
+    const allRooms = getResultData(response);
+
+    const [first, ...rest] = allRooms;
+    managerRoom.value = first;
+    myPurchaseRooms.value = rest;
+
+    // 배지 동기화: GROUP_CHAT만 관리 (MANAGER_CHAT은 FridgeMemberList에서 별도 관리)
+    const groupHasUnread = rest?.some(r => (r.unReadCount || 0) > 0);
+    store.commit('notification/setGroupChatCount', groupHasUnread ? 1 : 0);
+  } catch (error) {
+    console.error("API 호출 에러:", error);
+    alert(getErrorMessage(error));
+  }
+};
+
+// 공동 구매 생성 후 목록 새로고침 함수
+const handleRoomCreated = async () => {
+  await Promise.all([
+    refreshMyChatRooms(),
+    refreshPurchaseRooms()
+  ]);
+};
+
+// 채팅방 참여 후 목록 새로고침 함수
+const handleRoomJoined = async (roomId) => {
+  console.log('채팅방 참여 완료:', roomId);
+  await handleRoomCreated();
+};
+
+// 외부에서 호출할 수 있는 함수들을 expose
+defineExpose({
+  handleRoomCreated
+});
 
 const isRoomOpen = (room) => {
   // room.joinStatus 값에 따라 방의 열림/닫힘 상태 판단
@@ -460,15 +486,56 @@ const viewRoomInfo = (room, isParticipant) => {
 };
 
 const leaveRoom = async(room) => {
+  if (!room || !room.roomId) {
+    alert('채팅방 정보가 올바르지 않습니다.');
+    return;
+  }
+
+  // 방장인 경우 삭제 확인, 일반 참여자인 경우 나가기 확인
+  const isCreator = room.isCreator;
+  const actionText = isCreator ? '삭제' : '나가기';
+  const confirmMessage = isCreator 
+    ? `정말로 이 채팅방을 삭제하시겠습니까?\n삭제된 채팅방은 복구할 수 없습니다.`
+    : `정말로 이 채팅방에서 나가시겠습니까?`;
+
+  const confirmed = confirm(confirmMessage);
+  if (!confirmed) return;
+
+  isLoading.value = true;
+  
   try {
-    await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
-    alert('방에서 나갔습니다.');
-    window.location.reload();
+    if (isCreator) {
+      // 방장인 경우 채팅방 삭제
+      await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
+      alert('채팅방이 삭제되었습니다.');
+    } else {
+      // 일반 참여자인 경우 나가기
+      await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
+      alert('채팅방에서 나갔습니다.');
+    }
+    
+    // 목록 새로고침
+    await handleRoomCreated();
+    
+    // 채팅방 선택 초기화 이벤트 emit
+    emit('room-left');
+    
   } catch (error) {
     console.error("API 호출 에러:", error);
-    alert(getErrorMessage(error));
+    
+    // 구체적인 에러 메시지 표시
+    let errorMessage = getErrorMessage(error);
+    
+    if (error.response?.status === 403) {
+      errorMessage = '이 작업을 수행할 권한이 없습니다.';
+    } else if (error.response?.status === 404) {
+      errorMessage = '채팅방을 찾을 수 없습니다.';
+    } else if (error.response?.status === 400) {
+      errorMessage = '잘못된 요청입니다.';
+    }
+    
+    alert(`${actionText}에 실패했습니다: ${errorMessage}`);
   } finally {
-    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
     isLoading.value = false;
   }
 };
@@ -1504,6 +1571,23 @@ async function refreshUnreadCounts() {
   font-weight: 600 !important;
 }
 
+/* 로딩 상태 스타일 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 200px;
+}
+
+.loading-text {
+  margin-top: 16px;
+  color: #666;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
 /* 다크모드에서 공동구매 생성 버튼 */
 @media (prefers-color-scheme: dark) {
   .creation-card {
@@ -1550,6 +1634,11 @@ async function refreshUnreadCounts() {
   
   .refresh-card:hover .creation-text {
     color: #a7f3d0;
+  }
+  
+  /* 다크모드에서 로딩 상태 */
+  .loading-text {
+    color: #9ca3af;
   }
 }
 
