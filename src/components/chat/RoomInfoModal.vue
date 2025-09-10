@@ -131,8 +131,7 @@ const joinRoom = async(roomId) => {
     return;
   }
 
-  const confirmed = confirm('이 채팅방에 참여하시겠습니까?');
-  if (!confirmed) return;
+  // 확인 대화상자 제거 - 바로 참여
 
   isLoading.value = true;
   
