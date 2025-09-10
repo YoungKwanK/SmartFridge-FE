@@ -156,14 +156,15 @@
           <p class="loading-text">알림을 불러오는 중...</p>
         </div>
         
-        <div v-else-if="hasMoreData" class="load-more-section">
-          <v-btn @click="loadMoreData" variant="outlined" color="primary" class="load-more-btn" size="large">
-            더 보기
-          </v-btn>
+        <!-- 스크롤 페이징 로딩 인디케이터 -->
+        <div v-if="isLoadingMore" class="load-more-indicator">
+          <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
+          <p class="loading-more-text">더 많은 알림을 불러오는 중...</p>
         </div>
         
-        <div v-else-if="notificationList.length > 0" class="no-more-data">
-          <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-check-circle</v-icon>
+        <!-- 더 이상 로드할 데이터가 없을 때 - 알림 목록 맨 마지막에 표시 -->
+        <div v-if="!hasMoreData && !isLoadingMore" class="no-more-data">
+          <v-icon size="32" color="grey-lighten-1" class="mb-2">mdi-check-circle</v-icon>
           <p class="no-more-text">모든 알림을 불러왔습니다</p>
         </div>
       </v-card-text>
@@ -228,11 +229,17 @@ const currentPage = ref(0);
 const pageSize = ref(20);
 const hasMoreData = ref(true);
 const isLoading = ref(false);
+const isLoadingMore = ref(false);
 
 // methods를 일반 함수로 변환
 const fetchNotifications = async (isLoadMore = false) => {
-  if (isLoading.value) return;
-  isLoading.value = true;
+  if (isLoading.value || (isLoadMore && isLoadingMore.value)) return;
+  
+  if (isLoadMore) {
+    isLoadingMore.value = true;
+  } else {
+    isLoading.value = true;
+  }
   
   // 냉장고 Id 가 없으면 냉장고 목록으로 이동
   if (fridgeId.value === null) {
@@ -257,7 +264,8 @@ const fetchNotifications = async (isLoadMore = false) => {
     if (params.toString()) url += `?${params.toString()}`;
 
     const response = await axios.get(url);
-    const newNotifications = response.data.result.content;
+    const pageData = response.data.result;
+    const newNotifications = pageData.content;
 
     if (isLoadMore) {
       notificationList.value = [...notificationList.value, ...newNotifications];
@@ -266,11 +274,16 @@ const fetchNotifications = async (isLoadMore = false) => {
       setUserType();
     }
 
-    hasMoreData.value = newNotifications.length === pageSize.value;
+    // 서버에서 제공하는 last 필드를 사용하여 더보기 버튼 표시 여부 결정
+    hasMoreData.value = !pageData.last;
   } catch (error) {
     console.error('알림 조회 실패:', error);
   } finally {
-    isLoading.value = false;
+    if (isLoadMore) {
+      isLoadingMore.value = false;
+    } else {
+      isLoading.value = false;
+    }
   }
 };
 
@@ -448,7 +461,7 @@ const resetPagination = () => {
 };
 
 const loadMoreData = async () => { 
-  if (!hasMoreData.value || isLoading.value) return;
+  if (!hasMoreData.value || isLoadingMore.value) return;
   currentPage.value++;
   await fetchNotifications(true);
 };
@@ -1058,14 +1071,47 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 16px;
   }
-  
-  .notification-tabs {
-    overflow-x: auto;
-  }
-  
-  .notification-tab {
-    min-width: 80px;
-    flex-shrink: 0;
-  }
+}
+
+/* 스크롤 페이징 로딩 인디케이터 스타일 */
+.load-more-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.loading-more-text {
+  margin-top: 12px;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.no-more-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.no-more-text {
+  color: #999;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.notification-tabs {
+  overflow-x: auto;
+}
+
+.notification-tab {
+  min-width: 80px;
+  flex-shrink: 0;
 }
 </style>

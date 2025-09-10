@@ -123,8 +123,8 @@
                         />
                       </div>
                     </div>
-                    <!-- 메시지 버블 -->
-                    <div class="message-bubble">
+                    <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
+                    <div v-if="msg.message && msg.message.trim()" class="message-bubble">
                       <div class="message-text">{{ msg.message }}</div>
                     </div>
                   </div>
@@ -160,8 +160,8 @@
                         />
                       </div>
                     </div>
-                    <!-- 메시지 버블 -->
-                    <div class="message-bubble">
+                    <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
+                    <div v-if="msg.message && msg.message.trim()" class="message-bubble">
                       <div class="message-text">{{ msg.message }}</div>
                     </div>
                   </div>
@@ -236,6 +236,8 @@ const props = defineProps({
   selectedRoom: { type: Object, default: null },
   selectedRoomType: { type: String, default: null }
 });
+
+const emit = defineEmits(['order-completed']);
 
 // --- 상태 (State) ---
 const messages = ref([]);
@@ -697,6 +699,7 @@ const completeOrder = async () => {
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
     alert('공동 구매가 완료되었습니다.');
+    emit('order-completed');
   } catch (error) {
     console.error("요청 실패:", error);
     alert('요청에 실패했습니다. 다시 시도해주세요.');

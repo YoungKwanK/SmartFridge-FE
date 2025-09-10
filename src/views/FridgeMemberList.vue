@@ -263,6 +263,11 @@
                         <!-- 보낸 메시지 레이아웃: [메시지] [시간] -->
                         <div v-if="message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail" class="sent-message-layout">
                           <div class="sent-message-container">
+                            <!-- 현재 사용자가 아닌 사람이 보낸 메시지인 경우에만 이름 표시 -->
+                            <div v-if="message.senderEmail !== senderEmail && shouldShowSenderName(chatMessages, index, senderEmail)" class="sender-name-top-sent">
+                              {{ message.senderName }}
+                            </div>
+                            
                             <div class="message-content-container">
                               <!-- 이미지 -->
                               <div
@@ -282,8 +287,8 @@
                                   />
                                 </div>
                               </div>
-                              <!-- 메시지 버블 -->
-                              <div class="message-bubble">
+                              <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
+                              <div v-if="message.message && message.message.trim()" class="message-bubble">
                                 <div class="message-text">{{ message.message }}</div>
                               </div>
                             </div>
@@ -322,8 +327,8 @@
                                   />
                                 </div>
                               </div>
-                              <!-- 메시지 버블 -->
-                              <div class="message-bubble">
+                              <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
+                              <div v-if="message.message && message.message.trim()" class="message-bubble">
                                 <div class="message-text">{{ message.message }}</div>
                               </div>
                             </div>
@@ -615,8 +620,14 @@ onMounted(async () => {
   // 전역 SSE 이벤트 리스너 등록
   setupAdminChatListener();
   
-  // 초기 배지 상태 설정
+  // 초기 배지 상태 설정 (사용자 목록의 실제 unReadCount 기반)
   updateAdminChatBadge();
+  
+  // 냉장고 진입 시 채팅 배지 상태 동기화 (사이드바 배지 업데이트)
+  const currentFridgeId = store.getters.getCurrentFridgeId;
+  if (currentFridgeId) {
+    await store.dispatch('notification/updateChatBadgesOnFridgeEnter', currentFridgeId);
+  }
 });
 
 // --- Watcher ---
@@ -711,6 +722,9 @@ const loadChatHistory = async (user, isLoadMore = false) => {
       const userIndex = users.value.findIndex(u => u.email === user.email);
       if (userIndex !== -1) {
         users.value[userIndex].unReadCount = 0;
+        
+        // 사이드바 배지 상태도 함께 업데이트
+        updateAdminChatBadge();
       }
     }
 
@@ -794,7 +808,7 @@ const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
   const currentMsg = messages[currentIndex];
   
   // 현재 사용자가 보낸 메시지는 이름 표시 안함
-  if (currentMsg.senderEmail === currentUserEmail || currentMsg.senderEmail !== currentMsg.receiverEmail) return false;
+  if (currentMsg.senderEmail === currentUserEmail) return false;
   
   // 첫 번째 메시지는 항상 이름 표시
   if (currentIndex === 0) return true;
@@ -882,6 +896,7 @@ const connectWebSocket = (roomId) => {
                 message: receivedMessage.message,
                 timestamp: receivedMessage.timestamp,
                 imageUrls: receivedMessage.imageUrls || [],
+                receiverEmail: receivedMessage.receiverEmail || selectedUser.value?.email,
               });
               
               // 내가 보낸 메시지라면 무조건 스크롤을 아래로 이동
@@ -1807,6 +1822,18 @@ onUnmounted(() => {
   color: #5f6368;
   margin-bottom: 4px;
   align-self: flex-start;
+}
+
+/* 보낸 메시지 상단 이름 (이전 관리자) */
+.sender-name-top-sent {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  color: rgba(26, 115, 232, 0.8);
+  margin-bottom: 4px;
+  align-self: flex-end;
+  text-align: right;
 }
 
 /* 받은 메시지 하단 시간 */

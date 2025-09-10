@@ -81,8 +81,16 @@
         <v-btn v-if="isParticipant" color="primary"  variant="flat" @click="closeModal" min-width="100">
           확인
         </v-btn>
-        <v-btn v-if="!isParticipant" color="primary"  variant="flat" @click="joinRoom(roomId)" min-width="100">
-          참여
+        <v-btn 
+          v-if="!isParticipant" 
+          color="primary"  
+          variant="flat" 
+          @click="joinRoom(roomId)" 
+          min-width="100"
+          :loading="isLoading"
+          :disabled="isRoomFull"
+        >
+          {{ isRoomFull ? '인원 마감' : '참여' }}
         </v-btn>
         <v-btn v-if="!isParticipant" color="secondary"  variant="flat" @click="closeModal" min-width="100">
           취소
@@ -104,7 +112,7 @@ const props = defineProps({
   isParticipant: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'room-joined']);
 
 // [추가] 모달 내부에서 사용할 상태 변수들
 const roomDetails = ref(null); // API로 받아온 상세 데이터를 저장
@@ -112,16 +120,50 @@ const isLoading = ref(false);  // 로딩 상태
 const error = ref(null);       // 에러 메시지
 
 const joinRoom = async(roomId) => {
-  console.log('채팅방 참여:', roomId);
+  if (!roomId) {
+    alert('채팅방 정보가 올바르지 않습니다.');
+    return;
+  }
+
+  // 방이 가득 찬 경우 참여 불가
+  if (isRoomFull.value) {
+    alert('이미 인원이 가득 찬 채팅방입니다.');
+    return;
+  }
+
+  // 확인 대화상자 제거 - 바로 참여
+
+  isLoading.value = true;
+  
   try {
-    closeModal();
-    // roomId를 사용해 상세 정보 API 호출
     await axios.post(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${roomId}/join`);
+    
+    // 성공 메시지 표시
     alert("채팅방에 성공적으로 참여했습니다.");
-    window.location().reload();
+    
+    // 모달 닫기
+    closeModal();
+    
+    // 부모 컴포넌트에 참여 완료 이벤트 전달
+    emit('room-joined', roomId);
 
   } catch (err) {
     console.error("채팅방 참여 실패:", err);
+    
+    // 구체적인 에러 메시지 표시
+    let errorMessage = "채팅방 참여에 실패했습니다.";
+    
+    if (err.response?.status === 409) {
+      errorMessage = "이미 참여 중인 채팅방입니다.";
+    } else if (err.response?.status === 403) {
+      errorMessage = "이 채팅방에 참여할 권한이 없습니다.";
+    } else if (err.response?.status === 400) {
+      errorMessage = "채팅방이 가득 찼거나 참여할 수 없는 상태입니다.";
+    } else if (err.response?.data?.message) {
+      errorMessage = err.response.data.message;
+    }
+    
+    alert(errorMessage);
   } finally {
     isLoading.value = false;
   }
@@ -203,6 +245,7 @@ const isRoomFull = computed(() => {
   /* Vuetify의 기본 한 줄 처리를 무효화 */
   overflow: visible;
   -webkit-line-clamp: unset;
+  line-clamp: unset;
 }
 
 .toggle-button {

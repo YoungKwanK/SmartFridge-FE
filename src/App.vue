@@ -50,9 +50,6 @@ export default {
     onMounted(() => {
       // 초기 SSE 연결 (store 인스턴스 전달)
       store.dispatch('notification/initSSE', store);
-
-      // 배지 카운트 복원
-      store.dispatch('notification/hydrateTypeCounts');
       
       // 연결 상태 모니터링 (더 자주 확인)
       const checkConnection = setInterval(() => {

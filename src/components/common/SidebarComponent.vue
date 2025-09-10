@@ -101,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
@@ -153,13 +153,17 @@ const fetchUserType = async (fridgeId) => {
   }
 }
 
+// 채팅방 상태 동기화 함수 (MANAGER_CHAT은 유저 관리 탭에서 별도 관리)
+const syncChatBadgeStatus = async () => {
+  // 냉장고 ID가 있을 때만 채팅 배지 상태 동기화
+  const currentFridgeId = store.getters.getCurrentFridgeId;
+  if (currentFridgeId) {
+    await store.dispatch('notification/updateChatBadgesOnFridgeEnter', currentFridgeId);
+  }
+};
+
 // 컴포넌트 마운트 시 사용자 정보 로드 및 냉장고 ID 확인
 onMounted(async () => {
-  // 배지 카운트 복원 (사이드바가 재마운트될 때도 유지)
-  try {
-    await store.dispatch('notification/hydrateTypeCounts');
-  } catch (e) { console.warn('hydrateTypeCounts 복원 실패:', e); }
-
   const token = localStorage.getItem('accessToken');
   if (token && !userInfo.value) {
     try {
@@ -176,12 +180,22 @@ onMounted(async () => {
     window.location.href = '/fridge/list';
   }
   await fetchUserType(currentFridgeId);
+  
+  // 채팅 배지 상태 동기화 (초기 로드 시)
+  await syncChatBadgeStatus();
+  
+  // 주기적으로 채팅 배지 상태 동기화 (30초마다)
+  const syncInterval = setInterval(syncChatBadgeStatus, 30000);
+  
+  // 컴포넌트 언마운트 시 인터벌 정리
+  onUnmounted(() => {
+    clearInterval(syncInterval);
+  });
 });
 
 const menuItems = computed(() => {
   const inquiryBadgeCount = store.getters['notification/inquiryBadgeCount'];
   const chatBadgeCount = store.getters['notification/chatBadgeCount'];
-  const adminChatCount = store.getters['notification/typeCounts']?.MANAGER_CHAT || 0;
 
   const fridgeInfo = store.getters.getCurrentFridgeInfo;
   
@@ -198,16 +212,26 @@ const menuItems = computed(() => {
   
 
   
-  const userManagementBadgeCount = isManager && adminChatCount > 0 ? 1 : 0;
+  // 유저 관리 탭 배지 (실제 채팅방 unReadCount 기반)
+  let userManagementBadgeCount = 0;
+  if (isManager) {
+    // 유저 관리 탭은 실제 채팅방의 unReadCount를 기반으로 배지 표시
+    // store에서 관리자 채팅 배지 상태를 가져옴 (실제 unReadCount 기반으로 동기화됨)
+    const adminChatBadge = store.getters['notification/typeCounts']?.MANAGER_CHAT || 0;
+    userManagementBadgeCount = adminChatBadge > 0 ? 1 : 0;
+    console.log('유저 관리 탭 배지:', { adminChatBadge, userManagementBadgeCount, typeCounts: store.getters['notification/typeCounts'] });
+  }
   
   let finalChatBadgeCount = 0;
   if (isUser) {
-    finalChatBadgeCount = (adminChatCount > 0 ? 1 : 0) + 
-                         (store.getters['notification/typeCounts']?.GROUP_CHAT > 0 ? 1 : 0) + 
-                         (store.getters['notification/typeCounts']?.ROOM_FULL > 0 ? 1 : 0);
+    // 사용자는 MANAGER_CHAT 알림을 받지 않음 (관리자용 알림)
+    const hasGroupChat = store.getters['notification/typeCounts']?.GROUP_CHAT > 0;
+    const hasRoomFull = store.getters['notification/typeCounts']?.ROOM_FULL > 0;
+    finalChatBadgeCount = (hasGroupChat || hasRoomFull) ? 1 : 0;
   } else if (isManager) {
-    finalChatBadgeCount = (store.getters['notification/typeCounts']?.GROUP_CHAT > 0 ? 1 : 0) + 
-                         (store.getters['notification/typeCounts']?.ROOM_FULL > 0 ? 1 : 0);
+    const hasGroupChat = store.getters['notification/typeCounts']?.GROUP_CHAT > 0;
+    const hasRoomFull = store.getters['notification/typeCounts']?.ROOM_FULL > 0;
+    finalChatBadgeCount = (hasGroupChat || hasRoomFull) ? 1 : 0;
   } else {
     finalChatBadgeCount = chatBadgeCount > 0 ? 1 : 0;
   }

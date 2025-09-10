@@ -431,7 +431,7 @@ export default {
         console.error("냉장고 목록을 불러오는 데 실패했습니다:", error);
       }
     },
-    enterFridge(fridgeId) {
+    async enterFridge(fridgeId) {
       const currentFridge = this.fridgeList.find(f => f.fridgeId === fridgeId);
       
       // 기존 냉장고 ID 저장
@@ -442,10 +442,19 @@ export default {
         this.$store.commit('setCurrentFridgeInfo', currentFridge);
       }
       
-      // 냉장고가 변경되었을 때만 알림 초기화
+      // 냉장고가 변경되었을 때만 SSE 재연결
       if (previousFridgeId && previousFridgeId !== fridgeId) {
-        this.$store.dispatch('notification/refreshSSEOnFridgeChange', fridgeId);
+        await this.$store.dispatch('notification/refreshSSEOnFridgeChange', fridgeId);
+      } else if (!previousFridgeId) {
+        // 첫 번째 냉장고 선택 시 SSE 연결
+        const isSSEConnected = this.$store.getters['notification/isSSEConnected'];
+        if (!isSSEConnected) {
+          await this.$store.dispatch('notification/initSSE');
+        }
       }
+      
+      // 냉장고 진입 시 채팅 목록 조회하여 배지 상태 업데이트
+      await this.$store.dispatch('notification/updateChatBadgesOnFridgeEnter', fridgeId);
       
       this.$router.push('/fridge/dashboard');
     },
