@@ -4,7 +4,7 @@
       <v-container fluid class="chat-padding fill-height">
         <v-row no-gutters class="fill-height">
           <v-col cols="12" md="4" lg="3" xl="2">
-            <ChatSidebar ref="chatSidebar" @select-room="handleRoomSelect" />
+            <ChatSidebar ref="chatSidebar" @select-room="handleRoomSelect" @room-left="handleRoomLeft" />
           </v-col>
           
           <v-col cols="12" md="8" lg="9" xl="10">
@@ -46,6 +46,12 @@ const handleOrderCompleted = () => {
   if (chatSidebar.value) {
     chatSidebar.value.handleRoomCreated();
   }
+};
+
+// 채팅방 나가기/삭제 이벤트를 받아서 선택된 채팅방 초기화
+const handleRoomLeft = () => {
+  selectedRoom.value = null;
+  selectedRoomType.value = null;
 };
 
 // 페이지 진입 시 채팅 알림 제거 및 냉장고 ID 확인

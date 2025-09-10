@@ -321,7 +321,7 @@ const isCreateModalOpen = ref(false);
 const tab = ref('chat');
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
-const emit = defineEmits(['select-room', 'select-roomType']);
+const emit = defineEmits(['select-room', 'select-roomType', 'room-left']);
 const isParticipantforModal = ref(false); // 사용자가 해당 방의 참여자인지 여부를 추적하는 ref 추가
 
 // [추가] 모달의 상태를 관리할 ref들을 추가합니다.
@@ -516,6 +516,9 @@ const leaveRoom = async(room) => {
     
     // 목록 새로고침
     await handleRoomCreated();
+    
+    // 채팅방 선택 초기화 이벤트 emit
+    emit('room-left');
     
   } catch (error) {
     console.error("API 호출 에러:", error);
