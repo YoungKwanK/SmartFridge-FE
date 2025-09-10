@@ -124,6 +124,7 @@ const getSidebarValueFromRoute = (path) => {
     '/fridge/food/nonshared': 'sharedfoodlist',
     '/notification/list': 'notifications',
     '/fridge/community': 'community',
+    '/fridge/post': 'community', // 게시글 상세보기 페이지도 커뮤니티로 매핑
     '/chatpage': 'chat',
     '/mypage': 'mypage',
     '/inquiry': 'inquiry',
