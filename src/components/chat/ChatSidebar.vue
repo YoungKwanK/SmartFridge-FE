@@ -146,13 +146,13 @@
                    
                    <div class="participants-info">
                      <v-chip
-                       :color="!isRoomOpen(room) ? 'error' : 'success'"
+                       :color="getParticipantsChipColor(room)"
                        variant="outlined"
                        size="small"
                        class="participants-chip"
                      >
                        <v-icon 
-                         :icon="!isRoomOpen(room) ? 'mdi-account-off' : 'mdi-account-group'" 
+                         :icon="getParticipantsIcon(room)" 
                          size="14" 
                          class="mr-1"
                        />
@@ -403,22 +403,26 @@ const isRoomOpen = (room) => {
 
 // 참여자 수 칩 색상을 반환하는 함수
 const getParticipantsChipColor = (room) => {
-  // 공동구매 탭에서만 참여자 수에 따라 색상 구분
-  if (tab.value === 'groupbuy') {
-    return room.currentParticipants >= room.maxParticipants ? 'error' : 'success';
+  // 방이 닫혀있으면 무조건 error
+  if (!isRoomOpen(room)) {
+    return 'error';
   }
-  // 다른 탭에서는 joinStatus에 따라 구분
-  return !isRoomOpen(room) ? 'error' : 'success';
+  // 인원이 다 찼으면 error (빨간색)
+  if (room.currentParticipants >= room.maxParticipants) {
+    return 'error';
+  }
+  // 그 외에는 success (초록색)
+  return 'success';
 };
 
 // 참여자 수 칩 아이콘을 반환하는 함수
 const getParticipantsIcon = (room) => {
-  // 공동구매 탭에서만 참여자 수에 따라 아이콘 구분
-  if (tab.value === 'groupbuy') {
-    return room.currentParticipants >= room.maxParticipants ? 'mdi-account-off' : 'mdi-account-group';
+  // 방이 닫혀있거나 인원이 다 찼으면 account-off 아이콘
+  if (!isRoomOpen(room) || room.currentParticipants >= room.maxParticipants) {
+    return 'mdi-account-off';
   }
-  // 다른 탭에서는 joinStatus에 따라 구분
-  return !isRoomOpen(room) ? 'mdi-account-off' : 'mdi-account-group';
+  // 그 외에는 account-group 아이콘
+  return 'mdi-account-group';
 };
 
 const selectRoom = (room, roomType) => {
