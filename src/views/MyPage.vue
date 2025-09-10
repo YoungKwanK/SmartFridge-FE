@@ -244,9 +244,6 @@
             <div v-else class="no-posts">
               <v-icon size="48" color="grey-lighten-1">mdi-post-outline</v-icon>
               <p class="no-posts-text">작성한 게시글이 없습니다</p>
-              <v-btn color="primary" @click="goToCommunity">
-                첫 게시글 작성하기
-              </v-btn>
             </div>
           </v-card-text>
         </v-card>
@@ -604,11 +601,6 @@ export default {
       this.$router.push(`/fridge/${fridgeId}/post/${post.id}`)
     },
 
-    goToCommunity() {
-      // 커뮤니티 페이지로 이동
-      const fridgeId = this.$route.params.fridgeId || 'default'
-      this.$router.push(`/fridge/${fridgeId}/community`)
-    },
 
     formatDate(dateString) {
       if (!dateString) return ''

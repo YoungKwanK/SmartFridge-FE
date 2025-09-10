@@ -101,18 +101,60 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useStore } from 'vuex';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
 
 const store = useStore();
+const route = useRoute();
 const logoUrl = new URL('../../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
 
 const selectedItem = ref(['dashboard']);
 
 const refrigeratorItem = ref({ title: '냉장고목록', icon: 'mdi-fridge-outline', color: 'cyan-darken-2', to: "/fridge/list" });
 const inquiryItem = ref({ title: '문의하기', icon: 'mdi-comment-question-outline', color: 'pink-darken-1', to: "/#" });
+
+// 라우트 경로를 사이드바 value로 매핑하는 함수
+const getSidebarValueFromRoute = (path) => {
+  const routeMapping = {
+    '/fridge/dashboard': 'dashboard',
+    '/fridge/food/shared': 'sharedfoodlist',
+    '/fridge/food/nonshared': 'sharedfoodlist',
+    '/notification/list': 'notifications',
+    '/fridge/community': 'community',
+    '/chatpage': 'chat',
+    '/mypage': 'mypage',
+    '/inquiry': 'inquiry',
+    '/fridge/member/list': 'usermanagement'
+  };
+  
+  // 정확한 매칭을 먼저 시도
+  if (routeMapping[path]) {
+    return routeMapping[path];
+  }
+  
+  // 부분 매칭 시도 (예: /fridge/food/shared?mode=nonshared)
+  for (const [routePath, value] of Object.entries(routeMapping)) {
+    if (path.startsWith(routePath)) {
+      return value;
+    }
+  }
+  
+  return 'dashboard'; // 기본값
+};
+
+// 현재 라우트에 따라 selectedItem 업데이트
+const updateSelectedItem = () => {
+  const currentValue = getSidebarValueFromRoute(route.path);
+  selectedItem.value = [currentValue];
+};
+
+// 라우트 변경 감지
+watch(() => route.path, () => {
+  updateSelectedItem();
+}, { immediate: true });
 
 // Store에서 사용자 정보 가져오기
 const userInfo = computed(() => store.getters.getUserInfo);
