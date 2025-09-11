@@ -103,10 +103,11 @@
              <!-- 유통기한 날짜와 시간 -->
              <v-col cols="12" md="6">
                <div class="form-section">
-                 <label class="form-label">
-                   <v-icon size="18" color="warning" class="mr-2">mdi-calendar</v-icon>
-                   유통기한 날짜{{ isTempMode ? ' (선택사항)' : ' *' }}
-                 </label>
+                  <label class="form-label">
+                    <v-icon size="18" color="warning" class="mr-2">mdi-calendar</v-icon>
+                    유통기한 날짜 *
+                    <span class="date-hint">(임시등록시 선택 안해도 됨)</span>
+                  </label>
                  <v-text-field
                    v-model="formData.expirationDate"
                    type="date"
@@ -526,6 +527,13 @@ export default {
   color: #333;
   margin-bottom: 8px;
   font-size: 14px;
+}
+
+.date-hint {
+  font-size: 11px;
+  color: #666;
+  font-weight: 400;
+  margin-left: 6px;
 }
 
 .custom-input {
