@@ -18,7 +18,7 @@
                 <label class="form-label">게시판</label>
                 <v-select
                   v-model="formData.category"
-                  :items="boardTypeOptions"
+                  :items="filteredBoardTypeOptions"
                   item-title="category"
                   item-value="id"
                   variant="outlined"
@@ -156,6 +156,7 @@
 <script>
 import axios from 'axios';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
+import { useStore } from 'vuex';
 
 export default {
   name: 'PostFormModal',
@@ -177,6 +178,10 @@ export default {
     }
   },
   emits: ['update:modelValue', 'save'],
+  setup() {
+    const store = useStore();
+    return { store };
+  },
   data() {
     return {
       isValid: false,
@@ -188,7 +193,9 @@ export default {
         imageFiles: []
       },
       boardTypeOptions: [],
-      fileInputKey: 0 // 파일 입력 컴포넌트의 키를 위한 변수
+      fileInputKey: 0, // 파일 입력 컴포넌트의 키를 위한 변수
+      currentUserRole: 'COMMON', // 현재 사용자의 냉장고 역할
+      fridgeInfo: null // 현재 냉장고 정보
     }
   },
   computed: {
@@ -199,9 +206,25 @@ export default {
       set(value) {
         this.$emit('update:modelValue', value);
       }
+    },
+    // 현재 사용자가 관리자인지 확인
+    isManager() {
+      return this.currentUserRole === 'MANAGER';
+    },
+    // 공지사항을 제외한 카테고리 목록 (관리자가 아닌 경우)
+    filteredBoardTypeOptions() {
+      if (this.isManager) {
+        return this.boardTypeOptions;
+      } else {
+        // 관리자가 아닌 경우 공지사항 제외
+        return this.boardTypeOptions.filter(category => 
+          category.category !== '공지사항' && category.id !== 1
+        );
+      }
     }
   },
   async created() {
+    await this.checkUserRole();
     await this.fetchCategories();
   },
   watch: {
@@ -224,15 +247,79 @@ export default {
     },
     boardType(newBoardType) {
       if (!this.editingPost.id) {
+        // 공지사항 탭이고 일반 사용자인 경우 자유게시판으로 설정
+        if (newBoardType === '공지사항' && !this.isManager) {
+          const freeBoardCategory = this.boardTypeOptions.find(cat => cat.category === '자유게시판' || cat.id === 2);
+          this.formData.category = freeBoardCategory ? freeBoardCategory.id : 2;
+          return;
+        }
+        
+        // 사용자 역할에 따라 사용 가능한 카테고리에서 선택
+        const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
+        
         // boardType 문자열에 해당하는 카테고리 ID 찾기
-        const categoryOption = this.boardTypeOptions.find(cat => cat.category === newBoardType);
+        const categoryOption = availableCategories.find(cat => cat.category === newBoardType);
         if (categoryOption) {
           this.formData.category = categoryOption.id;
+        } else {
+          // 해당 boardType이 사용 가능한 카테고리에 없는 경우, 기본값 설정
+          const defaultCategory = availableCategories.find(cat => cat.id === 2); // 자유게시판
+          this.formData.category = defaultCategory ? defaultCategory.id : 2;
         }
       }
     }
   },
   methods: {
+    // 현재 사용자의 냉장고 역할 확인
+    async checkUserRole() {
+      try {
+        // 현재 냉장고 ID 가져오기
+        const currentFridgeId = this.store.state.currentFridgeId;
+        if (!currentFridgeId) {
+          console.warn('현재 냉장고 ID가 없습니다.');
+          this.currentUserRole = 'COMMON';
+          return;
+        }
+
+        // 현재 사용자 이메일 가져오기
+        const userEmail = this.store.getters.getUserEmail || localStorage.getItem('email');
+        if (!userEmail) {
+          console.warn('사용자 이메일이 없습니다.');
+          this.currentUserRole = 'COMMON';
+          return;
+        }
+
+        // 냉장고 멤버 목록에서 현재 사용자의 역할 확인
+        const response = await axios.get(
+          `${process.env.VUE_APP_API_BASE_URL}/fridge/${currentFridgeId}/members`,
+          {
+            headers: { 
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}` 
+            }
+          }
+        );
+
+        if (response.data && response.data.result) {
+          const members = response.data.result;
+          const currentUser = members.find(member => member.memberEmail === userEmail);
+          
+          if (currentUser) {
+            this.currentUserRole = currentUser.type || 'COMMON';
+            console.log('현재 사용자 냉장고 역할:', this.currentUserRole);
+          } else {
+            console.warn('현재 사용자를 냉장고 멤버 목록에서 찾을 수 없습니다.');
+            this.currentUserRole = 'COMMON';
+          }
+        } else {
+          console.warn('냉장고 멤버 목록을 가져올 수 없습니다.');
+          this.currentUserRole = 'COMMON';
+        }
+      } catch (error) {
+        console.error('사용자 역할 확인 실패:', error);
+        this.currentUserRole = 'COMMON';
+      }
+    },
+
     // 이미지 업로드 메서드 추가
     async uploadImages(files) {
       try {
@@ -280,7 +367,9 @@ export default {
         
         // 기본 카테고리 설정
         if (this.boardTypeOptions.length > 0) {
-          const defaultCategory = this.boardTypeOptions.find(cat => 
+          // 관리자가 아닌 경우 공지사항을 제외한 카테고리 중에서 기본값 선택
+          const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
+          const defaultCategory = availableCategories.find(cat => 
             cat.category === this.boardType || cat.id === 2
           );
           if (defaultCategory) {
@@ -298,7 +387,10 @@ export default {
           { id: 3, category: '꿀팁' },
           { id: 4, category: '레시피' }
         ];
-        this.formData.category = 2; // 자유게시판 기본값
+        // 관리자가 아닌 경우 공지사항을 제외한 카테고리 중에서 기본값 선택
+        const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
+        const defaultCategory = availableCategories.find(cat => cat.id === 2);
+        this.formData.category = defaultCategory ? defaultCategory.id : 2; // 자유게시판 기본값
       }
     },
     resetForm() {
@@ -352,7 +444,9 @@ export default {
     // 기본 카테고리 ID 반환
     getDefaultCategoryId() {
       if (this.boardTypeOptions.length > 0) {
-        const defaultCategory = this.boardTypeOptions.find(cat => 
+        // 관리자가 아닌 경우 공지사항을 제외한 카테고리 중에서 기본값 선택
+        const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
+        const defaultCategory = availableCategories.find(cat => 
           cat.category === this.boardType || cat.id === 2
         );
         return defaultCategory ? defaultCategory.id : 2;
