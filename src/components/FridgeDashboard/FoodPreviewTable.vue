@@ -107,6 +107,9 @@ const props = defineProps({
   }
 });
 
+// Emits 정의
+const emit = defineEmits(['food-saved']);
+
 const recentFoods = ref([])
 const recentSharedFoods = ref([])
 
@@ -166,6 +169,9 @@ const handleFoodSave = async (foodData) => {
     
     // 목록 새로고침
     await refreshFoodLists();
+    
+    // 부모 컴포넌트에 식품 저장 완료 이벤트 전달
+    emit('food-saved');
     
     // 모달은 FoodFormModal 내부에서 자동으로 닫힘
     // 폼 데이터도 editingFood prop을 통해 자동으로 초기화됨

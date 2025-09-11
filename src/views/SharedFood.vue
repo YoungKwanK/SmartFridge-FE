@@ -342,6 +342,11 @@ export default {
         const viewAll = this.activeTab === 'MY_FOODS' ? false : true;
         url += `&viewAll=${viewAll}`;
 
+        // 필터 탭 파라미터 추가 (백엔드에서 filterType 파라미터 사용)
+        if (this.activeTab !== 'ALL' && this.activeTab !== 'MY_FOODS') {
+          url += `&filterType=${this.activeTab}`;
+        }
+
         // 카테고리 필터 추가
         if (this.selectedCategory !== 'ALL') {
           url += `&category=${this.selectedCategory}`;
@@ -351,6 +356,14 @@ export default {
         if (this.searchQuery) {
           url += `&foodName=${this.searchQuery}`;
         }
+
+        console.log('식품 목록 조회 요청:', {
+          activeTab: this.activeTab,
+          selectedCategory: this.selectedCategory,
+          searchQuery: this.searchQuery,
+          isSharedView: this.isSharedView,
+          url: url
+        });
 
         const response = await axios.get(url);
         this.foodList = response.data.result.content || [];
