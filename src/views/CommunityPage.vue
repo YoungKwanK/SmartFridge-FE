@@ -8,7 +8,13 @@
           <p class="page-subtitle">냉장고 멤버들과 소통하고 정보를 공유해보세요</p>
         </div>
         <div class="header-actions">
-          <v-btn @click="openCreateModal" color="primary" prepend-icon="mdi-plus" size="large" class="write-post-btn">
+          <v-btn 
+            @click="openCreateModal" 
+            color="primary" 
+            prepend-icon="mdi-plus" 
+            size="large" 
+            class="write-post-btn"
+          >
             글쓰기
           </v-btn>
         </div>
@@ -74,8 +80,16 @@
         <div v-else class="no-data-container">
           <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-post-outline</v-icon>
           <h3 class="no-data-title">등록된 게시글이 없습니다</h3>
-          <p class="no-data-subtitle">첫 번째 게시글을 작성해보세요</p>
-          <v-btn color="primary" @click="openCreateModal" prepend-icon="mdi-plus" class="mt-4">
+          <p class="no-data-subtitle">
+            {{ isNoticeTab && !isManager ? '공지사항은 관리자만 작성할 수 있습니다' : '첫 번째 게시글을 작성해보세요' }}
+          </p>
+          <v-btn 
+            v-if="!(isNoticeTab && !isManager)" 
+            color="primary" 
+            @click="openCreateModal" 
+            prepend-icon="mdi-plus" 
+            class="mt-4"
+          >
             첫 게시글 작성하기
           </v-btn>
         </div>
@@ -109,11 +123,16 @@ import axios from 'axios';
 import { getFridgeId } from '@/utils/commonDataHandler';
 import PostFormModal from '../components/Community/PostFormModal.vue';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
+import { useStore } from 'vuex';
 
 export default {
   components: {
     PostFormModal,
     CommonSnackbar
+  },
+  setup() {
+    const store = useStore();
+    return { store };
   },
   data() {
     return {
@@ -126,7 +145,19 @@ export default {
       currentPage: 1,
       pageSize: 10,
       totalPages: 0,
-      totalElements: 0
+      totalElements: 0,
+      currentUserRole: 'COMMON', // 현재 사용자의 냉장고 역할
+      fridgeInfo: null // 현재 냉장고 정보
+    }
+  },
+  computed: {
+    // 현재 사용자가 관리자인지 확인
+    isManager() {
+      return this.currentUserRole === 'MANAGER';
+    },
+    // 공지사항 탭인지 확인
+    isNoticeTab() {
+      return this.activeBoard === '공지사항';
     }
   },
   async created() {
@@ -134,6 +165,7 @@ export default {
     console.log('현재 activeBoard:', this.activeBoard);
     console.log('현재 boardCategories:', this.boardCategories);
     
+    await this.checkUserRole();
     await this.fetchCategories();
     console.log('카테고리 로드 완료 후 activeBoard:', this.activeBoard);
     console.log('카테고리 로드 완료 후 boardCategories:', this.boardCategories);
@@ -145,6 +177,56 @@ export default {
     this.checkPostDeletedMessage();
   },
   methods: {
+    // 현재 사용자의 냉장고 역할 확인
+    async checkUserRole() {
+      try {
+        // 현재 냉장고 ID 가져오기
+        const currentFridgeId = this.store.state.currentFridgeId;
+        if (!currentFridgeId) {
+          console.warn('현재 냉장고 ID가 없습니다.');
+          this.currentUserRole = 'COMMON';
+          return;
+        }
+
+        // 현재 사용자 이메일 가져오기
+        const userEmail = this.store.getters.getUserEmail || localStorage.getItem('email');
+        if (!userEmail) {
+          console.warn('사용자 이메일이 없습니다.');
+          this.currentUserRole = 'COMMON';
+          return;
+        }
+
+        // 냉장고 멤버 목록에서 현재 사용자의 역할 확인
+        const response = await axios.get(
+          `${process.env.VUE_APP_API_BASE_URL}/fridge/${currentFridgeId}/members`,
+          {
+            headers: { 
+              'Authorization': `Bearer ${localStorage.getItem('accessToken')}` 
+            }
+          }
+        );
+
+        if (response.data && response.data.result) {
+          const members = response.data.result;
+          const currentUser = members.find(member => member.memberEmail === userEmail);
+          
+          if (currentUser) {
+            this.currentUserRole = currentUser.type || 'COMMON';
+            console.log('현재 사용자 냉장고 역할:', this.currentUserRole);
+          } else {
+            console.warn('현재 사용자를 냉장고 멤버 목록에서 찾을 수 없습니다.');
+            this.currentUserRole = 'COMMON';
+          }
+        } else {
+          console.warn('냉장고 멤버 목록을 가져올 수 없습니다.');
+          this.currentUserRole = 'COMMON';
+        }
+      } catch (error) {
+        console.error('사용자 역할 확인 실패:', error);
+        this.currentUserRole = 'COMMON';
+      }
+    },
+
     async fetchCategories() {
       try {
         const token = localStorage.getItem('accessToken');
