@@ -215,7 +215,7 @@ export default {
       
       // OAuth 설정
       googleUrl: "https://accounts.google.com/o/oauth2/auth",
-      googleClientId: "374485739574-jumcdbdoujbiibr15dhncieme5t1n3vb.apps.googleusercontent.com",
+      googleClientId: "135548742889-hvh4kecrrcetaqv8dla9uggr483fukll.apps.googleusercontent.com",
       googleRedirectUrl: `${process.env.VUE_APP_OAUTH_URL}/oauth/google/redirect`,
       googleScope: "openid email profile",
       
