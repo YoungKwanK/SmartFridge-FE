@@ -24,8 +24,9 @@ jobs:
 
       - name: .env setting
         run: |
-          echo "VUE_APP_API_BASE_URL=${{ secrets.VUE_APP_API_BASE_URL }}" >> .env
-          echo "VUE_APP_OAUTH_URL=${{ secrets.VUE_APP_OAUTH_URL }}" >> .env
+          # Vite는 VITE_ 접두사 변수만 노출 (GitHub Secrets 이름은 기존 그대로 사용)
+          echo "VITE_API_BASE_URL=${{ secrets.VUE_APP_API_BASE_URL }}" >> .env
+          echo "VITE_OAUTH_URL=${{ secrets.VUE_APP_OAUTH_URL }}" >> .env
 
       - name : npm build
         working-directory: .
