@@ -38,7 +38,7 @@ export default {
         '/admin/notification',
         '/admin/users'
       ];
-      return hideSidebarRoutes.includes(this.$route.path);
+      return hideSidebarRoutes.includes(this.$route.path) || this.$route.path.startsWith('/invite/');
     }
   },
   setup() {

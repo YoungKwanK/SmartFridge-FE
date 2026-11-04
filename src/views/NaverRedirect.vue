@@ -128,6 +128,7 @@
 <script>
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { getPostLoginPath } from '@/utils/inviteHandler';
 
 export default {
     name: 'NaverRedirect',
@@ -242,15 +243,16 @@ export default {
         },
         
         async checkUserFridgeStatus() {
+            const nextPath = getPostLoginPath();
             try {
-                // 로그인 성공 후 바로 FridgeList 페이지로 이동
-                this.$router.push('/fridge/list').catch(() => {
-                    window.location.href = "/fridge/list";
+                // 로그인 성공 후 초대 페이지 또는 FridgeList 페이지로 이동
+                this.$router.push(nextPath).catch(() => {
+                    window.location.href = nextPath;
                 });
             } catch (error) {
                 console.error('페이지 이동 오류:', error);
-                // 오류 발생 시에도 FridgeList로 이동
-                window.location.href = "/fridge/list";
+                // 오류 발생 시에도 같은 페이지로 이동
+                window.location.href = nextPath;
             }
         }
     }
