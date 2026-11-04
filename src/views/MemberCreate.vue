@@ -56,7 +56,7 @@
           <div class="signup-content-area">
             <div class="signup-wrapper">
               <!-- 회원가입 카드 -->
-              <v-card class="signup-card elevation-12">
+              <v-card class="signup-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 회원가입 헤더 -->
                   <div class="signup-header mb-6">
@@ -315,16 +315,16 @@ export default {
       // OAuth 설정 (로그인 페이지와 동일)
       googleUrl: "https://accounts.google.com/o/oauth2/auth",
       googleClientId: "374485739574-jumcdbdoujbiibr15dhncieme5t1n3vb.apps.googleusercontent.com",
-      googleRedirectUrl: `${process.env.VUE_APP_OAUTH_URL}/oauth/google/redirect`,
+      googleRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/google/redirect`,
       googleScope: "openid email profile",
       
       kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
       kakaoClientId: "1db026f5c4d2e11d7e597cdd4488d193",
-      kakaoRedirectUrl: `${process.env.VUE_APP_OAUTH_URL}/oauth/kakao/redirect`,
+      kakaoRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/kakao/redirect`,
       
       naverUrl: "https://nid.naver.com/oauth2.0/authorize",
       naverClientId: "GbQ_01jKVCMgOVze1pio",
-      naverRedirectUrl: `${process.env.VUE_APP_OAUTH_URL}/oauth/naver/redirect`,
+      naverRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/naver/redirect`,
     }
   },
   

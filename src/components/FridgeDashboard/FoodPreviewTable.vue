@@ -157,7 +157,7 @@ const handleFoodSave = async (foodData) => {
     }
     
     // 식품 등록 API 호출
-    await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/food/register`, foodData);
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/food/register`, foodData);
     
     // 성공 메시지
     console.log('식품이 성공적으로 등록되었습니다.');
@@ -200,7 +200,7 @@ const fetchRecentFoods = async () => {
       return;
     }
     
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/food/list?isShared=false`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/food/list?isShared=false`);
     
     console.log('API 응답 데이터:', response.data.result.content);
     
@@ -226,7 +226,7 @@ const fetchRecentSharedFoods = async () => {
       return;
     }
     
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/food/list?isShared=true`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/food/list?isShared=true`);
     
     console.log('공유식품 API 응답 데이터:', response.data.result.content);
     

@@ -56,7 +56,7 @@
           <div class="login-content-area">
             <div class="login-wrapper">
               <!-- 로그인 카드 -->
-              <v-card class="login-card elevation-12">
+              <v-card class="login-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 로그인 헤더 -->
                   <div class="login-header mb-6">
@@ -216,16 +216,16 @@ export default {
       // OAuth 설정
       googleUrl: "https://accounts.google.com/o/oauth2/auth",
       googleClientId: "135548742889-hvh4kecrrcetaqv8dla9uggr483fukll.apps.googleusercontent.com",
-      googleRedirectUrl: `${process.env.VUE_APP_OAUTH_URL}/oauth/google/redirect`,
+      googleRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/google/redirect`,
       googleScope: "openid email profile",
       
       kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
       kakaoClientId: "1db026f5c4d2e11d7e597cdd4488d193",
-      kakaoRedirectUrl: `${process.env.VUE_APP_OAUTH_URL}/oauth/kakao/redirect`,
+      kakaoRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/kakao/redirect`,
       
       naverUrl: "https://nid.naver.com/oauth2.0/authorize",
       naverClientId: "GbQ_01jKVCMgOVze1pio",
-      naverRedirectUrl: `${process.env.VUE_APP_OAUTH_URL}/oauth/naver/redirect`,
+      naverRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/naver/redirect`,
     }
   },
   
@@ -246,7 +246,7 @@ export default {
       };
 
       try {
-        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/doLogin`, loginData);
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/member/doLogin`, loginData);
         
         // 백엔드 응답 구조에 맞춰 데이터 추출
         if (response.data.status_code === 200 && response.data.result) {

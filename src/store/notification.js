@@ -47,7 +47,7 @@ function createSSEConnection(store) {
   try {
     
     globalEventSource = new EventSourcePolyfill(
-      `${process.env.VUE_APP_API_BASE_URL}/sse/connect/notification`,
+      `${import.meta.env.VITE_API_BASE_URL}/sse/connect/notification`,
       { 
         headers: { Authorization: `Bearer ${token}` },
         heartbeatTimeout: 60000,
@@ -514,7 +514,7 @@ export default {
     async updateChatBadgesOnFridgeEnter({ commit }, fridgeId) {
       try {
         // 일반 채팅방 목록 조회
-        const chatResponse = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
+        const chatResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
@@ -562,7 +562,7 @@ export default {
     async updateGroupChatBadgeOnly({ commit }, fridgeId) {
       try {
         // 일반 채팅방 목록 조회
-        const chatResponse = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
+        const chatResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
@@ -591,7 +591,7 @@ export default {
     async initializeUserManagementBadge({ commit, state }, fridgeId) {
       try {
         // 채팅방 목록 조회하여 실제 unReadCount 확인 (유저 관리 채팅방은 첫 번째 방)
-        const chatResponse = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
+        const chatResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }
@@ -632,7 +632,7 @@ export default {
     async syncUserManagementBadgeWithUnreadCount({ commit, state }, fridgeId) {
       try {
         // 채팅방 목록 조회하여 실제 unReadCount 확인 (유저 관리 채팅방은 첫 번째 방)
-        const chatResponse = await fetch(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
+        const chatResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
           }

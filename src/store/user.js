@@ -40,7 +40,7 @@ const user = {
                 try {
                     console.log('🔍 Fetching user info for email:', email);
                     
-                    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/member/info`, {
+                    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/member/info`, {
                         headers: {
                             'Authorization': `Bearer ${token}`
                         }
@@ -72,7 +72,7 @@ const user = {
                             await authService.refreshAccessToken();
                             
                             // 토큰 갱신 후 다시 API 호출 시도
-                            const retryResponse = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/member/info`, {
+                            const retryResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/member/info`, {
                                 headers: {
                                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                                 }

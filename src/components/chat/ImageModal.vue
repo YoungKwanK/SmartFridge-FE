@@ -2,7 +2,7 @@
   <v-dialog v-model="isVisible" max-width="90vw" max-height="90vh" @update:model-value="handleVisibilityChange">
     <v-card class="image-modal-card">
       <v-card-title class="d-flex justify-space-between align-center pa-3">
-        <span class="text-h6">이미지 {{ currentImageIndex + 1 }} / {{ images.length }}</span>
+        <span class="text-title-large">이미지 {{ currentImageIndex + 1 }} / {{ images.length }}</span>
         <v-btn icon="mdi-close" variant="text" @click="closeModal" />
       </v-card-title>
       

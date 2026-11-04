@@ -22,7 +22,7 @@
                 color="primary"
                 class="cta-button-large"
                 :to="'/login'"
-                elevation="8"
+                elevation="4"
                 rounded="xl"
               >
                 <v-icon start icon="mdi-rocket-launch"></v-icon>
@@ -54,7 +54,7 @@
         
         <v-row class="features-grid">
           <v-col cols="12" md="6" v-for="feature in features" :key="feature.title">
-            <v-card class="feature-card" elevation="4" rounded="xl">
+            <v-card class="feature-card" elevation="2" rounded="xl">
               <div class="feature-icon-wrapper">
                 <v-icon :icon="feature.icon" size="56" :color="feature.color"></v-icon>
               </div>

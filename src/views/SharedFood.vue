@@ -313,7 +313,7 @@ export default {
     async fetchEnums() {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/enums`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/enums`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -336,7 +336,7 @@ export default {
           return;
         }
 
-        let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=${this.isSharedView}&page=${this.currentPage - 1}&size=${this.pageSize}`;
+        let url = `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=${this.isSharedView}&page=${this.currentPage - 1}&size=${this.pageSize}`;
         
         // viewAll 파라미터 추가 (전체식품: true, 내 식품목록: false)
         const viewAll = this.activeTab === 'MY_FOODS' ? false : true;
@@ -408,11 +408,11 @@ export default {
         }
         let response;
         if (foodData.id) {
-          response = await axios.put(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/update/${foodData.id}`, foodData);
+          response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/update/${foodData.id}`, foodData);
           console.log('식품 수정 성공:', response.data);
           this.$refs.snackbar.showSuccess('식품이 성공적으로 수정되었습니다.');
         } else {
-          response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
+          response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
           console.log('식품 등록 성공:', response.data);
           this.$refs.snackbar.showSuccess('식품이 성공적으로 등록되었습니다.');
         }
@@ -433,7 +433,7 @@ export default {
           console.error('Vuex store에서 냉장고 ID를 찾을 수 없습니다.'); 
           return; 
         }
-        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/food/delete/${this.selectedFood.id}`);
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/delete/${this.selectedFood.id}`);
         this.deleteDialog = false;
         this.selectedFood = {};
         await this.fetchFoodList();
@@ -533,7 +533,7 @@ export default {
           return;
         }
         
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/detail`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/detail`);
         if (response.data.result) {
           this.fridgeInfo = response.data.result;
           console.log('냉장고 정보 로딩 완료:', this.fridgeInfo);

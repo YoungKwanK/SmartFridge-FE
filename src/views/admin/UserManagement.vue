@@ -142,7 +142,7 @@ export default {
     async loadUsers() {
       try {
         this.loading = true;
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/member/list`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/member/list`);
         
         console.log('Member List API Response:', response.data);
         
@@ -212,7 +212,7 @@ export default {
     
     async viewUser(user) {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/member/detail/${user.email}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/member/detail/${user.email}`);
         
         console.log('Member Detail API Response:', response.data);
         
@@ -295,7 +295,7 @@ export default {
       try {
         this.deleting = true;
         
-        const response = await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/admin/member/delete/`, {
+        const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/member/delete/`, {
           data: this.userToDelete.email,
           headers: {
             'Content-Type': 'text/plain'

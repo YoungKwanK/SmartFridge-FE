@@ -18,7 +18,7 @@
           <div class="forgot-password-content-area">
             <div class="forgot-password-wrapper">
               <!-- 비밀번호 찾기 카드 -->
-              <v-card class="forgot-password-card elevation-12">
+              <v-card class="forgot-password-card elevation-5">
                 <v-card-text class="pa-8">
                   
                   <!-- 이메일 입력 단계 -->
@@ -279,7 +279,7 @@ export default {
       this.successMessage = "";
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         const response = await axios.create({
           timeout: 10000,
@@ -330,7 +330,7 @@ export default {
       this.successMessage = "";
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         const response = await axios.create({
           timeout: 10000,
@@ -398,7 +398,7 @@ export default {
       this.successMessage = "";
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         const response = await axios.create({
           timeout: 10000,

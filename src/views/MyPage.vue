@@ -316,7 +316,7 @@
       <!-- 회원 탈퇴 확인 다이얼로그 -->
       <v-dialog v-model="showDeleteAccountDialog" max-width="500px">
         <v-card>
-          <v-card-title class="text-h5 error--text">
+          <v-card-title class="text-headline-small error--text">
             <v-icon left color="error">mdi-alert-circle</v-icon>
             회원 탈퇴 확인
           </v-card-title>
@@ -443,7 +443,7 @@ export default {
         this.isLoadingPosts = true
         const token = localStorage.getItem('accessToken')
         const response = await axios.get(
-          `${process.env.VUE_APP_API_BASE_URL}/member/myposts`,
+          `${import.meta.env.VITE_API_BASE_URL}/member/myposts`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }
@@ -467,7 +467,7 @@ export default {
       try {
         const token = localStorage.getItem('accessToken')
         const response = await axios.get(
-          `${process.env.VUE_APP_API_BASE_URL}/member/mystats`,
+          `${import.meta.env.VITE_API_BASE_URL}/member/mystats`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }
@@ -514,7 +514,7 @@ export default {
       try {
         const token = localStorage.getItem('accessToken')
         const response = await axios.put(
-          `${process.env.VUE_APP_API_BASE_URL}/member/update/name`,
+          `${import.meta.env.VITE_API_BASE_URL}/member/update/name`,
           { name: this.editedName },
           {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -569,7 +569,7 @@ export default {
 
         const token = localStorage.getItem('accessToken')
         const response = await axios.put(
-          `${process.env.VUE_APP_API_BASE_URL}/member/update/profileimage`,
+          `${import.meta.env.VITE_API_BASE_URL}/member/update/profileimage`,
           formData,
           {
             headers: {
@@ -631,7 +631,7 @@ export default {
         const token = localStorage.getItem('accessToken')
         
         const response = await axios.get(
-          `${process.env.VUE_APP_API_BASE_URL}/member/mynoti`,
+          `${import.meta.env.VITE_API_BASE_URL}/member/mynoti`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }
@@ -710,7 +710,7 @@ export default {
         const requestData = { settings }
 
         const response = await axios.post(
-          `${process.env.VUE_APP_API_BASE_URL}/notification/setting`,
+          `${import.meta.env.VITE_API_BASE_URL}/notification/setting`,
           requestData,
           {
             headers: { 
@@ -792,7 +792,7 @@ export default {
         }
 
         const response = await axios.delete(
-          `${process.env.VUE_APP_API_BASE_URL}/member/delete`,
+          `${import.meta.env.VITE_API_BASE_URL}/member/delete`,
           {
             headers: { 'Authorization': `Bearer ${token}` }
           }

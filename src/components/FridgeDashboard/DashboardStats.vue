@@ -62,7 +62,7 @@ const fetchFoodStats = async () => {
       return;
     }
     
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/food/stats`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/food/stats`);
     foodStats.value = response.data.result;
   } catch (error) {
     console.error("식품통계를 불러오는데 실패했습니다:", error);

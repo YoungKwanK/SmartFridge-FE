@@ -18,7 +18,7 @@
           <div class="reset-password-content-area">
             <div class="reset-password-wrapper">
               <!-- 비밀번호 재설정 카드 -->
-              <v-card class="reset-password-card elevation-12">
+              <v-card class="reset-password-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 헤더 -->
                   <div class="reset-password-header mb-6">
@@ -192,7 +192,7 @@ export default {
       };
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         // 임시 토큰 생성 (비밀번호 찾기용)
         const tempToken = btoa(JSON.stringify({

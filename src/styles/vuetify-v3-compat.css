@@ -1,0 +1,14 @@
+/*
+ * Vuetify 4에서 제거된 전역 CSS reset 중 레이아웃에 영향을 주는 부분을 복원합니다.
+ * (공식 업그레이드 가이드의 권장 스니펫)
+ */
+@layer vuetify-core.reset {
+  ul, ol, figure, details, summary {
+    padding: 0;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6, p {
+    margin: 0;
+  }
+}

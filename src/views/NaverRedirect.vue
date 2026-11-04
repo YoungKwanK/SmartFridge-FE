@@ -54,7 +54,7 @@
           <div class="loading-content-area">
             <div class="loading-wrapper">
               <!-- 로딩 카드 -->
-              <v-card class="loading-card elevation-12">
+              <v-card class="loading-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 로딩 헤더 -->
                   <div class="loading-header mb-6">
@@ -182,7 +182,7 @@ export default {
                 this.updateStep(2, '서버에서 인증을 처리하고 있습니다...');
                 
                 // 백엔드 컨트롤러에 맞춰 code와 state를 전송 (NaverRedirectDto)
-                const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/naver/doLogin`, {
+                const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/member/naver/doLogin`, {
                     code: code,
                     state: state
                 });

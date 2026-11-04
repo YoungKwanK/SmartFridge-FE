@@ -803,8 +803,8 @@ export default {
         const role = this.$store.state.user.userInfo?.role;
 
         const url = role === 'ADMIN'
-        ? `${process.env.VUE_APP_API_BASE_URL}/inquiry/list`
-        : `${process.env.VUE_APP_API_BASE_URL}/inquiry/myInquiry`
+        ? `${import.meta.env.VITE_API_BASE_URL}/inquiry/list`
+        : `${import.meta.env.VITE_API_BASE_URL}/inquiry/myInquiry`
         
         // 현재 로그인한 사용자의 문의 목록 조회 API 호출
         const response = await axios.get(url)
@@ -886,7 +886,7 @@ export default {
           formData.append('imageFiles', file);
         });
 
-        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/inquiry/create`, formData)
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/inquiry/create`, formData)
         
         if (response.status === 201 || response.data.status_code === 201) {
           this.showMessage('문의가 성공적으로 등록되었습니다.', 'success')
@@ -1212,7 +1212,7 @@ export default {
           commentContents: this.answerData.contents
         };
         const response = await axios.post(
-          `${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/${this.selectedInquiry.id}/reply`, 
+          `${import.meta.env.VITE_API_BASE_URL}/admin/inquiry/${this.selectedInquiry.id}/reply`, 
           requestData,
           {
             headers: {
@@ -1338,7 +1338,7 @@ export default {
           formData.append('removedImageIndexes', JSON.stringify(this.editData.removedImageIndexes));
         }
 
-        const response = await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/inquiry/update/${this.selectedInquiry.id}`, formData);
+        const response = await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/inquiry/update/${this.selectedInquiry.id}`, formData);
         
         if (response.status === 200 || response.data.status_code === 200) {
           this.showMessage('문의가 성공적으로 수정되었습니다.', 'success');
@@ -1368,7 +1368,7 @@ export default {
        this.isDeleting = true;
 
        try {
-         const response = await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/inquiry/delete/${this.selectedInquiry.id}`);
+         const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/inquiry/delete/${this.selectedInquiry.id}`);
          
          if (response.status === 200 || response.data.status_code === 200) {
            this.showMessage('문의가 성공적으로 삭제되었습니다.', 'success');
