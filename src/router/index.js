@@ -59,8 +59,8 @@ router.beforeEach((to) => {
   if (requiresAdmin && userRole !== 'ADMIN') {
     return '/';
   }
-  // 이미 로그인된 사용자가 로그인/회원가입 페이지에 접근하려는 경우
-  if ((to.path === '/login' || to.path === '/member/create') && isAuthenticated) {
+  // 이미 로그인된 사용자가 로그인 페이지에 접근하려는 경우
+  if ((to.path === '/login' || to.path === '/admin/login') && isAuthenticated) {
     // 관리자인 경우 관리자 대시보드로, 일반 사용자인 경우 냉장고 목록으로
     return userRole === 'ADMIN' ? '/admin' : '/fridge/list';
   }

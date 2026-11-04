@@ -22,14 +22,11 @@ export default {
   },
   computed: {
     isLoginPage() {
-      // 로그인 관련 페이지들, NoFridgePage, FridgeList, 이메일 인증 페이지, 관리자 페이지에서는 사이드바를 숨김
+      // 로그인 관련 페이지들, NoFridgePage, FridgeList, 관리자 페이지에서는 사이드바를 숨김
       const hideSidebarRoutes = [
         '/', 
         '/login', 
-        '/member/create', 
-        '/member/verify-email',
-        '/member/forgot-password',
-        '/reset-password',
+        '/admin/login',
         '/no-fridge', 
         '/fridge/list', 
         '/dashboard',
