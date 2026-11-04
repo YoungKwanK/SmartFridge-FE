@@ -60,8 +60,10 @@
                 <v-card-text class="pa-8">
                   <!-- 로그인 헤더 -->
                   <div class="login-header mb-6">
-                    <h2 class="login-title">로그인</h2>
-                    <p class="login-subtitle">스마트 냉장고 관리를 시작해보세요</p>
+                    <h2 class="login-title">{{ isAdminLogin ? '관리자 로그인' : '로그인' }}</h2>
+                    <p class="login-subtitle">
+                      {{ isAdminLogin ? '관리자 계정으로 로그인하세요' : '소셜 계정으로 스마트 냉장고 관리를 시작해보세요' }}
+                    </p>
                   </div>
 
                   <!-- 에러 메시지 표시 -->
@@ -75,8 +77,8 @@
                     @click:close="errorMessage = ''"
                   ></v-alert>
 
-                  <!-- 로그인 폼 -->
-                  <v-form @submit.prevent="doLogin" ref="loginForm">
+                  <!-- 관리자 전용 이메일/비밀번호 로그인 폼 -->
+                  <v-form v-if="isAdminLogin" @submit.prevent="doLogin" ref="loginForm">
                     <div class="form-group mb-4">
                       <label class="form-label">이메일</label>
                       <v-text-field
@@ -122,13 +124,8 @@
                     </v-btn>
                   </v-form>
 
-                  <!-- 소셜 로그인 구분선 -->
-                  <div class="divider-section mb-6">
-                    <span class="divider-text">또는</span>
-                  </div>
-
                   <!-- 소셜 로그인 버튼들 -->
-                  <div class="social-login-section mb-6">
+                  <div v-else class="social-login-section mb-6">
                     <div class="social-buttons-row">
                       <v-btn
                         variant="outlined"
@@ -164,14 +161,6 @@
                       </v-btn>
                     </div>
                   </div>
-
-                  <!-- 회원가입 링크 -->
-                  <div class="signup-section text-center">
-                    <router-link to="/member/create" class="signup-text signup-link">회원가입</router-link>
-                    <span class="signup-divider">|</span>
-                    <router-link to="/member/forgot-password" class="signup-text signup-link">비밀번호 찾기</router-link>
-                  </div>
-                  
 
                 </v-card-text>
               </v-card>
@@ -229,6 +218,13 @@ export default {
     }
   },
   
+  computed: {
+    // /admin/login 에서만 이메일/비밀번호 폼을 보여줌
+    isAdminLogin() {
+      return this.$route.path === '/admin/login';
+    }
+  },
+
   methods: {
     async doLogin() {
       // 폼 유효성 검사
@@ -592,31 +588,6 @@ export default {
   box-shadow: 0 4px 12px rgba(32, 178, 170, 0.3) !important;
 }
 
-/* 구분선 */
-.divider-section {
-  position: relative;
-  text-align: center;
-}
-
-.divider-section::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #e9ecef;
-}
-
-.divider-text {
-  background: white;
-  color: #7f8c8d;
-  font-size: 14px;
-  padding: 0 16px;
-  position: relative;
-  z-index: 1;
-}
-
 /* 소셜 로그인 버튼들 */
 .social-buttons-row {
   display: flex;
@@ -705,37 +676,6 @@ export default {
   justify-content: center;
   font-size: 10px;
   font-weight: 900;
-}
-
-/* 회원가입 섹션 */
-.signup-section {
-  margin-top: 8px;
-}
-
-.signup-text {
-  font-size: 14px;
-  color: #7f8c8d;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.signup-text:hover {
-  color: #667eea;
-}
-
-.signup-link {
-  text-decoration: none !important;
-  font-weight: 500;
-}
-
-.signup-link:hover {
-  color: #667eea !important;
-  text-decoration: underline !important;
-}
-
-.signup-divider {
-  margin: 0 12px;
-  color: #e9ecef;
 }
 
 /* 반응형 디자인 */

@@ -35,7 +35,7 @@ const processQueue = (error, token = null) => {
 axios.interceptors.request.use(
   config => {
     // 인증이 필요 없는 API 경로들
-    const publicPaths = ['/api/v1/email/send', '/api/v1/email/verify', '/member/create', '/member/doLogin', '/member/refresh-at'];
+    const publicPaths = ['/member/doLogin', '/member/refresh-at'];
     
     // 디버깅을 위한 로그
     console.log('Axios interceptor - 요청 URL:', config.url);

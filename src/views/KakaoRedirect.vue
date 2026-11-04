@@ -183,19 +183,25 @@ export default {
                     code: code
                 });
                 
-                // 백엔드 응답 구조: { result: { id, token }, status_code: 200, status_message: "카카오 로그인 성공" }
+                // 백엔드 응답 구조: { result: { accessToken, refreshToken }, status_code: 200, status_message: "카카오 로그인 성공" }
                 if (response.data.status_code === 200 && response.data.result) {
-                    const { token } = response.data.result;
+                    const { accessToken, refreshToken } = response.data.result;
                     
                     // JWT 토큰에서 사용자 정보 추출
-                    const decodedToken = jwtDecode(token);
+                    const decodedToken = jwtDecode(accessToken);
                     const role = decodedToken.role;
                     const email = decodedToken.sub;
                     
-                    // 일반 로그인과 동일한 방식으로 토큰 저장
-                    localStorage.setItem("accessToken", token);
+                    // 토큰과 사용자 정보 저장 (RT는 AT 만료 시 재발급에 사용)
+                    localStorage.setItem("accessToken", accessToken);
+                    localStorage.setItem("refreshToken", refreshToken);
                     localStorage.setItem("role", role);
                     localStorage.setItem("email", email);
+                    
+                    // 토큰 모니터링 시작
+                    if (window.tokenManager) {
+                        window.tokenManager.startMonitoring();
+                    }
                     
                     // 사용자 정보를 store에 로드
                     try {
@@ -219,7 +225,9 @@ export default {
             } catch (error) {
                 console.error('Kakao OAuth 에러:', error);
                 
-                this.statusMessage = "로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
+                // 서버가 보낸 사유(이메일 미동의, 미인증 이메일 등)가 있으면 그대로 보여줌
+                this.statusMessage = error.response?.data?.status_message
+                    || "로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
                 this.progressValue = 0;
                 
                 // 3초 후 로그인 페이지로 이동
