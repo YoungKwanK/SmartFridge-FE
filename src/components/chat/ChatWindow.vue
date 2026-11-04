@@ -475,7 +475,7 @@ const loadChatHistory = async (room, roomType, isLoadMore = false) => {
   }
 
   try {
-    const url = `${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/history/${room.roomId}?page=${currentPage.value}&size=${pageSize.value}`;
+    const url = `${import.meta.env.VITE_API_BASE_URL}/${roomType}/chat/history/${room.roomId}?page=${currentPage.value}&size=${pageSize.value}`;
     const response = await axios.get(url);
     const pageData = getResultData(response);
     const chatMessages = pageData?.content || [];
@@ -489,7 +489,7 @@ const loadChatHistory = async (room, roomType, isLoadMore = false) => {
       // 초기 로드일 때는 DESC로 받은 데이터를 ASC로 정렬 (오래된 것부터 최신 순)
       messages.value = safeNewMessages.reverse();
       try {
-        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/${roomType}/chat/${room.roomId}/read`);
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/${roomType}/chat/${room.roomId}/read`);
       } catch (readError) {
         console.warn('읽음 처리 실패:', readError);
       }
@@ -564,7 +564,7 @@ const scrollToBottom = () => {
 const connectWebsocket = (roomId, roomType) => {
   if (stompClient.value?.connected || !roomType) return;
   
-  const sockJs = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/connect/chat`);
+  const sockJs = new SockJS(`${import.meta.env.VITE_API_BASE_URL}/connect/chat`);
   stompClient.value = Stomp.over(sockJs);
   stompClient.value.connect({ Authorization: `Bearer ${token.value}` }, () => {
     subscription.value = stompClient.value.subscribe(`/topic/chat/${roomType.toUpperCase()}/${roomId}`, (message) => {
@@ -616,7 +616,7 @@ const changeImage = async (files) => {
   const formData = new FormData();
   files.forEach(file => formData.append("images", file));
   const response = await axios.post(
-    `${process.env.VUE_APP_API_BASE_URL}/${props.selectedRoomType}/chat/room/${props.selectedRoom.roomId}/images`,
+    `${import.meta.env.VITE_API_BASE_URL}/${props.selectedRoomType}/chat/room/${props.selectedRoom.roomId}/images`,
     formData,
     { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token.value}` } }
   );
@@ -695,7 +695,7 @@ const completeOrder = async () => {
   try {
     // [개선 2] axios.delete 파라미터 구조 수정
     await axios.delete(
-      `${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${props.selectedRoom.roomId}/complete`,
+      `${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${props.selectedRoom.roomId}/complete`,
       { headers: { 'Authorization': `Bearer ${token.value}` } }
     );
     alert('공동 구매가 완료되었습니다.');

@@ -355,7 +355,7 @@ onMounted(async () => {
   await refreshMyChatRooms();
   await refreshPurchaseRooms();
   try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
     const allRooms = getResultData(response); // 서버에서 받은 채팅방 배열
 
     const [first, ...rest] = allRooms;
@@ -381,7 +381,7 @@ onMounted(async () => {
   }
 
   try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
     purchaseRooms.value = getResultData(response); // 서버에서 받은 채팅방 배열
   } catch (error) {
     console.error("API 호출 에러:", error);
@@ -408,7 +408,7 @@ const createChatRoom = () => {
 const refreshPurchaseRooms = async () => {
   isLoading.value = true;
   try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
     purchaseRooms.value = getResultData(response);
   } catch (error) {
     console.error("API 호출 에러:", error);
@@ -421,7 +421,7 @@ const refreshPurchaseRooms = async () => {
 // 나의 채팅방 목록 새로고침 함수
 const refreshMyChatRooms = async () => {
   try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
     const allRooms = getResultData(response);
 
     const [first, ...rest] = allRooms;
@@ -558,11 +558,11 @@ const leaveRoom = async(room) => {
   try {
     if (isCreator) {
       // 방장인 경우 채팅방 삭제
-      await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
       alert('채팅방이 삭제되었습니다.');
     } else {
       // 일반 참여자인 경우 나가기
-      await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
       alert('채팅방에서 나갔습니다.');
     }
     
@@ -656,7 +656,7 @@ async function refreshUnreadCounts() {
   if (isRefreshingUnread) return;
   isRefreshingUnread = true;
   try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
     const allRooms = getResultData(response) || [];
     if (!Array.isArray(allRooms) || allRooms.length === 0) return;
     const [first, ...rest] = allRooms;

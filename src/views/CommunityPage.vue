@@ -198,7 +198,7 @@ export default {
 
         // 냉장고 멤버 목록에서 현재 사용자의 역할 확인
         const response = await axios.get(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${currentFridgeId}/members`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${currentFridgeId}/members`,
           {
             headers: { 
               'Authorization': `Bearer ${localStorage.getItem('accessToken')}` 
@@ -232,7 +232,7 @@ export default {
         const token = localStorage.getItem('accessToken');
         console.log('카테고리 조회 시작 - 토큰:', token ? '있음' : '없음');
         
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/categories`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -263,7 +263,7 @@ export default {
           return;
         }
 
-        let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/list?page=${this.currentPage - 1}&size=${this.pageSize}`;
+        let url = `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/list?page=${this.currentPage - 1}&size=${this.pageSize}`;
 
         // 전체가 아닐 때만 카테고리 파라미터 추가
         if (this.activeBoard !== '전체') {
@@ -305,7 +305,7 @@ export default {
           return;
         }
 
-        const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/create`, postData);
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/create`, postData);
 
         console.log('게시글 등록 성공:', response.data);
 

@@ -62,7 +62,7 @@ export default {
     async loadDashboardData() {
       try {
         this.loading = true;
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/dashboard`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/dashboard`);
         
         if (response.data.status_code === 200) {
           const data = response.data.result;
@@ -91,7 +91,7 @@ export default {
     // 읽지 않은 알림 개수 로드
     async loadUnreadNotificationCount() {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/notification/count`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/notification/count`);
         if (response.data.status_code === 200) {
           this.unreadNotificationCount = response.data.result.unreadCount || 0;
         }

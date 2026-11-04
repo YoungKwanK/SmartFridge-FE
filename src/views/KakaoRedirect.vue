@@ -179,7 +179,7 @@ export default {
                 this.updateStep(2, '서버에서 인증을 처리하고 있습니다...');
                 
                 // 백엔드 컨트롤러에 맞춰 code를 전송
-                const response = await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/kakao/doLogin`, {
+                const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/member/kakao/doLogin`, {
                     code: code
                 });
                 

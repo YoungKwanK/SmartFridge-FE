@@ -163,7 +163,7 @@ const handleCreateRoom = async () => {
       fridgeId: props.fridgeId
     };
     
-    await axios.post(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/create`, payload);
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/create`, payload);
     
     // 성공 메시지 표시
     alert('새로운 공동구매 채팅방이 생성되었습니다.');

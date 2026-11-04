@@ -349,7 +349,7 @@ export default {
     async fetchEnums() {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/enums`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/enums`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         this.categories = response.data.categories;

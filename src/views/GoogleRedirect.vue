@@ -175,7 +175,7 @@ export default {
                 this.updateStep(1, '구글 인증 코드를 확인하고 있습니다...');
                 
                 // API 기본 URL 설정 (환경변수가 없는 경우 기본값 사용)
-                const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
                 
                 // 1단계 완료
                 await new Promise(resolve => setTimeout(resolve, 500));

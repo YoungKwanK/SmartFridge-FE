@@ -219,7 +219,7 @@ const fetchParticipants = async () => {
 
   try {
     // 공동구매 채팅방의 경우 - 채팅방 정보 API에서 참여자 정보 추출
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/participants/${props.roomId}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/participants/${props.roomId}`);
     const participantsData = getResultData(response);
     console.log("participantsData", participantsData);
 

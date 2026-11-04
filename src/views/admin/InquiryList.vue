@@ -178,7 +178,7 @@ export default {
     async loadInquiries() {
       try {
         this.loading = true;
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/list`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/inquiry/list`);
         
         console.log('Admin Inquiry API Response:', response.data);
         
@@ -238,7 +238,7 @@ export default {
     
     async viewInquiry(inquiry) {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/detail/${inquiry.id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/inquiry/detail/${inquiry.id}`);
         
         console.log('Inquiry Detail API Response:', response.data);
         console.log('Inquiry Detail Result:', response.data.result);
@@ -290,7 +290,7 @@ export default {
       
       try {
         const response = await axios.post(
-          `${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/reply/${this.selectedInquiry.id}`,
+          `${import.meta.env.VITE_API_BASE_URL}/admin/inquiry/reply/${this.selectedInquiry.id}`,
           {
             commentContents: this.replyContent
           },
@@ -367,7 +367,7 @@ export default {
 
       try {
         const response = await axios.post(
-          `${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/${this.selectedInquiry.id}/reply/update`,
+          `${import.meta.env.VITE_API_BASE_URL}/admin/inquiry/${this.selectedInquiry.id}/reply/update`,
           {
             newCommentContents: this.editReplyContent
           },
@@ -486,7 +486,7 @@ export default {
       
       try {
         const response = await axios.post(
-          `${process.env.VUE_APP_API_BASE_URL}/admin/inquiry/${inquiry.id}/update`,
+          `${import.meta.env.VITE_API_BASE_URL}/admin/inquiry/${inquiry.id}/update`,
           this.mapStatusToServer(inquiry.newStatus),
           {
             headers: {

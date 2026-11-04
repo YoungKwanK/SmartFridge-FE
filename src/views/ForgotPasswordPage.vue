@@ -279,7 +279,7 @@ export default {
       this.successMessage = "";
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         const response = await axios.create({
           timeout: 10000,
@@ -330,7 +330,7 @@ export default {
       this.successMessage = "";
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         const response = await axios.create({
           timeout: 10000,
@@ -398,7 +398,7 @@ export default {
       this.successMessage = "";
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         const response = await axios.create({
           timeout: 10000,

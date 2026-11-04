@@ -199,7 +199,7 @@ const fetchInitialNotifications = async () => {
       return;
     }
     
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/notification/badgeNotification`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/notification/badgeNotification`);
     
     if (response.data.result) {
       // content가 배열인지 확인하고 안전하게 설정
@@ -228,7 +228,7 @@ const fetchFridgeInfo = async () => {
       return;
     }
     
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/detail`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/detail`);
     if (response.data.result) {
       fridge.value = response.data.result;
     }
@@ -357,7 +357,7 @@ const handleNotificationClick = async (notification) => {
     try {
       if (notification.id) {
         await axios.patch(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${props.fridgeId}/notification/isRead`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/notification/isRead`,
           [{ notificationId: notification.id }]
         );
       }

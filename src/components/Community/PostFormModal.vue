@@ -291,7 +291,7 @@ export default {
 
         // 냉장고 멤버 목록에서 현재 사용자의 역할 확인
         const response = await axios.get(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${currentFridgeId}/members`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${currentFridgeId}/members`,
           {
             headers: { 
               'Authorization': `Bearer ${localStorage.getItem('accessToken')}` 
@@ -335,7 +335,7 @@ export default {
         
         const token = localStorage.getItem('accessToken');
         const response = await axios.post(
-          `${process.env.VUE_APP_API_BASE_URL}/api/images/upload`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/images/upload`,
           formData,
           {
             headers: { 
@@ -358,7 +358,7 @@ export default {
     async fetchCategories() {
       try {
         const token = localStorage.getItem('accessToken');
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/api/categories`, {
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         

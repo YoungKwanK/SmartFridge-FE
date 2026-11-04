@@ -192,7 +192,7 @@ export default {
       };
 
       try {
-        const apiBaseUrl = process.env.VUE_APP_API_BASE_URL;
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
         
         // 임시 토큰 생성 (비밀번호 찾기용)
         const tempToken = btoa(JSON.stringify({

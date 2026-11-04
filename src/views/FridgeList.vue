@@ -425,7 +425,7 @@ export default {
   methods: {
     async fetchFridgeList() {
       try {
-        const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/list`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/list`);
         this.fridgeList = response.data.result;
       } catch (error) {
         console.error("냉장고 목록을 불러오는 데 실패했습니다:", error);
@@ -475,10 +475,10 @@ export default {
     async handleSaveFridge(formData) {
       try {
         if (formData.fridgeId) {
-          await axios.put(`${process.env.VUE_APP_API_BASE_URL}/fridge/${formData.fridgeId}/update`, formData);
+          await axios.put(`${import.meta.env.VITE_API_BASE_URL}/fridge/${formData.fridgeId}/update`, formData);
           this.showSnackbar('냉장고 정보가 수정되었습니다.', 'success');
         } else {
-          await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/create`, formData);
+          await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/create`, formData);
           this.showSnackbar('새로운 냉장고가 생성되었습니다!', 'success');
         }
         await this.fetchFridgeList();
@@ -490,7 +490,7 @@ export default {
     },
     async handleJoinFridge(inviteCode) {
       try {
-        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/fridge/join`, null, {
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/join`, null, {
           params: { code: inviteCode }
         });
         this.showSnackbar('냉장고에 성공적으로 참여했습니다!', 'success');
@@ -516,7 +516,7 @@ export default {
 
     async leaveFridge(fridgeId) {
       try {
-        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/leave`);
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/leave`);
         this.showSnackbar('냉장고에서 나갔습니다.', 'success');
         this.showLeaveDialog = false; // 다이얼로그 닫기
         await this.fetchFridgeList();
@@ -528,7 +528,7 @@ export default {
 
     async deleteFridge(fridgeId) {
       try {
-        await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}`);
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}`);
         this.showSnackbar('냉장고가 삭제되었습니다.', 'success');
         this.showDeleteDialog = false; // 다이얼로그 닫기
         await this.fetchFridgeList();

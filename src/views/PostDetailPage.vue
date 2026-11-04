@@ -308,7 +308,7 @@ export default {
         }
         
         const response = await axios.get(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}`,
           {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
           }
@@ -336,7 +336,7 @@ export default {
         }
         
         const response = await axios.get(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/list?page=${this.commentPage - 1}&size=${this.commentPageSize}`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/list?page=${this.commentPage - 1}&size=${this.commentPageSize}`,
           {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
           }
@@ -391,7 +391,7 @@ export default {
         };
         
         await axios.post(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/create`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/create`,
           commentData,
           {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
@@ -432,7 +432,7 @@ export default {
         };
         
         await axios.patch(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/update/${commentId}`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/update/${commentId}`,
           updateData,
           {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
@@ -468,7 +468,7 @@ export default {
         }
         
         await axios.delete(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/delete/${commentId}`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/comment/delete/${commentId}`,
           {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
           }
@@ -524,7 +524,7 @@ export default {
         if (this.postDetail.isLiked) {
           // 좋아요 취소
           await axios.delete(
-            `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/like`,
+            `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/like`,
             {
               headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
             }
@@ -532,7 +532,7 @@ export default {
         } else {
           // 좋아요 추가
           await axios.post(
-            `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/like`,
+            `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/like`,
             {},
             {
               headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
@@ -593,7 +593,7 @@ export default {
         }
         
         await axios.put(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/update`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/update`,
           updatedPost,
           {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
@@ -635,7 +635,7 @@ export default {
         }
         
         await axios.delete(
-          `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/post/delete/${postId}`,
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/delete/${postId}`,
           {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
           }

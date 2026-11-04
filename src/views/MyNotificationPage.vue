@@ -248,7 +248,7 @@ const fetchNotifications = async (isLoadMore = false) => {
   }
 
   try {
-    let url = `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/notification/list`;
+    let url = `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/notification/list`;
     const params = new URLSearchParams();
     if (selectedCategory.value !== "ALL") {
       if (selectedCategory.value.includes(',')) {
@@ -425,7 +425,7 @@ const markAsRead = async (notification) => {
     notification.isRead = true;
     // 서버 반영
     await axios.patch(
-      `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/notification/isRead`,
+      `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/notification/isRead`,
       [{ notificationId: notification.id }]
     );
   } catch (error) {
@@ -442,7 +442,7 @@ const confirmDelete = (notification) => {
 const deleteNotification = async () => {
   if (!deleteTarget.value) return;
   try {
-    await axios.delete(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/notification/delete/${deleteTarget.value.id}`);
+    await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/notification/delete/${deleteTarget.value.id}`);
     notificationList.value = notificationList.value.filter(n => n.id !== deleteTarget.value.id);
     deleteDialog.value = false;
     deleteTarget.value = null;
@@ -476,7 +476,7 @@ const handleScroll = () => {
 const readAll = async () => {
   try {
     const readNotification = notificationList.value.map(n => ({ notificationId: n.id }));
-    await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/notification/isRead`, readNotification);
+    await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/notification/isRead`, readNotification);
     await fetchNotifications();
   } catch (error) { console.error('모두 읽음 처리 실패:', error); }
 };

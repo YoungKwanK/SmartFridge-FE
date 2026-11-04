@@ -558,7 +558,7 @@ const fetchUsers = async () => {
   try {
     
     const response = await axios.get(
-      `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/members`,
+      `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/members`,
       { headers: { Authorization: `Bearer ${token.value}` } }
     );
     
@@ -685,7 +685,7 @@ const loadChatHistory = async (user, isLoadMore = false) => {
   }
 
   try {
-    const url = `${process.env.VUE_APP_API_BASE_URL}/manager/chat/history/room/${user.roomId}?page=${currentPage.value}&size=${pageSize.value}`;
+    const url = `${import.meta.env.VITE_API_BASE_URL}/manager/chat/history/room/${user.roomId}?page=${currentPage.value}&size=${pageSize.value}`;
     const response = await axios.get(url, {
       headers: { Authorization: `Bearer ${token.value}` },
     });
@@ -725,7 +725,7 @@ const loadChatHistory = async (user, isLoadMore = false) => {
       
       // 읽음 처리
       try {
-        await axios.post(`${process.env.VUE_APP_API_BASE_URL}/manager/chat/${user.roomId}/read`);
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/manager/chat/${user.roomId}/read`);
       } catch (readError) {
         console.warn('읽음 처리 실패:', readError);
       }
@@ -892,7 +892,7 @@ const connectWebSocket = (roomId) => {
   if (stompClient.value?.connected) return;
   try {
     const sockJs = new SockJS(
-      `${process.env.VUE_APP_API_BASE_URL}/connect/chat`
+      `${import.meta.env.VITE_API_BASE_URL}/connect/chat`
     );
     stompClient.value = Stomp.over(sockJs);
     stompClient.value.connect(
@@ -986,7 +986,7 @@ const uploadImages = async (files) => {
     const formData = new FormData();
     files.forEach((file) => formData.append("images", file));
     const response = await axios.post(
-      `${process.env.VUE_APP_API_BASE_URL}/manager/chat/room/${selectedUser.value.roomId}/images`,
+      `${import.meta.env.VITE_API_BASE_URL}/manager/chat/room/${selectedUser.value.roomId}/images`,
       formData,
       {
         headers: {
@@ -1112,7 +1112,7 @@ const closeImageModal = () => {
 const promoteToAdmin = async (user) => {
   if (confirm(`${user.name}님을 관리자로 승격하시겠습니까?`)) {
     try {
-      await axios.patch(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`);
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`);
       alert(`${user.name}님을 관리자로 승격하였습니다.`);
       router.push('/fridge/list');
     } catch (error) {
@@ -1126,7 +1126,7 @@ const removeUser = async (user) => {
   if (confirm(`${user.name}님을 냉장고에서 제거하시겠습니까?`)) {
     try {
       await axios.delete(
-        `${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId.value}/members/${user.email}`,
+        `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/members/${user.email}`,
       );
       users.value = users.value.filter((u) => u.email !== user.email);
       if (selectedUser.value && selectedUser.value.email === user.email) {

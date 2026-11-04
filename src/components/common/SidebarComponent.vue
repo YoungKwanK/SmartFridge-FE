@@ -189,7 +189,7 @@ const doLogout = () => {
 
 const fetchUserType = async (fridgeId) => {
   try {
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/fridge/${fridgeId}/member/type`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/member/type`);
     userType.value = getResultData(response);
     console.log('userType', userType.value);
   } catch (error) {

@@ -136,7 +136,7 @@ const joinRoom = async(roomId) => {
   isLoading.value = true;
   
   try {
-    await axios.post(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/${roomId}/join`);
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${roomId}/join`);
     
     // 성공 메시지 표시
     alert("채팅방에 성공적으로 참여했습니다.");
@@ -179,7 +179,7 @@ const fetchRoomDetails = async () => {
 
   try {
     // roomId를 사용해 상세 정보 API 호출
-    const response = await axios.get(`${process.env.VUE_APP_API_BASE_URL}/purchase/chat/info/${props.roomId}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/info/${props.roomId}`);
     roomDetails.value = getResultData(response); // 예시 경로, 실제 API에 맞게 수정
   } catch (err) {
     console.error("채팅방 상세 정보 조회 실패:", err);
