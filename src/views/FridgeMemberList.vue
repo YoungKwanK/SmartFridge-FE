@@ -568,7 +568,7 @@ const fetchUsers = async () => {
       const userName = user.memberName || user.nickname || "이름 없음";
       
       // 프로필 이미지 유효성 검사 (올바른 필드명 사용)
-      let profileImage = null;
+      let profileImage;
       if (user.memberProfileImage && user.memberProfileImage.trim() !== '') {
         // URL이 유효한지 확인
         if (user.memberProfileImage.startsWith('http') || user.memberProfileImage.startsWith('data:')) {

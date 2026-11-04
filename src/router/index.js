@@ -44,35 +44,33 @@ const router = createRouter(
 )
 
 // 라우터 가드 - 인증이 필요한 페이지 접근 제어
-router.beforeEach((to, from, next) => {
+// (vue-router 5에서 next() 콜백 방식이 deprecated 되어 반환값 방식으로 변경)
+router.beforeEach((to) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin);
   const isAuthenticated = localStorage.getItem('accessToken');
   const userRole = localStorage.getItem('role') || 'USER';
-  
+
   // 인증이 필요한 페이지인데 로그인하지 않은 경우
   if (requiresAuth && !isAuthenticated) {
-    next('/');
-  } 
+    return '/';
+  }
   // 관리자 권한이 필요한 페이지인데 관리자가 아닌 경우
-  else if (requiresAdmin && userRole !== 'ADMIN') {
-    next('/');
+  if (requiresAdmin && userRole !== 'ADMIN') {
+    return '/';
   }
   // 이미 로그인된 사용자가 로그인/회원가입 페이지에 접근하려는 경우
-  else if ((to.path === '/login' || to.path === '/member/create') && isAuthenticated) {
+  if ((to.path === '/login' || to.path === '/member/create') && isAuthenticated) {
     // 관리자인 경우 관리자 대시보드로, 일반 사용자인 경우 냉장고 목록으로
-    if (userRole === 'ADMIN') {
-      next('/admin');
-    } else {
-      next('/fridge/list');
-    }
-  } 
-  else {
-    next();
+    return userRole === 'ADMIN' ? '/admin' : '/fridge/list';
   }
-  
-  // SSE 연결 상태 확인 및 필요시 재연결 (next() 호출 후)
-  const store = window.$store || window.__VUE_DEVTOOLS_GLOBAL_HOOK__?.Vue?.prototype?.$store;
+  return true;
+});
+
+// SSE 연결 상태 확인 및 필요시 재연결 (기존: next() 호출 후 실행 → afterEach로 이동)
+router.afterEach(() => {
+  const isAuthenticated = localStorage.getItem('accessToken');
+  const store = window.$store;
   if (store && isAuthenticated) {
     const isConnected = store.getters['notification/isSSEConnected'];
     if (!isConnected) {

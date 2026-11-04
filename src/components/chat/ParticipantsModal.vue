@@ -11,7 +11,7 @@
       <slot name="activator" :props="activatorProps"></slot>
     </template>
     
-    <v-card class="participants-dropdown" rounded="xl" elevation="12">
+    <v-card class="participants-dropdown" rounded="xl" elevation="5">
       <!-- 헤더 섹션 -->
       <div class="modal-header">
         <div class="header-gradient"></div>

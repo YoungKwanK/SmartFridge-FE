@@ -2,7 +2,7 @@
   <v-card class="d-flex flex-column chat-window-full" rounded="xl">
     <div v-if="!selectedRoom" class="d-flex justify-center align-center flex-grow-1 text-center text-grey">
       <div>
-        <p class="text-h6">채팅을 선택해주세요.</p>
+        <p class="text-title-large">채팅을 선택해주세요.</p>
         <p>왼쪽 목록에서 채팅방을 선택하면 대화를 시작할 수 있습니다.</p>
       </div>
     </div>

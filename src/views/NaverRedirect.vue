@@ -54,7 +54,7 @@
           <div class="loading-content-area">
             <div class="loading-wrapper">
               <!-- 로딩 카드 -->
-              <v-card class="loading-card elevation-12">
+              <v-card class="loading-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 로딩 헤더 -->
                   <div class="loading-header mb-6">

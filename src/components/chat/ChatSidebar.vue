@@ -26,7 +26,7 @@
           </span>
         </v-avatar>
       </template>
-        <v-list-item-title class="font-weight-bold text-h6 ml-3">{{ userName }} </v-list-item-title>
+        <v-list-item-title class="font-weight-bold text-title-large ml-3">{{ userName }} </v-list-item-title>
       </v-list-item>
 
       <v-tabs v-model="tab" grow>

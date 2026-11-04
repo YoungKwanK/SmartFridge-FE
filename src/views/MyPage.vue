@@ -316,7 +316,7 @@
       <!-- 회원 탈퇴 확인 다이얼로그 -->
       <v-dialog v-model="showDeleteAccountDialog" max-width="500px">
         <v-card>
-          <v-card-title class="text-h5 error--text">
+          <v-card-title class="text-headline-small error--text">
             <v-icon left color="error">mdi-alert-circle</v-icon>
             회원 탈퇴 확인
           </v-card-title>

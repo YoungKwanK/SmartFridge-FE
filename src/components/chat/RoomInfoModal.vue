@@ -6,7 +6,7 @@
   >
     <v-card rounded="lg">
       <v-card-title class="d-flex align-center pa-4">
-        <span class="text-h6 font-weight-bold">채팅방 정보</span>
+        <span class="text-title-large font-weight-bold">채팅방 정보</span>
         <v-spacer></v-spacer>
         <v-btn icon="mdi-close" variant="text" @click="closeModal"></v-btn>
       </v-card-title>

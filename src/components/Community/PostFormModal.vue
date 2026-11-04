@@ -113,7 +113,7 @@
                   @update:model-value="handleImageFilesChange"
                   @click:clear="clearFileInput"
                 ></v-file-input>
-                <small class="text-caption text-grey">
+                <small class="text-body-small text-grey">
                   여러 이미지를 선택할 수 있습니다. 각 이미지는 내용에 삽입하거나 첨부파일로 저장할 수 있습니다.<br>
                   <strong>참고:</strong> 이미지를 삽입한 후 내용에서 이미지 태그를 삭제하면 해당 이미지는 게시글에 포함되지 않습니다.
                 </small>

@@ -18,7 +18,7 @@
           <div class="reset-password-content-area">
             <div class="reset-password-wrapper">
               <!-- 비밀번호 재설정 카드 -->
-              <v-card class="reset-password-card elevation-12">
+              <v-card class="reset-password-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 헤더 -->
                   <div class="reset-password-header mb-6">

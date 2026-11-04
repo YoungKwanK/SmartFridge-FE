@@ -56,7 +56,7 @@
           <div class="signup-content-area">
             <div class="signup-wrapper">
               <!-- 회원가입 카드 -->
-              <v-card class="signup-card elevation-12">
+              <v-card class="signup-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 회원가입 헤더 -->
                   <div class="signup-header mb-6">

@@ -13,10 +13,10 @@
 
       <!-- 메인 콘텐츠 -->
       <div class="verification-content">
-        <v-container class="fill-height">
-          <v-row justify="center" align="center" class="fill-height">
+        <v-container class="fill-height d-flex align-center flex-wrap">
+          <v-row class="fill-height justify-center align-center">
             <v-col cols="12" sm="8" md="6" lg="4">
-              <v-card class="verification-card elevation-12">
+              <v-card class="verification-card elevation-5">
                 <v-card-text class="pa-8">
                   
                   <!-- 이메일 인증 단계 표시 -->

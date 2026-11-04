@@ -1,10 +1,10 @@
 <template>
   <v-dialog v-model="show" max-width="400" persistent>
     <v-card>
-      <v-card-title class="text-h6 font-weight-bold">
+      <v-card-title class="text-title-large font-weight-bold">
         {{ title }}
       </v-card-title>
-      <v-card-text class="text-body-1">
+      <v-card-text class="text-body-large">
         {{ message }}
       </v-card-text>
       <v-card-actions class="d-flex justify-center">

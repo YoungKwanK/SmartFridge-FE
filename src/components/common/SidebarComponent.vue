@@ -310,8 +310,8 @@ const menuItems = computed(() => {
 
   const fridgeInfo = store.getters.getCurrentFridgeInfo;
   
-  let isManager = false;
-  let isUser = false;
+  let isManager;
+  let isUser;
   
   if (fridgeInfo && fridgeInfo.type) {
     isManager = fridgeInfo.type === 'MANAGER';
@@ -342,7 +342,7 @@ const menuItems = computed(() => {
     });
   }
   
-  let finalChatBadgeCount = 0;
+  let finalChatBadgeCount;
   if (isUser) {
     // 사용자는 MANAGER_CHAT 알림을 받지 않음 (관리자용 알림)
     const hasGroupChat = store.getters['notification/typeCounts']?.GROUP_CHAT > 0;

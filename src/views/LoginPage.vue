@@ -56,7 +56,7 @@
           <div class="login-content-area">
             <div class="login-wrapper">
               <!-- 로그인 카드 -->
-              <v-card class="login-card elevation-12">
+              <v-card class="login-card elevation-5">
                 <v-card-text class="pa-8">
                   <!-- 로그인 헤더 -->
                   <div class="login-header mb-6">
