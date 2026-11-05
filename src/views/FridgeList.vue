@@ -7,10 +7,6 @@
           <p class="page-subtitle">참여중인 냉장고를 관리하고 새로운 냉장고를 만들어보세요</p>
         </div>
         <div class="header-actions">
-          <v-btn class="action-btn join-btn" variant="outlined" @click="openJoinModal">
-            <v-icon start>mdi-account-plus</v-icon>
-            참여하기
-          </v-btn>
           <v-btn class="action-btn create-btn" color="primary" @click="openCreateModal">
             <v-icon start>mdi-plus</v-icon>
             냉장고 만들기
@@ -29,7 +25,7 @@
           <v-icon size="80" color="grey-lighten-1">mdi-fridge-outline</v-icon>
         </div>
         <h3 class="empty-title">참여중인 냉장고가 없습니다</h3>
-        <p class="empty-description">'냉장고 만들기' 또는 '참여하기'를 통해 새 냉장고를 추가해보세요.</p>
+        <p class="empty-description">'냉장고 만들기'로 새 냉장고를 추가하거나, 받은 초대 링크로 참여해보세요.</p>
       </div>
 
       <div v-else class="fridge-grid">
@@ -44,9 +40,9 @@
               </div>
             </div>
             <div v-if="fridge.type === 'MANAGER'" class="invite-section">
-              <span class="invite-label">초대코드</span>
+              <span class="invite-label">초대 링크</span>
               <v-btn icon="mdi-content-copy" variant="text" size="small" class="copy-btn"
-                @click="copyInviteCode(fridge.inviteLink)" title="초대코드 복사"></v-btn>
+                @click="copyInviteLink(fridge.inviteLink)" title="초대 링크 복사"></v-btn>
             </div>
           </div>
 
@@ -81,7 +77,6 @@
     </div>
 
     <FridgeFormModal v-model="isFormModalOpen" :editing-fridge="selectedFridge" @save="handleSaveFridge" />
-    <FridgeInviteModal v-model="isJoinModalOpen" @join="handleJoinFridge" />
 
     <!-- 삭제 확인 다이얼로그 -->
     <DeleteConfirmDialog
@@ -178,11 +173,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.join-btn {
-  border: 2px solid #667eea;
-  color: #667eea;
 }
 
 .create-btn {
@@ -397,14 +387,12 @@
 <script>
 import axios from 'axios';
 import FridgeFormModal from '@/components/Fridge/FridgeFormModal.vue';
-import FridgeInviteModal from '@/components/Fridge/FridgeInviteModal.vue';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue';
 
 export default {
   components: {
     FridgeFormModal,
-    FridgeInviteModal,
     CommonSnackbar,
     DeleteConfirmDialog
   },
@@ -412,7 +400,6 @@ export default {
     return {
       fridgeList: [],
       isFormModalOpen: false,
-      isJoinModalOpen: false,
       showDeleteDialog: false,
       showLeaveDialog: false,
       selectedFridge: {},
@@ -469,9 +456,6 @@ export default {
       this.selectedFridge = { ...fridge };
       this.isFormModalOpen = true;
     },
-    openJoinModal() {
-      this.isJoinModalOpen = true;
-    },
     async handleSaveFridge(formData) {
       try {
         if (formData.fridgeId) {
@@ -485,19 +469,6 @@ export default {
       } catch (error) {
         console.error("냉장고 처리 중 오류:", error);
         const message = error.response?.data?.status_message || "오류가 발생했습니다.";
-        this.showSnackbar(message, 'error');
-      }
-    },
-    async handleJoinFridge(inviteCode) {
-      try {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/join`, null, {
-          params: { code: inviteCode }
-        });
-        this.showSnackbar('냉장고에 성공적으로 참여했습니다!', 'success');
-        await this.fetchFridgeList();
-      } catch (error) {
-        console.error("냉장고 참여에 실패했습니다:", error);
-        const message = error.response?.data?.status_message || "냉장고 참여 중 오류가 발생했습니다.";
         this.showSnackbar(message, 'error');
       }
     },
@@ -537,12 +508,12 @@ export default {
         this.showSnackbar(error.response?.data?.status_message || "삭제 처리 중 오류 발생", 'error');
       }
     },
-    copyInviteCode(inviteCode) {
-      if (!inviteCode) return;
-      navigator.clipboard.writeText(inviteCode).then(() => {
-        this.showSnackbar('초대 코드가 복사되었습니다!', 'info');
+    copyInviteLink(inviteLink) {
+      if (!inviteLink) return;
+      navigator.clipboard.writeText(inviteLink).then(() => {
+        this.showSnackbar('초대 링크가 복사되었습니다!', 'info');
       }).catch(err => {
-        console.error('코드 복사 실패:', err);
+        console.error('링크 복사 실패:', err);
         this.showSnackbar('복사에 실패했습니다.', 'error');
       });
     },
