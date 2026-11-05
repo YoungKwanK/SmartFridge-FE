@@ -46,9 +46,6 @@
             <v-tab value="EXPIRED" class="filter-tab">
               지남
             </v-tab>
-            <v-tab value="TEMP_ONLY" class="filter-tab">
-              임시보관
-            </v-tab>
             <v-tab v-if="isManager" value="MY_FOODS" class="filter-tab">
               내 식품목록
             </v-tab>
@@ -471,15 +468,13 @@ export default {
     getStorageColor(storageType) {
       if (storageType === '냉장') return 'info';
       if (storageType === '냉동') return 'error';
-      if (storageType === '실온') return 'success';
       return 'grey';
     },
     getCategoryColor(category) {
       if (category === '과일') return 'primary';
       if (category === '채소') return 'success';
-      if (category === '육류') return 'error';
-      if (category === '해산물') return 'info';
-      if (category === '곡류') return 'warning';
+      if (category === '고기') return 'error';
+      if (category === '가공식품') return 'warning';
       if (category === '유제품') return 'purple';
       if (category === '음료') return 'blue';
       return 'grey';
