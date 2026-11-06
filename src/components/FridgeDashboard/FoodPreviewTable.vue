@@ -156,7 +156,7 @@ const handleFoodSave = async (foodData) => {
       return;
     }
     
-    // 식품 등록 API 호출
+    // 식품 등록 API 호출 (foodData는 식품 목록 배열)
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/food/register`, foodData);
     
     // 성공 메시지
@@ -164,7 +164,7 @@ const handleFoodSave = async (foodData) => {
     
     // 성공 snackbar 표시
     if (snackbar.value) {
-      snackbar.value.showSuccess('식품이 성공적으로 등록되었습니다.');
+      snackbar.value.showSuccess(`식품 ${foodData.length}개가 성공적으로 등록되었습니다.`);
     }
     
     // 목록 새로고침
