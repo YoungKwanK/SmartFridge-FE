@@ -205,8 +205,58 @@
                 </v-checkbox>
               </div>
             </v-col>
+
+            <!-- 목록에 담기 (등록 모드에서만) -->
+            <v-col v-if="isCreateMode" cols="12" class="d-flex justify-end">
+              <v-btn
+                variant="tonal"
+                color="primary"
+                :prepend-icon="editingIndex !== null ? 'mdi-check' : 'mdi-plus'"
+                class="action-btn"
+                :disabled="editingIndex === null && pendingFoods.length >= maxCount"
+                @click="addToList"
+              >
+                {{ editingIndex !== null ? '목록에 반영' : '목록에 담기' }}
+              </v-btn>
+              <v-btn
+                v-if="editingIndex !== null"
+                variant="text"
+                class="action-btn ml-2"
+                @click="cancelItemEdit"
+              >
+                수정 취소
+              </v-btn>
+            </v-col>
           </v-row>
         </v-container>
+
+        <!-- 담은 식품 목록 -->
+        <div v-if="isCreateMode && pendingFoods.length > 0" class="pending-section">
+          <div class="pending-header">
+            <v-icon size="18" color="primary" class="mr-2">mdi-format-list-bulleted</v-icon>
+            담은 식품 {{ pendingFoods.length }}개
+            <span class="pending-limit">(최대 {{ maxCount }}개)</span>
+          </div>
+          <div
+            v-for="(item, index) in pendingFoods"
+            :key="index"
+            class="pending-item"
+            :class="{ 'is-editing': editingIndex === index }"
+          >
+            <div class="pending-info">
+              <span class="pending-name">{{ item.name }}</span>
+              <span v-if="getItemSummary(item)" class="pending-meta">· {{ getItemSummary(item) }}</span>
+              <span v-if="!isItemComplete(item)" class="pending-warning">
+                <v-icon size="14" color="warning">mdi-alert</v-icon> {{ getMissingFields(item).join(', ') }} 입력 필요
+              </span>
+              <v-chip v-if="item.shareable" size="x-small" color="primary" variant="tonal" class="ml-2">공유</v-chip>
+            </div>
+            <div class="pending-actions">
+              <v-btn icon="mdi-pencil" size="small" variant="text" @click="editListItem(index)"></v-btn>
+              <v-btn icon="mdi-delete" size="small" variant="text" color="error" @click="removeListItem(index)"></v-btn>
+            </div>
+          </div>
+        </div>
       </v-card-text>
 
       <!-- 액션 버튼 -->
@@ -230,7 +280,7 @@
               :loading="isLoading"
               prepend-icon="mdi-check"
             >
-              {{ isEditMode ? '수정 완료' : '등록 완료' }}
+              {{ getSaveButtonText() }}
             </v-btn>
           </div>
         </div>
@@ -275,7 +325,11 @@ export default {
       },
       storageTypes: [],
       categories: [],
-      isLoading: false
+      isLoading: false,
+      // 여러 개 등록: 담은 식품 목록과 수정 중인 항목 위치
+      pendingFoods: [],
+      editingIndex: null,
+      maxCount: 30
     }
   },
   created() {
@@ -284,6 +338,14 @@ export default {
   computed: {
     isEditMode() {
       return this.editingFood && this.editingFood.id;
+    },
+    isCreateMode() {
+      return !this.isEditMode && !this.readOnly;
+    },
+    // 등록 버튼을 누르면 저장될 개수 (담은 식품 + 입력칸에 쓴 식품)
+    totalCount() {
+      const formCount = (this.editingIndex === null && !this.isFormEmpty()) ? 1 : 0;
+      return this.pendingFoods.length + formCount;
     },
     dialog: {
       get() {
@@ -295,6 +357,13 @@ export default {
     }
   },
   watch: {
+    // 모달을 새로 열 때 담은 목록 초기화
+    modelValue(isOpen) {
+      if (isOpen) {
+        this.pendingFoods = [];
+        this.editingIndex = null;
+      }
+    },
     editingFood: {
       handler(newFoodData) {
         const defaultFormData = this.$options.data().formData;
@@ -367,66 +436,167 @@ export default {
         v => !v || new Date(v) >= new Date(this.getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다'
       ];
     },
-    async save() {
-      // 필수 필드 검증
-      if (!this.formData.name.trim()) {
+    getSaveButtonText() {
+      if (this.isEditMode) return '수정 완료';
+      if (this.pendingFoods.length > 0) return `${this.totalCount}개 등록`;
+      return '등록 완료';
+    },
+    formatShortDate(date) {
+      const [, month, day] = date.split('-');
+      return `${month}/${day}`;
+    },
+    // 목록 한 줄 요약: 입력된 항목만 보여줌 (예: 유제품 · 냉장 · 11/15)
+    getItemSummary(item) {
+      return [
+        item.quantity > 1 ? `${item.quantity}개` : null,
+        item.category,
+        item.storageType,
+        item.expirationDate ? this.formatShortDate(item.expirationDate) : null
+      ].filter(Boolean).join(' · ');
+    },
+    // 입력칸이 완전히 비어 있는지 (보관위치, 카테고리, 공유는 다음 식품에도 남기므로 제외)
+    isFormEmpty() {
+      const f = this.formData;
+      return !(f.name && f.name.trim()) && !f.expirationDate && !f.expirationTime && !(f.memo && f.memo.trim());
+    },
+    // 필수 항목 검사. 문제가 있으면 경고를 띄우고 false
+    validateForm() {
+      const checks = [
+        [!this.formData.name || !this.formData.name.trim(), "식품명을 입력해주세요."],
+        [!this.formData.quantity || this.formData.quantity <= 0, "수량을 입력해주세요."],
+        [!this.formData.storageType, "보관위치를 선택해주세요."],
+        [!this.formData.expirationDate, "유통기한 날짜를 선택해주세요."],
+        [this.formData.expirationDate && new Date(this.formData.expirationDate) < new Date(this.getTodayDate()), "유통기한은 오늘 날짜 이후여야 합니다."],
+        [!this.formData.category, "카테고리를 선택해주세요."]
+      ];
+      const failed = checks.find(([isInvalid]) => isInvalid);
+      if (failed) {
+        this.$refs.snackbar.showWarning(failed[1]);
+        return false;
+      }
+      return true;
+    },
+    // 목록의 식품이 등록할 수 있는 상태인지 (나중에 영수증으로 들어온 식품은 비어 있을 수 있음)
+    isItemComplete(item) {
+      return this.getMissingFields(item).length === 0;
+    },
+    // 비어 있는 필수 항목 이름 목록
+    getMissingFields(item) {
+      const missing = [];
+      if (!item.name || !item.name.trim()) missing.push('식품명');
+      if (!item.quantity || item.quantity <= 0) missing.push('수량');
+      if (!item.storageType) missing.push('보관위치');
+      if (!item.category) missing.push('카테고리');
+      if (!item.expirationDate) missing.push('유통기한');
+      return missing;
+    },
+    // 다음 식품 입력을 위해 입력칸 비우기. 보관위치, 카테고리, 공유는 그대로 둔다
+    resetFormForNext() {
+      this.formData = {
+        ...this.formData,
+        name: '',
+        quantity: 1,
+        expirationDate: '',
+        expirationTime: '',
+        memo: ''
+      };
+    },
+    // 목록에 담을 때는 식품명만 필수. 나머지는 등록 전에 채우면 됨
+    validateForListItem() {
+      if (!this.formData.name || !this.formData.name.trim()) {
         this.$refs.snackbar.showWarning("식품명을 입력해주세요.");
+        return false;
+      }
+      if (this.formData.expirationDate && new Date(this.formData.expirationDate) < new Date(this.getTodayDate())) {
+        this.$refs.snackbar.showWarning("유통기한은 오늘 날짜 이후여야 합니다.");
+        return false;
+      }
+      return true;
+    },
+    addToList() {
+      if (!this.validateForListItem()) return;
+      const item = { ...this.formData };
+      if (this.editingIndex !== null) {
+        this.pendingFoods.splice(this.editingIndex, 1, item);
+        this.editingIndex = null;
+      } else {
+        if (this.pendingFoods.length >= this.maxCount) {
+          this.$refs.snackbar.showWarning(`식품은 한 번에 최대 ${this.maxCount}개까지 등록할 수 있습니다.`);
+          return;
+        }
+        this.pendingFoods.push(item);
+      }
+      this.resetFormForNext();
+    },
+    editListItem(index) {
+      if (this.editingIndex === null && !this.isFormEmpty()) {
+        this.$refs.snackbar.showWarning("입력 중인 식품을 먼저 목록에 담거나 지워주세요.");
         return;
       }
-      
-      if (!this.formData.quantity || this.formData.quantity <= 0) {
-        this.$refs.snackbar.showWarning("수량을 입력해주세요.");
-        return;
+      this.editingIndex = index;
+      this.formData = { ...this.pendingFoods[index] };
+    },
+    cancelItemEdit() {
+      this.editingIndex = null;
+      this.resetFormForNext();
+    },
+    removeListItem(index) {
+      this.pendingFoods.splice(index, 1);
+      if (this.editingIndex === index) {
+        this.cancelItemEdit();
+      } else if (this.editingIndex !== null && this.editingIndex > index) {
+        this.editingIndex--;
       }
-      
-      if (!this.formData.storageType) {
-        this.$refs.snackbar.showWarning("보관위치를 선택해주세요.");
-        return;
+    },
+    // 화면 입력값을 API 형식으로 변환 (시간을 시와 분으로 나눔)
+    toSaveData(item) {
+      let expirationHour = null;
+      let expirationMinute = null;
+      if (item.expirationTime) {
+        const [hour, minute] = item.expirationTime.split(':');
+        expirationHour = parseInt(hour);
+        expirationMinute = parseInt(minute);
       }
-      
-      if (!this.formData.expirationDate) {
-        this.$refs.snackbar.showWarning("유통기한 날짜를 선택해주세요.");
+      const saveData = { ...item, expirationHour, expirationMinute };
+      delete saveData.expirationTime;
+      return saveData;
+    },
+    async save() {
+      // 등록 모드: 담은 식품 + 입력칸 식품을 목록으로 만들어 보냄
+      let foods = null;
+      if (this.isCreateMode) {
+        if (this.editingIndex !== null) {
+          this.$refs.snackbar.showWarning("수정 중인 식품을 목록에 반영하거나 수정을 취소해주세요.");
+          return;
+        }
+        foods = [...this.pendingFoods];
+        if (!this.isFormEmpty() || foods.length === 0) {
+          if (!this.validateForm()) return;
+          foods.push({ ...this.formData });
+        }
+        const incomplete = foods.filter(item => !this.isItemComplete(item));
+        if (incomplete.length > 0) {
+          const names = incomplete.map(item => item.name).join(', ');
+          this.$refs.snackbar.showWarning(`입력이 끝나지 않은 식품이 있습니다: ${names}. 목록에서 ✏를 눌러 채워주세요.`);
+          return;
+        }
+        if (foods.length > this.maxCount) {
+          this.$refs.snackbar.showWarning(`식품은 한 번에 최대 ${this.maxCount}개까지 등록할 수 있습니다.`);
+          return;
+        }
+      } else if (!this.validateForm()) {
         return;
       }
 
-      if (new Date(this.formData.expirationDate) < new Date(this.getTodayDate())) {
-        this.$refs.snackbar.showWarning("유통기한은 오늘 날짜 이후여야 합니다.");
-        return;
-      }
-      
-      if (!this.formData.category) {
-        this.$refs.snackbar.showWarning("카테고리를 선택해주세요.");
-        return;
-      }
-      
       this.isLoading = true;
-      
+
       try {
-        let expirationHour = null;
-        let expirationMinute = null;
-        
-        if (this.formData.expirationTime) {
-          const [hour, minute] = this.formData.expirationTime.split(':');
-          expirationHour = parseInt(hour);
-          expirationMinute = parseInt(minute);
-        }
-        
-        const saveData = { 
-          ...this.formData, 
-          expirationHour: expirationHour,
-          expirationMinute: expirationMinute
-        };
-        
-        delete saveData.expirationTime;
-        
-        // 성공 메시지 표시
         if (this.isEditMode) {
-          this.$refs.snackbar.showSuccess("식품 정보가 성공적으로 수정되었습니다.");
+          this.$emit('save', this.toSaveData(this.formData));
         } else {
-          this.$refs.snackbar.showSuccess("식품이 성공적으로 등록되었습니다.");
+          // 등록은 항상 배열로 보냄 (하나만 등록해도 한 칸짜리 배열)
+          this.$emit('save', foods.map(item => this.toSaveData(item)));
         }
-        
-        this.$emit('save', saveData);
         this.closeModal();
       } catch (error) {
         console.error("식품 저장 중 오류가 발생했습니다:", error);
@@ -547,6 +717,75 @@ export default {
   font-weight: 400;
   margin-left: 28px;
   opacity: 0.8;
+}
+
+.pending-section {
+  margin-top: 16px;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.pending-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.pending-limit {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #888;
+}
+
+.pending-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.pending-item.is-editing {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.pending-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.pending-name {
+  font-weight: 600;
+  color: #333;
+  word-break: break-all;
+}
+
+.pending-meta {
+  color: #666;
+}
+
+.pending-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: #e65100;
+  font-size: 13px;
+}
+
+.pending-actions {
+  display: flex;
+  flex-shrink: 0;
 }
 
 .action-buttons {

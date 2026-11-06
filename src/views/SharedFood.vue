@@ -404,14 +404,15 @@ export default {
           return; 
         }
         let response;
-        if (foodData.id) {
+        // 수정은 식품 하나(객체), 등록은 식품 목록(배열)으로 들어옴
+        if (!Array.isArray(foodData) && foodData.id) {
           response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/update/${foodData.id}`, foodData);
           console.log('식품 수정 성공:', response.data);
           this.$refs.snackbar.showSuccess('식품이 성공적으로 수정되었습니다.');
         } else {
           response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
           console.log('식품 등록 성공:', response.data);
-          this.$refs.snackbar.showSuccess('식품이 성공적으로 등록되었습니다.');
+          this.$refs.snackbar.showSuccess(`식품 ${foodData.length}개가 성공적으로 등록되었습니다.`);
         }
         await this.fetchFoodList();
       } catch (error) {
