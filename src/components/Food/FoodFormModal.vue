@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" max-width="700px" persistent>
+  <v-dialog v-model="dialog" max-width="700px" persistent scrollable>
     <v-card class="food-form-modal">
       <!-- 헤더 섹션 -->
       <div class="modal-header">
@@ -106,7 +106,6 @@
                   <label class="form-label">
                     <v-icon size="18" color="warning" class="mr-2">mdi-calendar</v-icon>
                     유통기한 날짜 *
-                    <span class="date-hint">(임시등록시 선택 안해도 됨)</span>
                   </label>
                  <v-text-field
                    v-model="formData.expirationDate"
@@ -215,17 +214,6 @@
       
       <v-card-actions class="pa-6">
         <div class="action-buttons">
-          <v-btn 
-            v-if="!readOnly"
-            variant="outlined" 
-            color="grey-darken-1" 
-            @click="save(true)"
-            class="action-btn temp-btn"
-            prepend-icon="mdi-clock-outline"
-          >
-            임시 등록
-          </v-btn>
-          
           <div class="right-buttons">
             <v-btn 
               variant="outlined" 
@@ -237,7 +225,7 @@
             <v-btn 
               v-if="!readOnly"
               color="primary" 
-              @click="save(false)"
+              @click="save"
               class="action-btn save-btn"
               :loading="isLoading"
               prepend-icon="mdi-check"
@@ -287,8 +275,7 @@ export default {
       },
       storageTypes: [],
       categories: [],
-      isLoading: false,
-      isTempMode: false // 임시등록 모드 여부
+      isLoading: false
     }
   },
   created() {
@@ -375,20 +362,12 @@ export default {
       return `${year}-${month}-${day}`;
     },
     getExpirationRules() {
-      // 임시등록인 경우 유통기한 선택사항, 일반 등록인 경우 필수
-      if (this.isTempMode) {
-        return [v => !v || new Date(v) >= new Date(this.getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다'];
-      } else {
-        return [
-          v => !!v || '유통기한 날짜를 선택해주세요',
-          v => !v || new Date(v) >= new Date(this.getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다'
-        ];
-      }
+      return [
+        v => !!v || '유통기한 날짜를 선택해주세요',
+        v => !v || new Date(v) >= new Date(this.getTodayDate()) || '유통기한은 오늘 날짜 이후여야 합니다'
+      ];
     },
-    async save(isTemp) {
-      // 임시등록 모드 설정
-      this.isTempMode = isTemp;
-      
+    async save() {
       // 필수 필드 검증
       if (!this.formData.name.trim()) {
         this.$refs.snackbar.showWarning("식품명을 입력해주세요.");
@@ -405,14 +384,12 @@ export default {
         return;
       }
       
-      // 일반 등록인 경우 유통기한 필수 검증
-      if (!isTemp && !this.formData.expirationDate) {
+      if (!this.formData.expirationDate) {
         this.$refs.snackbar.showWarning("유통기한 날짜를 선택해주세요.");
         return;
       }
-      
-      // 유통기한이 입력된 경우에만 날짜 검증
-      if (this.formData.expirationDate && new Date(this.formData.expirationDate) < new Date(this.getTodayDate())) {
+
+      if (new Date(this.formData.expirationDate) < new Date(this.getTodayDate())) {
         this.$refs.snackbar.showWarning("유통기한은 오늘 날짜 이후여야 합니다.");
         return;
       }
@@ -437,16 +414,13 @@ export default {
         const saveData = { 
           ...this.formData, 
           expirationHour: expirationHour,
-          expirationMinute: expirationMinute,
-          isTemp: isTemp 
+          expirationMinute: expirationMinute
         };
         
         delete saveData.expirationTime;
         
         // 성공 메시지 표시
-        if (isTemp) {
-          this.$refs.snackbar.showInfo("식품이 임시로 등록되었습니다.");
-        } else if (this.isEditMode) {
+        if (this.isEditMode) {
           this.$refs.snackbar.showSuccess("식품 정보가 성공적으로 수정되었습니다.");
         } else {
           this.$refs.snackbar.showSuccess("식품이 성공적으로 등록되었습니다.");
@@ -529,13 +503,6 @@ export default {
   font-size: 14px;
 }
 
-.date-hint {
-  font-size: 11px;
-  color: #666;
-  font-weight: 400;
-  margin-left: 6px;
-}
-
 .custom-input {
   border-radius: 12px;
 }
@@ -584,7 +551,7 @@ export default {
 
 .action-buttons {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
 }
@@ -601,11 +568,6 @@ export default {
   padding: 12px 24px;
   height: auto;
   min-height: 44px;
-}
-
-.temp-btn {
-  border: 2px solid #666;
-  color: #666;
 }
 
 .cancel-btn {
