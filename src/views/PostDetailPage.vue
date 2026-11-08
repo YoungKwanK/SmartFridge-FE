@@ -21,6 +21,18 @@
               삭제
             </v-btn>
           </div>
+          <!-- 냉장고 관리자에게만, 공지사항일 때만 상단 고정 버튼 표시 -->
+          <v-btn
+            v-if="canPin"
+            @click="togglePin"
+            :color="postDetail.pinned ? 'error' : 'grey'"
+            variant="outlined"
+            :loading="isPinning"
+            class="pin-btn"
+          >
+            <v-icon>{{ postDetail.pinned ? 'mdi-pin-off' : 'mdi-pin' }}</v-icon>
+            {{ postDetail.pinned ? '고정 해제' : '상단 고정' }}
+          </v-btn>
           <v-btn @click="toggleLike" :color="postDetail.isLiked ? 'red' : 'grey'" variant="outlined" class="like-btn">
             <v-icon>{{ postDetail.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
             좋아요 {{ postDetail.likeCount }}
@@ -34,7 +46,10 @@
       <!-- 게시글 헤더 -->
       <v-card-title class="post-header">
         <div class="post-title-section">
-          <h2 class="post-title">{{ postDetail.title }}</h2>
+          <h2 class="post-title">
+            <v-icon v-if="postDetail.pinned" size="22" color="error" class="pin-icon">mdi-pin</v-icon>
+            {{ postDetail.title }}
+          </h2>
           <div class="post-meta">
             <span class="post-author">{{ postDetail.writer }}</span>
             <span class="post-category">{{ postDetail.categoryName }}</span>
@@ -222,6 +237,7 @@ import PostFormModal from '@/components/Community/PostFormModal.vue';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue';
 import { getFridgeId } from '@/utils/commonDataHandler';
+import { NOTICE_CATEGORY } from '@/utils/postCategory';
 
 export default {
   name: 'PostDetailPage',
@@ -248,7 +264,10 @@ export default {
       // 게시글 수정 관련
       showEditModal: false,
       showDeleteDialog: false,
-      editingPost: {}
+      editingPost: {},
+      // 상단 고정 관련
+      memberType: 'COMMON', // 현재 냉장고에서의 내 역할 (MANAGER / COMMON)
+      isPinning: false
     }
   },
   computed: {
@@ -275,6 +294,11 @@ export default {
     // 사용자 정보
     userInfo() {
       return this.getUserInfo;
+    },
+
+    // 상단 고정은 냉장고 관리자가 공지사항에만 할 수 있음
+    canPin() {
+      return this.memberType === 'MANAGER' && this.postDetail?.categoryName === NOTICE_CATEGORY;
     }
   },
   
@@ -290,8 +314,46 @@ export default {
     
     await this.fetchPostDetail();
     await this.fetchComments();
+    await this.fetchMemberType();
   },
   methods: {
+    // 현재 냉장고에서의 내 역할 조회 (상단 고정 버튼 표시용)
+    async fetchMemberType() {
+      try {
+        const fridgeId = getFridgeId(this.$store);
+        if (!fridgeId) return;
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/member/type`,
+          { headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` } }
+        );
+        this.memberType = response.data.result || 'COMMON';
+      } catch (error) {
+        console.error('냉장고 역할 조회 실패:', error);
+        this.memberType = 'COMMON';
+      }
+    },
+
+    // 상단 고정 / 해제 전환
+    async togglePin() {
+      try {
+        this.isPinning = true;
+        const fridgeId = getFridgeId(this.$store);
+        const postId = this.$route.params.postId;
+        const response = await axios.patch(
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/post/${postId}/pin`,
+          {},
+          { headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` } }
+        );
+        this.postDetail.pinned = response.data.result;
+        this.showSnackbar(response.data.status_message, 'success');
+      } catch (error) {
+        console.error('게시글 고정 실패:', error);
+        this.showSnackbar(error.response?.data?.status_message || error.response?.data?.message || '게시글 고정에 실패했습니다.', 'error');
+      } finally {
+        this.isPinning = false;
+      }
+    },
+
     getFridgeId() {
       return this.$store?.getters?.getCurrentFridgeId || localStorage.getItem('currentFridgeId');
     },
@@ -748,6 +810,18 @@ export default {
 .edit-btn:hover, .delete-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.pin-icon {
+  margin-right: 4px;
+  vertical-align: -3px;
+}
+
+.pin-btn {
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 600;
+  margin-right: 8px;
 }
 
 .like-btn {

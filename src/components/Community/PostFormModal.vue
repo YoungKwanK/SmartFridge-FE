@@ -19,8 +19,6 @@
                 <v-select
                   v-model="formData.category"
                   :items="filteredBoardTypeOptions"
-                  item-title="category"
-                  item-value="id"
                   variant="outlined"
                   density="compact"
                   class="form-field"
@@ -157,6 +155,7 @@
 import axios from 'axios';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import { useStore } from 'vuex';
+import { fetchPostCategories, NOTICE_CATEGORY, DEFAULT_CATEGORY } from '@/utils/postCategory';
 
 export default {
   name: 'PostFormModal',
@@ -187,12 +186,12 @@ export default {
       isValid: false,
       isSaving: false,
       formData: {
-        category: null, // 초기값은 null로 설정하고 fetchCategories에서 설정
+        category: null, // 카테고리 이름 (예: '자유게시판'). fetchCategories에서 기본값 설정
         title: '',
         content: '',
         imageFiles: []
       },
-      boardTypeOptions: [],
+      boardTypeOptions: [], // 카테고리 이름 목록 (예: ['공지사항', '자유게시판', '공동구매'])
       fileInputKey: 0, // 파일 입력 컴포넌트의 키를 위한 변수
       currentUserRole: 'COMMON', // 현재 사용자의 냉장고 역할
       fridgeInfo: null // 현재 냉장고 정보
@@ -217,9 +216,7 @@ export default {
         return this.boardTypeOptions;
       } else {
         // 관리자가 아닌 경우 공지사항 제외
-        return this.boardTypeOptions.filter(category => 
-          category.category !== '공지사항' && category.id !== 1
-        );
+        return this.boardTypeOptions.filter(category => category !== NOTICE_CATEGORY);
       }
     }
   },
@@ -233,7 +230,7 @@ export default {
         if (newPost.id) {
           // 수정 모드
           this.formData = {
-            category: this.getCategoryId(newPost.category),
+            category: newPost.category || DEFAULT_CATEGORY,
             title: newPost.title || '',
             content: newPost.content || '',
             imageFiles: [] // 수정 모드에서는 이미지 파일을 새로 선택하도록
@@ -247,25 +244,8 @@ export default {
     },
     boardType(newBoardType) {
       if (!this.editingPost.id) {
-        // 공지사항 탭이고 일반 사용자인 경우 자유게시판으로 설정
-        if (newBoardType === '공지사항' && !this.isManager) {
-          const freeBoardCategory = this.boardTypeOptions.find(cat => cat.category === '자유게시판' || cat.id === 2);
-          this.formData.category = freeBoardCategory ? freeBoardCategory.id : 2;
-          return;
-        }
-        
-        // 사용자 역할에 따라 사용 가능한 카테고리에서 선택
-        const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
-        
-        // boardType 문자열에 해당하는 카테고리 ID 찾기
-        const categoryOption = availableCategories.find(cat => cat.category === newBoardType);
-        if (categoryOption) {
-          this.formData.category = categoryOption.id;
-        } else {
-          // 해당 boardType이 사용 가능한 카테고리에 없는 경우, 기본값 설정
-          const defaultCategory = availableCategories.find(cat => cat.id === 2); // 자유게시판
-          this.formData.category = defaultCategory ? defaultCategory.id : 2;
-        }
+        // 보고 있는 탭의 카테고리로 맞춤 (쓸 수 없는 카테고리면 자유게시판)
+        this.formData.category = this.getDefaultCategory(newBoardType);
       }
     }
   },
@@ -355,103 +335,27 @@ export default {
 
 
 
+    // 카테고리 이름 목록 가져오기 (커뮤니티 화면과 같은 결과를 공유해서 요청은 한 번만 나감)
     async fetchCategories() {
-      try {
-        const token = localStorage.getItem('accessToken');
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        // 백엔드에서 카테고리 데이터를 받아옴
-        this.boardTypeOptions = response.data;
-        
-        // 기본 카테고리 설정
-        if (this.boardTypeOptions.length > 0) {
-          // 관리자가 아닌 경우 공지사항을 제외한 카테고리 중에서 기본값 선택
-          const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
-          const defaultCategory = availableCategories.find(cat => 
-            cat.category === this.boardType || cat.id === 2
-          );
-          if (defaultCategory) {
-            this.formData.category = defaultCategory.id;  // ID만 저장
-            console.log('기본 카테고리 설정:', defaultCategory.id, typeof defaultCategory.id);
-          }
-        }
-      } catch (error) {
-        console.error("커뮤니티 카테고리 목록을 불러오는 데 실패했습니다.", error);
-        this.showSnackbar('카테고리 목록을 불러오는 데 실패했습니다.', 'error');
-        // API 호출 실패 시 기본값으로 설정
-        this.boardTypeOptions = [
-          { id: 1, category: '공지사항' },
-          { id: 2, category: '자유게시판' },
-          { id: 3, category: '꿀팁' },
-          { id: 4, category: '레시피' }
-        ];
-        // 관리자가 아닌 경우 공지사항을 제외한 카테고리 중에서 기본값 선택
-        const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
-        const defaultCategory = availableCategories.find(cat => cat.id === 2);
-        this.formData.category = defaultCategory ? defaultCategory.id : 2; // 자유게시판 기본값
+      this.boardTypeOptions = await fetchPostCategories();
+      if (!this.editingPost.id) {
+        this.formData.category = this.getDefaultCategory(this.boardType);
       }
     },
     resetForm() {
       this.formData = {
-        category: this.getDefaultCategoryId(),
+        category: this.getDefaultCategory(this.boardType),
         title: '',
         content: '',
         imageFiles: []
       };
       this.fileInputKey = 0; // 파일 입력 키 초기화
       this.$refs.form?.resetValidation();
-      
-      // 디버깅용 로그
-      console.log('폼 초기화 - 카테고리 ID:', this.formData.category, typeof this.formData.category);
-      console.log('현재 boardTypeOptions:', this.boardTypeOptions);
     },
 
-    // 카테고리 문자열이나 ID를 숫자 ID로 변환
-    getCategoryId(categoryValue) {
-      console.log('getCategoryId 호출 - 입력값:', categoryValue, typeof categoryValue);
-      
-      // 이미 숫자인 경우 그대로 반환
-      if (typeof categoryValue === 'number') {
-        console.log('숫자 타입 반환:', categoryValue);
-        return categoryValue;
-      }
-      
-      // 문자열인 경우 해당하는 카테고리 ID 찾기
-      if (typeof categoryValue === 'string') {
-        const categoryOption = this.boardTypeOptions.find(cat => cat.category === categoryValue);
-        if (categoryOption) {
-          console.log('문자열에서 ID 찾음:', categoryOption.id);
-          return categoryOption.id;
-        }
-      }
-      
-      // 객체인 경우 ID 추출 시도
-      if (typeof categoryValue === 'object' && categoryValue !== null) {
-        console.log('객체에서 ID 추출 시도:', categoryValue);
-        if (categoryValue.id !== undefined) {
-          console.log('객체에서 ID 추출 성공:', categoryValue.id);
-          return categoryValue.id;
-        }
-      }
-      
-      // 기본값 반환
-      console.log('기본값 반환: 2');
-      return 2; // 자유게시판 기본값
-    },
-    
-    // 기본 카테고리 ID 반환
-    getDefaultCategoryId() {
-      if (this.boardTypeOptions.length > 0) {
-        // 관리자가 아닌 경우 공지사항을 제외한 카테고리 중에서 기본값 선택
-        const availableCategories = this.isManager ? this.boardTypeOptions : this.filteredBoardTypeOptions;
-        const defaultCategory = availableCategories.find(cat => 
-          cat.category === this.boardType || cat.id === 2
-        );
-        return defaultCategory ? defaultCategory.id : 2;
-      }
-      return 2; // 자유게시판 기본값
+    // 새 글의 기본 카테고리: 보고 있는 탭의 카테고리. 쓸 수 없는 카테고리(전체, 일반 멤버의 공지사항)면 자유게시판
+    getDefaultCategory(boardType) {
+      return this.filteredBoardTypeOptions.includes(boardType) ? boardType : DEFAULT_CATEGORY;
     },
     
     closeModal() {
@@ -464,18 +368,8 @@ export default {
     async savePost() {
       if (!this.$refs.form.validate()) return;
       
-      // 카테고리 ID 최종 검증 및 변환
-      console.log('=== 카테고리 디버깅 ===');
-      console.log('formData.category:', this.formData.category);
-      console.log('formData.category 타입:', typeof this.formData.category);
-      console.log('boardTypeOptions:', this.boardTypeOptions);
-      
-      const categoryId = this.getCategoryId(this.formData.category);
-      console.log('변환된 categoryId:', categoryId, typeof categoryId);
-      
-      if (!categoryId || typeof categoryId !== 'number') {
-        console.error('유효하지 않은 카테고리 ID:', this.formData.category, '변환된 값:', categoryId);
-        alert('카테고리를 선택해주세요.');
+      if (!this.formData.category) {
+        this.showSnackbar('카테고리를 선택해주세요.', 'warning');
         return;
       }
       
@@ -492,7 +386,7 @@ export default {
         const postData = {
           title: this.formData.title,
           content: this.formData.content,
-          categoryId: categoryId,  // 검증된 카테고리 ID 사용
+          category: this.formData.category,  // 카테고리 이름 (예: '자유게시판')
           imageUrls: contentImageUrls  // 내용에 실제로 삽입된 이미지 URL만
         };
         

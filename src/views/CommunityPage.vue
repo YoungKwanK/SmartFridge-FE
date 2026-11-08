@@ -31,8 +31,8 @@
             전체보기
           </v-tab>
           <!-- 기존 카테고리 탭들 -->
-          <v-tab v-for="category in boardCategories" :key="category.id" :value="category.category" class="board-tab">
-            {{ category.category }}
+          <v-tab v-for="category in boardCategories" :key="category" :value="category" class="board-tab">
+            {{ category }}
           </v-tab>
         </v-tabs>
       </v-card-title>
@@ -56,10 +56,13 @@
 
         <!-- 게시글 목록 -->
         <div v-else-if="postList && postList.length > 0" class="post-list">
-          <div v-for="post in postList" :key="post.id" class="post-item" @click="viewPost(post)">
+          <div v-for="post in postList" :key="post.id" class="post-item" :class="{ 'is-pinned': post.pinned }" @click="viewPost(post)">
             <div class="post-content">
               <div class="post-header">
-                <h3 class="post-title">{{ post.title }}</h3>
+                <h3 class="post-title">
+                  <v-icon v-if="post.pinned" size="18" color="error" class="pin-icon">mdi-pin</v-icon>
+                  {{ post.title }}
+                </h3>
                 <div class="post-meta">
                   <span class="post-author">{{ post.writer }}</span>
                   <span class="post-category">{{ post.categoryName }}</span>
@@ -124,6 +127,7 @@ import { getFridgeId } from '@/utils/commonDataHandler';
 import PostFormModal from '../components/Community/PostFormModal.vue';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import { useStore } from 'vuex';
+import { fetchPostCategories } from '@/utils/postCategory';
 
 export default {
   components: {
@@ -227,32 +231,9 @@ export default {
       }
     },
 
+    // 카테고리 이름 목록 가져오기 (작성 모달과 같은 결과를 공유해서 요청은 한 번만 나감)
     async fetchCategories() {
-      try {
-        const token = localStorage.getItem('accessToken');
-        console.log('카테고리 조회 시작 - 토큰:', token ? '있음' : '없음');
-        
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/categories`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        console.log('API 응답 전체:', response);
-        console.log('API 응답 데이터:', response.data);
-        
-        this.boardCategories = response.data;
-        console.log('설정된 boardCategories:', this.boardCategories);
-        
-      } catch (error) {
-        console.error("커뮤니티 카테고리 목록을 불러오는 데 실패했습니다.", error);
-        // API 호출 실패 시 기본값으로 설정 - 객체 형태로 변경
-        this.boardCategories = [
-          { id: 1, category: '공지사항' },
-          { id: 2, category: '자유게시판' },
-          { id: 3, category: '꿀팁' },
-          { id: 4, category: '레시피' }
-        ];
-        console.log('기본 카테고리로 설정됨:', this.boardCategories);
-      }
+      this.boardCategories = await fetchPostCategories();
     },
     async fetchPostList() {
       try {
@@ -551,6 +532,17 @@ export default {
   box-shadow: 0 8px 24px rgba(25, 118, 210, 0.15);
   transform: translateY(-2px);
   background: rgba(255, 255, 255, 0.95);
+}
+
+/* 상단 고정된 공지사항 */
+.post-item.is-pinned {
+  background: rgba(255, 243, 224, 0.9);
+  border-color: rgba(239, 108, 0, 0.35);
+}
+
+.pin-icon {
+  margin-right: 4px;
+  vertical-align: -2px;
 }
 
 .post-header {
