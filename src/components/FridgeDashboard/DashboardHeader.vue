@@ -373,7 +373,7 @@ const handleNotificationClick = async (notification) => {
   );
   const postId = extractPostId(notification);
 
-  if (type === 'NEW_FOOD' || type === 'EXPIRATION_IMMINENT') {
+  if (type === 'EXPIRATION_IMMINENT') {
     router.push('/fridge/food/shared');
     showNotificationModal.value = false;
     return;
@@ -448,7 +448,6 @@ const getNotificationTypeText = (type) => {
   switch (type) {
     case 'ADMIN_REPLY': return '관리자 답변';
     case 'ADMIN_REPLY_UPDATED': return '답변 수정';
-    case 'NEW_FOOD': return '새로운 음식';
     case 'EXPIRATION_IMMINENT': return '유통기한 임박';
     case 'NEW_ANNOUNCEMENT': return '새로운 공지';
     case 'NEW_COMMENT': return '새로운 댓글';
@@ -462,7 +461,6 @@ const getNotificationIcon = (type) => {
   switch (type) {
     case 'ADMIN_REPLY':
     case 'ADMIN_REPLY_UPDATED': return 'mdi-account-cog';
-    case 'NEW_FOOD': return 'mdi-food';
     case 'EXPIRATION_IMMINENT': return 'mdi-clock-alert';
     case 'NEW_ANNOUNCEMENT': return 'mdi-bullhorn';
     case 'NEW_COMMENT': return 'mdi-comment';
@@ -476,7 +474,6 @@ const getNotificationColor = (type) => {
   switch (type) {
     case 'ADMIN_REPLY':
     case 'ADMIN_REPLY_UPDATED': return 'blue';
-    case 'NEW_FOOD': return 'green';
     case 'EXPIRATION_IMMINENT': return 'red';
     case 'NEW_ANNOUNCEMENT': return 'purple';
     case 'NEW_COMMENT': return 'orange';
