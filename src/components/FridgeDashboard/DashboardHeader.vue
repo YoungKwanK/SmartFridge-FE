@@ -385,7 +385,7 @@ const handleNotificationClick = async (notification) => {
     return;
   }
 
-  if (type === 'ADMIN_REPLY') {
+  if (type === 'ADMIN_REPLY' || type === 'ADMIN_REPLY_UPDATED') {
     router.push('/inquiry');
     showNotificationModal.value = false;
     return;
@@ -447,6 +447,7 @@ const formatTimeAgo = (timestamp) => {
 const getNotificationTypeText = (type) => {
   switch (type) {
     case 'ADMIN_REPLY': return '관리자 답변';
+    case 'ADMIN_REPLY_UPDATED': return '답변 수정';
     case 'NEW_FOOD': return '새로운 음식';
     case 'EXPIRATION_IMMINENT': return '유통기한 임박';
     case 'NEW_ANNOUNCEMENT': return '새로운 공지';
@@ -459,7 +460,8 @@ const getNotificationTypeText = (type) => {
 // 알림 타입별 아이콘
 const getNotificationIcon = (type) => {
   switch (type) {
-    case 'ADMIN_REPLY': return 'mdi-account-cog';
+    case 'ADMIN_REPLY':
+    case 'ADMIN_REPLY_UPDATED': return 'mdi-account-cog';
     case 'NEW_FOOD': return 'mdi-food';
     case 'EXPIRATION_IMMINENT': return 'mdi-clock-alert';
     case 'NEW_ANNOUNCEMENT': return 'mdi-bullhorn';
@@ -472,7 +474,8 @@ const getNotificationIcon = (type) => {
 // 알림 타입별 색상
 const getNotificationColor = (type) => {
   switch (type) {
-    case 'ADMIN_REPLY': return 'blue';
+    case 'ADMIN_REPLY':
+    case 'ADMIN_REPLY_UPDATED': return 'blue';
     case 'NEW_FOOD': return 'green';
     case 'EXPIRATION_IMMINENT': return 'red';
     case 'NEW_ANNOUNCEMENT': return 'purple';
