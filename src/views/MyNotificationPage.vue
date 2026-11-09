@@ -305,7 +305,7 @@ const filterByTab = (tab) => {
   else if (tab === "expiration") category = "EXPIRATION_IMMINENT";
   else if (tab === "post") category = "NEW_ANNOUNCEMENT";
   else if (tab === "comment") category = "NEW_COMMENT";
-  else if (tab === "inquiry-reply") category = "ADMIN_REPLY";
+  else if (tab === "inquiry-reply") category = "ADMIN_REPLY,ADMIN_REPLY_UPDATED";
   else if (tab === "group-chat") category = "ROOM_FULL,ROOM_CLOSED";
   else if (tab === "member") category = "NEW_MEMBER";
   selectedCategory.value = category;
@@ -319,7 +319,7 @@ const getNotificationType = (notification) => {
   if (notification.type === "NEW_ANNOUNCEMENT") return "post";
   if (notification.type === "NEW_COMMENT") return "comment";
   if (notification.type === "INQUIRY_REPLY") return "inquiry-reply";
-  if (notification.type === "ADMIN_REPLY") return "inquiry-reply";
+  if (notification.type === "ADMIN_REPLY" || notification.type === "ADMIN_REPLY_UPDATED") return "inquiry-reply";
   if (notification.type === "NEW_INQUIRY") return "inquiry-reply";
   if (notification.type === "NEW_MEMBER") return "member";
   if (notification.type === "ROOM_FULL" || notification.type === "ROOM_CLOSED") return "group-chat";
@@ -383,7 +383,7 @@ const goToDetail = (notification) => {
     return;
   }
 
-  if (type === 'ADMIN_REPLY' || type === 'INQUIRY_REPLY' || type === 'NEW_INQUIRY') {
+  if (type === 'ADMIN_REPLY' || type === 'ADMIN_REPLY_UPDATED' || type === 'INQUIRY_REPLY' || type === 'NEW_INQUIRY') {
     router.push('/inquiry');
     return;
   }
