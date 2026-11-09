@@ -89,7 +89,7 @@ function createSSEConnection(store) {
 
     // 타입별 커스텀 이벤트 리스너 등록 (전역 처리)
     const notificationTypes = [
-      'ADMIN_REPLY', 'NEW_FOOD', 'EXPIRATION_IMMINENT', 
+      'ADMIN_REPLY', 'ADMIN_REPLY_UPDATED', 'NEW_FOOD', 'EXPIRATION_IMMINENT',
       'NEW_ANNOUNCEMENT', 'NEW_COMMENT', 'NEW_INQUIRY', 'NEW_MEMBER',
       'MANAGER_CHAT', 'GROUP_CHAT', 'INQUIRY_REPLY'
     ];
@@ -200,6 +200,7 @@ export default {
     fridgeNotificationCounts: {}, // { fridgeId: count }
     typeCounts: {
       ADMIN_REPLY: 0,
+      ADMIN_REPLY_UPDATED: 0,
       NEW_FOOD: 0,
       EXPIRATION_IMMINENT: 0,
       NEW_ANNOUNCEMENT: 0,
