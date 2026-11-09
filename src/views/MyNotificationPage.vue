@@ -34,7 +34,6 @@
           density="compact"
         >
           <v-tab value="all" class="notification-tab">전체</v-tab>
-          <v-tab value="food-register" class="notification-tab">식품등록</v-tab>
           <v-tab value="expiration" class="notification-tab">유통기한</v-tab>
           <v-tab value="post" class="notification-tab">게시글</v-tab>
           <v-tab value="comment" class="notification-tab">댓글</v-tab>
@@ -58,7 +57,6 @@
         class="notification-item"
         :class="{ 
           'read': notification.read,
-          'food-register-border': getNotificationType(notification) === 'food-register',
           'expiration-border': getNotificationType(notification) === 'expiration',
           'post-border': getNotificationType(notification) === 'post',
           'comment-border': getNotificationType(notification) === 'comment',
@@ -88,13 +86,6 @@
               </v-chip>
             </div>
             
-            <div v-if="getNotificationType(notification) === 'food-register'" class="food-info">
-              <v-chip color="green" size="small" variant="outlined" class="food-chip">
-                <v-icon size="16" class="mr-1">mdi-food</v-icon>
-                새로운 음식 등록
-              </v-chip>
-            </div>
-
             <div v-if="getNotificationType(notification) === 'comment'" class="comment-info">
               <v-chip color="blue" size="small" variant="outlined" class="comment-chip">
                 <v-icon size="16" class="mr-1">mdi-comment</v-icon>
@@ -301,8 +292,7 @@ const filterByTab = (tab) => {
     return;
   }
   let category = "ALL";
-  if (tab === "food-register") category = "NEW_FOOD";
-  else if (tab === "expiration") category = "EXPIRATION_IMMINENT";
+  if (tab === "expiration") category = "EXPIRATION_IMMINENT";
   else if (tab === "post") category = "NEW_ANNOUNCEMENT";
   else if (tab === "comment") category = "NEW_COMMENT";
   else if (tab === "inquiry-reply") category = "ADMIN_REPLY,ADMIN_REPLY_UPDATED";
@@ -314,7 +304,6 @@ const filterByTab = (tab) => {
 };
 
 const getNotificationType = (notification) => {
-  if (notification.type === "NEW_FOOD") return "food-register";
   if (notification.type === "EXPIRATION_IMMINENT") return "expiration";
   if (notification.type === "NEW_ANNOUNCEMENT") return "post";
   if (notification.type === "NEW_COMMENT") return "comment";
@@ -328,7 +317,6 @@ const getNotificationType = (notification) => {
 
 const getNotificationText = (notification) => {
   if (notification.type === "EXPIRATION_IMMINENT") return `${notification.content || '음식'}`;
-  if (notification.type === "NEW_FOOD") return `${notification.content || '새로운 음식'}`;
   if (notification.type === "NEW_ANNOUNCEMENT") return `${notification.content || '새로운 공지사항'}`;
   if (notification.type === "NEW_COMMENT") return `${notification.content || '새로운 댓글'}`;
   if (notification.type === "INQUIRY_REPLY") return `${notification.content || '새로운 문의 답변'}`;
@@ -373,7 +361,7 @@ const goToDetail = (notification) => {
   );
   const postId = extractPostId(notification);
 
-  if (type === 'NEW_FOOD' || type === 'EXPIRATION_IMMINENT') {
+  if (type === 'EXPIRATION_IMMINENT') {
     router.push('/fridge/food/shared');
     return;
   }
@@ -648,10 +636,6 @@ onBeforeUnmount(() => {
 }
 
 /* 알림 타입별 왼쪽 테두리 색상 */
-.notification-item.food-register-border {
-  border-left-color: #61d02d;
-}
-
 .notification-item.expiration-border {
   border-left-color: #eb3c4e;
 }
