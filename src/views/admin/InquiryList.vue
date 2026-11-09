@@ -75,6 +75,7 @@
           <div class="modal-body">
             <div class="inquiry-detail">
               <p><strong>작성자:</strong> {{ selectedInquiry.author }}</p>
+              <p><strong>냉장고:</strong> {{ selectedInquiry.fridgeName }}</p>
               <p><strong>작성일:</strong> {{ selectedInquiry.createdAt }}</p>
               <p><strong>내용:</strong></p>
               <div class="content">{{ selectedInquiry.content }}</div>
@@ -175,6 +176,11 @@ export default {
     this.loadInquiries();
   },
   methods: {
+    // 작성자를 이름(이메일) 형식으로 표시
+    formatAuthor(inquiry) {
+      return inquiry.memberName ? `${inquiry.memberName}(${inquiry.memberEmail})` : inquiry.memberEmail;
+    },
+
     async loadInquiries() {
       try {
         this.loading = true;
@@ -186,14 +192,12 @@ export default {
           console.log('First inquiry item:', response.data.result[0]);
           
           this.inquiries = await Promise.all(response.data.result.map(async (inquiry) => {
-            // 작성자 정보 - member email 사용
-            let authorInfo = inquiry.memberEmail || `Member ID: ${inquiry.memberId}`;
-            
             return {
               // InquiryResDto 구조에 맞게 수정
               id: inquiry.inquiryId,
               title: inquiry.title,
-              author: authorInfo,
+              author: this.formatAuthor(inquiry),
+              fridgeName: inquiry.fridgeName || '정보 없음',
               status: this.mapStatus(inquiry.status),
               createdAt: inquiry.createdTime ? this.formatDate(inquiry.createdTime) : '-',
               content: inquiry.contents,
@@ -252,7 +256,8 @@ export default {
             ...inquiry,
             content: inquiryDetail.contents,
             title: inquiryDetail.title,
-            author: inquiryDetail.memberEmail || `Member ID: ${inquiryDetail.memberId}`,
+            author: this.formatAuthor(inquiryDetail),
+            fridgeName: inquiryDetail.fridgeName || '정보 없음',
             createdAt: inquiryDetail.createdTime ? this.formatDate(inquiryDetail.createdTime) : '-',
             imageUrls: inquiryDetail.imageUrls || [], // 이미지 URL 배열 추가
             // OneToOne 관계로 변경된 comments 처리
