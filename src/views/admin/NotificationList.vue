@@ -91,6 +91,7 @@
           <div class="modal-body">
             <div class="notification-detail">
               <p><strong>타입:</strong> {{ selectedNotification.type }}</p>
+              <p><strong>냉장고 번호:</strong> {{ selectedNotification.fridgeId }}</p>
               <p><strong>생성일:</strong> {{ selectedNotification.createdAt }}</p>
               <p><strong>상태:</strong> {{ selectedNotification.status }}</p>
               <p><strong>내용:</strong></p>
@@ -158,7 +159,9 @@ export default {
               typeGroup: this.getNotificationTypeKorean(notification.type),
               title: notification.title || '알림',
               content: notification.message || notification.content,
-              status: notification.isRead ? '읽음' : '읽지않음',
+              // 백엔드의 boolean isRead 필드는 JSON에서 read로 내려온다
+              status: notification.read ? '읽음' : '읽지않음',
+              fridgeId: notification.fridgeId ?? '정보 없음',
               createdAt: notification.createdAt ? new Date(notification.createdAt).toLocaleString() : '-',
               relatedData: notification.relatedData || null
             };
