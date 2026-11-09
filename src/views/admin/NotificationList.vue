@@ -494,6 +494,11 @@ export default {
   transition: all 0.3s ease;
 }
 
+.filters select option {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
 .filters select:focus {
   outline: none;
   border-color: #4285f4;
