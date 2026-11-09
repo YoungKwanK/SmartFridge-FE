@@ -16,6 +16,7 @@
       <div class="filters">
         <select v-model="typeFilter" @change="filterNotifications">
           <option value="">전체 타입</option>
+          <option value="새 문의">새 문의</option>
           <option value="문의등록">문의등록</option>
           <option value="답변완료">답변완료</option>
           <option value="시스템">시스템</option>
@@ -152,11 +153,13 @@ export default {
             
             return {
               id: notification.notificationId || notification.id || notification.notification_id,
-              type: this.getNotificationTypeKorean(notification.type),
+              // 화면에는 새 문의일 때 사용자가 선택한 문의 유형을 표시하고, 필터는 알림 종류로 동작
+              type: this.getInquiryTypeKorean(notification.inquiryType) || this.getNotificationTypeKorean(notification.type),
+              typeGroup: this.getNotificationTypeKorean(notification.type),
               title: notification.title || '알림',
               content: notification.message || notification.content,
               status: notification.isRead ? '읽음' : '읽지않음',
-              createdAt: notification.createdTime ? new Date(notification.createdTime).toLocaleString() : '-',
+              createdAt: notification.createdAt ? new Date(notification.createdAt).toLocaleString() : '-',
               relatedData: notification.relatedData || null
             };
           });
@@ -175,6 +178,15 @@ export default {
       }
     },
     
+    getInquiryTypeKorean(inquiryType) {
+      const inquiryTypeMap = {
+        'FUNCTION': '기능 관련',
+        'BUG': '버그 신고',
+        'ETC': '기타'
+      };
+      return inquiryTypeMap[inquiryType];
+    },
+
     getNotificationTypeKorean(type) {
       const typeMap = {
         'INQUIRY_CREATED': '문의등록',
@@ -192,7 +204,7 @@ export default {
       let filtered = [...this.notifications];
       
       if (this.typeFilter) {
-        filtered = filtered.filter(notification => notification.type === this.typeFilter);
+        filtered = filtered.filter(notification => notification.typeGroup === this.typeFilter);
       }
       
       if (this.readFilter) {
