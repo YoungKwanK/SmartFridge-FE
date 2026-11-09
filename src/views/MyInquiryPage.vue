@@ -881,6 +881,12 @@ export default {
         formData.append('title', this.inquiryData.title);
         formData.append('contents', this.inquiryData.contents);
 
+        // 관리자가 어느 냉장고의 문의인지 볼 수 있도록 현재 냉장고를 함께 전송
+        const fridgeId = this.$store.getters.getCurrentFridgeId;
+        if (fridgeId) {
+          formData.append('fridgeId', fridgeId);
+        }
+
         // 파일이 여러 개인 경우
         this.inquiryData.imageFiles.forEach(file => {
           formData.append('imageFiles', file);
