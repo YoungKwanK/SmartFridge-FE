@@ -311,8 +311,10 @@ import axios from 'axios';
 import { getErrorMessage, getFridgeId, getResultData } from '@/utils/commonDataHandler';
 import CreateRoomModal from './CreateRoomModal.vue';
 import { useStore } from 'vuex';
+import { useRoute } from 'vue-router';
 
 const store = useStore();
+const route = useRoute();
 
 const userName = computed(() => store.getters.getUserName);
 const userProfileImage = computed(() => store.getters.getUserProfileImage);
@@ -354,6 +356,13 @@ onMounted(async () => {
   // 초기 데이터 로드
   await refreshMyChatRooms();
   await refreshPurchaseRooms();
+
+  // 게시판 공동구매 글에서 들어온 경우(?roomId=) 그 방을 바로 연다
+  const targetRoomId = Number(route.query.roomId);
+  const targetRoom = targetRoomId ? myPurchaseRooms.value.find(r => r.roomId === targetRoomId) : null;
+  if (targetRoom) {
+    selectRoom(targetRoom, 'purchase');
+  }
   try {
     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
     const allRooms = getResultData(response); // 서버에서 받은 채팅방 배열
