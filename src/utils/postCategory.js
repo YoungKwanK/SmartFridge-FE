@@ -3,6 +3,7 @@ import axios from 'axios';
 // 게시판 카테고리 이름 (백엔드 PostCategory enum과 같음)
 export const NOTICE_CATEGORY = '공지사항';
 export const DEFAULT_CATEGORY = '자유게시판';
+export const PURCHASE_CATEGORY = '공동구매'; // 이 카테고리로 글을 쓰면 공동구매 채팅방이 같이 생긴다
 const FALLBACK_CATEGORIES = ['공지사항', '자유게시판', '공동구매'];
 
 // 한 번 받아온 목록을 화면끼리 같이 쓰도록 저장 (커뮤니티 화면과 작성 모달이 따로 요청하지 않게)

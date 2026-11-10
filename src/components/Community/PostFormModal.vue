@@ -27,6 +27,43 @@
                 ></v-select>
               </div>
 
+              <!-- 공동구매 모집 정보 (새 글일 때만. 등록하면 채팅방이 같이 생긴다) -->
+              <template v-if="isPurchase && !editingPost.id">
+                <div class="form-row">
+                  <label class="form-label">모집 인원 <span class="required">*</span></label>
+                  <v-text-field
+                    v-model.number="formData.maxParticipants"
+                    type="number"
+                    :min="MIN_PARTICIPANTS"
+                    :max="MAX_PARTICIPANTS"
+                    variant="outlined"
+                    density="compact"
+                    class="form-field"
+                    suffix="명 (본인 포함)"
+                    :rules="participantRules"
+                  ></v-text-field>
+                </div>
+                <div class="form-row">
+                  <label class="form-label">상품 링크</label>
+                  <v-text-field
+                    v-model="formData.productUrl"
+                    placeholder="https://"
+                    variant="outlined"
+                    density="compact"
+                    class="form-field"
+                    :rules="urlRules"
+                  ></v-text-field>
+                  <small class="text-body-small text-grey">
+                    등록하면 공동구매 채팅방이 같이 만들어지고, 작성자가 방장이 됩니다.
+                  </small>
+                </div>
+              </template>
+              <div v-else-if="isPurchase && editingPost.id" class="form-row">
+                <small class="text-body-small text-grey">
+                  모집 인원·상태는 공동구매 채팅방에서 관리합니다. 제목을 바꾸면 채팅방 이름도 같이 바뀝니다.
+                </small>
+              </div>
+
               <!-- 제목 입력 -->
               <div class="form-row">
                 <label class="form-label">제목 <span class="required">*</span></label>
@@ -155,7 +192,11 @@
 import axios from 'axios';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import { useStore } from 'vuex';
-import { fetchPostCategories, NOTICE_CATEGORY, DEFAULT_CATEGORY } from '@/utils/postCategory';
+import { fetchPostCategories, NOTICE_CATEGORY, DEFAULT_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
+
+// 공동구매 모집 인원 범위 (백엔드 ChatRoomCreateDto, 채팅 CreateRoomModal 과 같은 값)
+const MIN_PARTICIPANTS = 2;
+const MAX_PARTICIPANTS = 20;
 
 export default {
   name: 'PostFormModal',
@@ -189,8 +230,20 @@ export default {
         category: null, // 카테고리 이름 (예: '자유게시판'). fetchCategories에서 기본값 설정
         title: '',
         content: '',
-        imageFiles: []
+        imageFiles: [],
+        maxParticipants: MIN_PARTICIPANTS, // 공동구매 글일 때만 사용
+        productUrl: ''
       },
+      MIN_PARTICIPANTS,
+      MAX_PARTICIPANTS,
+      participantRules: [
+        v => Number.isInteger(v) || '정수를 입력해주세요.',
+        v => v >= MIN_PARTICIPANTS || `최소 ${MIN_PARTICIPANTS}명 이상이어야 합니다.`,
+        v => v <= MAX_PARTICIPANTS || `최대 ${MAX_PARTICIPANTS}명까지만 가능합니다.`
+      ],
+      urlRules: [
+        v => !v || /^https?:\/\/.+/.test(v.trim()) || 'http(s)로 시작하는 주소를 입력해주세요.'
+      ],
       boardTypeOptions: [], // 카테고리 이름 목록 (예: ['공지사항', '자유게시판', '공동구매'])
       fileInputKey: 0, // 파일 입력 컴포넌트의 키를 위한 변수
       currentUserRole: 'COMMON', // 현재 사용자의 냉장고 역할
@@ -205,6 +258,10 @@ export default {
       set(value) {
         this.$emit('update:modelValue', value);
       }
+    },
+    // 공동구매 글인지 (등록하면 채팅방이 같이 생김)
+    isPurchase() {
+      return this.formData.category === PURCHASE_CATEGORY;
     },
     // 현재 사용자가 관리자인지 확인
     isManager() {
@@ -233,7 +290,9 @@ export default {
             category: newPost.category || DEFAULT_CATEGORY,
             title: newPost.title || '',
             content: newPost.content || '',
-            imageFiles: [] // 수정 모드에서는 이미지 파일을 새로 선택하도록
+            imageFiles: [], // 수정 모드에서는 이미지 파일을 새로 선택하도록
+            maxParticipants: MIN_PARTICIPANTS,
+            productUrl: ''
           };
         } else {
           // 새 글 작성 모드
@@ -347,7 +406,9 @@ export default {
         category: this.getDefaultCategory(this.boardType),
         title: '',
         content: '',
-        imageFiles: []
+        imageFiles: [],
+        maxParticipants: MIN_PARTICIPANTS,
+        productUrl: ''
       };
       this.fileInputKey = 0; // 파일 입력 키 초기화
       this.$refs.form?.resetValidation();
@@ -390,6 +451,12 @@ export default {
           imageUrls: contentImageUrls  // 내용에 실제로 삽입된 이미지 URL만
         };
         
+        // 공동구매 새 글이면 모집 정보도 보낸다 (채팅방이 같이 생성됨)
+        if (this.isPurchase && !this.editingPost.id) {
+          postData.maxParticipants = this.formData.maxParticipants;
+          postData.productUrl = this.formData.productUrl?.trim() || null;
+        }
+
         // 수정 모드일 때만 id 포함
         if (this.editingPost.id) {
           postData.id = this.editingPost.id;
