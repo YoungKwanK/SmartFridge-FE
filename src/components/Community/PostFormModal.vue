@@ -194,7 +194,7 @@ import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import { useStore } from 'vuex';
 import { fetchPostCategories, NOTICE_CATEGORY, DEFAULT_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
 
-// 공동구매 모집 인원 범위 (백엔드 ChatRoomCreateDto, 채팅 CreateRoomModal 과 같은 값)
+// 공동구매 모집 인원 범위 (백엔드 ChatRoomCreateDto 와 같은 값)
 const MIN_PARTICIPANTS = 2;
 const MAX_PARTICIPANTS = 20;
 
