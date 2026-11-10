@@ -76,6 +76,56 @@
       <v-card-text class="post-content">
         <div class="content-text" v-html="processedContent"></div>
       </v-card-text>
+
+      <!-- 공동구매 모집 정보 -->
+      <v-card-text v-if="purchase" class="purchase-section">
+        <div class="purchase-box">
+          <div class="purchase-info">
+            <div class="purchase-title">
+              <v-icon size="20" color="primary">mdi-cart-outline</v-icon>
+              <span>공동구매 모집</span>
+              <v-chip size="small" :color="purchaseStatus.color" variant="flat" class="ml-2">
+                {{ purchaseStatus.label }}
+              </v-chip>
+            </div>
+            <div class="purchase-meta">
+              <span>
+                <v-icon size="16">mdi-account-group</v-icon>
+                {{ purchase.currentParticipants }} / {{ purchase.maxParticipants }}명
+              </span>
+              <a
+                v-if="purchase.productUrl"
+                :href="purchase.productUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="purchase-link"
+              >
+                <v-icon size="16">mdi-link-variant</v-icon> 상품 보러가기
+              </a>
+            </div>
+          </div>
+          <v-btn
+            v-if="purchase.isJoined"
+            color="primary"
+            variant="flat"
+            prepend-icon="mdi-chat-outline"
+            @click="goToChatRoom"
+          >
+            채팅방으로 이동
+          </v-btn>
+          <v-btn
+            v-else
+            color="primary"
+            variant="flat"
+            prepend-icon="mdi-account-plus"
+            :disabled="!purchaseStatus.canJoin"
+            :loading="isJoining"
+            @click="joinPurchase"
+          >
+            {{ purchaseStatus.canJoin ? '참여하기' : '참여 불가' }}
+          </v-btn>
+        </div>
+      </v-card-text>
     </v-card>
 
     <!-- 댓글 섹션 -->
@@ -214,7 +264,7 @@
     <DeleteConfirmDialog
       v-model="showDeleteDialog"
       title="게시글 삭제 확인"
-      :message="`'${postDetail?.title || ''}' 게시글을 정말 삭제하시겠습니까?`"
+      :message="deleteMessage"
       @confirm="deletePost"
       @cancel="showDeleteDialog = false"
     />
@@ -236,7 +286,7 @@ import { mapGetters } from 'vuex';
 import PostFormModal from '@/components/Community/PostFormModal.vue';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue';
-import { getFridgeId } from '@/utils/commonDataHandler';
+import { getErrorMessage, getFridgeId } from '@/utils/commonDataHandler';
 import { NOTICE_CATEGORY } from '@/utils/postCategory';
 
 export default {
@@ -267,7 +317,9 @@ export default {
       editingPost: {},
       // 상단 고정 관련
       memberType: 'COMMON', // 현재 냉장고에서의 내 역할 (MANAGER / COMMON)
-      isPinning: false
+      isPinning: false,
+      // 공동구매 참여 중
+      isJoining: false
     }
   },
   computed: {
@@ -299,6 +351,26 @@ export default {
     // 상단 고정은 냉장고 관리자가 공지사항에만 할 수 있음
     canPin() {
       return this.memberType === 'MANAGER' && this.postDetail?.categoryName === NOTICE_CATEGORY;
+    },
+
+    // 공동구매 모집 정보 (공동구매 글이 아니거나 채팅방이 없으면 null)
+    purchase() {
+      return this.postDetail?.purchase || null;
+    },
+
+    // 모집 상태 표시와 참여 가능 여부
+    purchaseStatus() {
+      const p = this.purchase;
+      if (!p) return { label: '', color: 'grey', canJoin: false };
+      if (p.joinStatus !== 'OPEN' || !p.isActive) return { label: '모집 완료', color: 'grey', canJoin: false };
+      if (p.currentParticipants >= p.maxParticipants) return { label: '정원 마감', color: 'error', canJoin: false };
+      return { label: '모집 중', color: 'success', canJoin: true };
+    },
+
+    // 공동구매 글은 지워도 채팅방이 남는다는 점을 알려 준다
+    deleteMessage() {
+      const message = `'${this.postDetail?.title || ''}' 게시글을 정말 삭제하시겠습니까?`;
+      return this.purchase ? `${message} 공동구매 채팅방은 삭제되지 않습니다.` : message;
     }
   },
   
@@ -684,6 +756,27 @@ export default {
       console.log('변경 후 showDeleteDialog:', this.showDeleteDialog);
     },
     
+    // 공동구매 채팅방 참여 후 채팅방으로 이동
+    async joinPurchase() {
+      if (!this.purchase) return;
+      this.isJoining = true;
+      try {
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${this.purchase.roomId}/join`);
+        this.goToChatRoom();
+      } catch (error) {
+        console.error('공동구매 참여 실패:', error);
+        this.showSnackbar(getErrorMessage(error), 'error');
+        // 정원·모집 상태가 바뀌었을 수 있으니 다시 불러온다
+        await this.fetchPostDetail();
+      } finally {
+        this.isJoining = false;
+      }
+    },
+
+    goToChatRoom() {
+      this.$router.push({ path: '/chatpage', query: { roomId: this.purchase.roomId } });
+    },
+
     // 게시글 삭제
     async deletePost() {
       try {
@@ -909,6 +1002,48 @@ export default {
 
 .post-content {
   padding: 24px;
+}
+
+.purchase-section {
+  padding: 0 24px 24px;
+}
+
+.purchase-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.3);
+  border-radius: 12px;
+  background: rgba(var(--v-theme-primary), 0.05);
+}
+
+.purchase-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.purchase-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 6px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.purchase-link {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: none;
+}
+
+.purchase-link:hover {
+  text-decoration: underline;
 }
 
 .content-text {

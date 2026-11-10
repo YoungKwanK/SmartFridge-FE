@@ -44,7 +44,7 @@ const handleRoomSelect = (room, roomType) => {
 // 구매 완료 이벤트를 받아서 사이드바 새로고침
 const handleOrderCompleted = () => {
   if (chatSidebar.value) {
-    chatSidebar.value.handleRoomCreated();
+    chatSidebar.value.refreshRooms();
   }
 };
 

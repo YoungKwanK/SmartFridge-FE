@@ -29,14 +29,12 @@
         <v-list-item-title class="font-weight-bold text-title-large ml-3">{{ userName }} </v-list-item-title>
       </v-list-item>
 
-      <v-tabs v-model="tab" grow>
-        <v-tab value="chat">채팅목록</v-tab>
-        <v-tab value="groupbuy">공동구매</v-tab>
-      </v-tabs>
+      <!-- 채팅목록: 관리자와의 채팅 + 내가 참여한 공동구매 채팅 (참여는 게시판 공동구매 글에서) -->
+      <div class="chat-list-title">채팅목록</div>
       <v-divider></v-divider>
 
-      <v-window v-model="tab" class="flex-grow-1" style="overflow-y: auto;">
-        <v-window-item value="chat">
+      <v-window class="flex-grow-1" style="overflow-y: auto;">
+        <v-window-item>
           <!-- 로딩 상태 표시 -->
           <div v-if="isLoading" class="loading-container">
             <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
@@ -182,7 +180,7 @@
                    <div class="action-icon">
                      <v-icon size="18">mdi-login-variant</v-icon>
                    </div>
-                   <div class="action-text">참여하기</div>
+                   <div class="action-text">입장하기</div>
                  </div>
                  
                  <div class="action-divider"></div>
@@ -195,98 +193,10 @@
                  </div>
                </div>
              </div>
+             <p v-if="sortedMyPurchaseRooms.length === 0" class="empty-purchase-hint">
+               공동구매 채팅은 커뮤니티의 공동구매 글에서 참여할 수 있어요.
+             </p>
            </v-list>
-        </v-window-item>
-
-        <v-window-item value="groupbuy">
-          <!-- 로딩 상태 표시 -->
-          <div v-if="isLoading" class="loading-container">
-            <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
-            <p class="loading-text">공동구매 목록을 불러오는 중...</p>
-          </div>
-          
-          <v-list v-else @mouseleave="hoveredRoomId = null">
-            
-            <div class="unified-action-bar-container">
-              <div class="unified-action-bar">
-                <div class="action-segment create-segment" @click="createChatRoom()">
-                  <v-icon class="action-segment-icon">mdi-plus-box-outline</v-icon>
-                  <span class="action-segment-text">공동 구매 생성</span>
-                </div>
-
-                <div class="action-segment-divider"></div>
-
-                <div class="action-segment refresh-segment" @click="refreshPurchaseRooms()">
-                  <v-icon class="action-segment-icon">mdi-refresh</v-icon>
-                  <span class="action-segment-text">새로고침</span>
-                </div>
-              </div>
-            </div>
-            
-            <div
-              v-for="room in purchaseRooms.filter(room => isRoomOpen(room))"
-              :key="room.roomId"
-              class="chat-room-card"
-              @mouseenter="hoveredRoomId = room.roomId"
-              @mouseleave="hoveredRoomId = null"
-            >
-              <div v-if="hoveredRoomId !== room.roomId" class="room-content">
-                <div class="room-header">
-                  <div class="room-title-section">
-                    <h3 class="room-title">
-                      {{ room.roomName }}
-                      <v-icon
-                        v-if="room.isCreator"
-                        icon="mdi-crown"
-                        size="16"
-                        color="amber"
-                        class="crown-icon"
-                      />
-                      <v-icon
-                        v-if="myPurchaseRooms.some(r => r.roomId === room.roomId && !r.isCreator)"
-                        icon="mdi-check-circle"
-                        size="16"
-                        color="success"
-                        class="participating-icon"
-                      />
-                    </h3>
-                  </div>
-                  
-                  <div class="room-badges">
-                    <v-chip
-                      :color="getParticipantsChipColor(room)"
-                      variant="outlined"
-                      size="small"
-                      class="participants-chip"
-                    >
-                      <v-icon 
-                        :icon="getParticipantsIcon(room)" 
-                        size="14" 
-                        class="mr-1"
-                      />
-                      {{ room.currentParticipants }}/{{ room.maxParticipants }}
-                    </v-chip>
-                  </div>
-                </div>
-              </div>
-
-              <div v-else class="hover-actions">
-                <div v-if="!myPurchaseRooms.some(r => r.roomId === room.roomId)" class="action-button start" @click.stop="viewRoomInfo(room, false)">
-                  <div class="action-icon">
-                    <v-icon size="18">mdi-login-variant</v-icon>
-                  </div>
-                  <div class="action-text">참여하기</div>
-                </div>
-                
-                <div v-if="myPurchaseRooms.some(r => r.roomId === room.roomId)" class="action-button participating">
-                  <div class="action-icon">
-                    <v-icon size="18" color="success">mdi-check-circle</v-icon>
-                  </div>
-                  <div class="action-text">이미 참여중입니다</div>
-                </div>
-              </div>
-            </div>
-          </v-list>
         </v-window-item>
       </v-window>
     </v-card>
@@ -297,11 +207,6 @@
        :isParticipant="isParticipantforModal"
        @room-joined="handleRoomJoined"
      />
-     <CreateRoomModal
-       v-model="isCreateModalOpen"
-       :fridge-id="fridgeId"
-       @room-created="handleRoomCreated"
-     />
   </v-container>
 </template>
 <script setup>
@@ -309,16 +214,15 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import RoomInfoModal from './RoomInfoModal.vue';
 import axios from 'axios';
 import { getErrorMessage, getFridgeId, getResultData } from '@/utils/commonDataHandler';
-import CreateRoomModal from './CreateRoomModal.vue';
 import { useStore } from 'vuex';
+import { useRoute } from 'vue-router';
 
 const store = useStore();
+const route = useRoute();
 
 const userName = computed(() => store.getters.getUserName);
 const userProfileImage = computed(() => store.getters.getUserProfileImage);
 
-const isCreateModalOpen = ref(false);
-const tab = ref('chat');
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
 const emit = defineEmits(['select-room', 'select-roomType', 'room-left']);
@@ -330,7 +234,6 @@ const selectedRoomIdForModal = ref(null); // 모달에 표시할 방 정보
 
 const managerRoom = ref(null);    // 첫 번째 채팅방
 const myPurchaseRooms = ref([]);     // 나머지 모든 채팅방
-const purchaseRooms = ref([]);     // 공동구매 채팅방
 const isLoading = ref(true); // 1. 로딩 상태를 관리할 ref 추가 (초기값 true)
 const fridgeId = computed(() => getFridgeId(store));
 
@@ -353,7 +256,13 @@ const sortedMyPurchaseRooms = computed(() => {
 onMounted(async () => {
   // 초기 데이터 로드
   await refreshMyChatRooms();
-  await refreshPurchaseRooms();
+
+  // 게시판 공동구매 글에서 들어온 경우(?roomId=) 그 방을 바로 연다
+  const targetRoomId = Number(route.query.roomId);
+  const targetRoom = targetRoomId ? myPurchaseRooms.value.find(r => r.roomId === targetRoomId) : null;
+  if (targetRoom) {
+    selectRoom(targetRoom, 'purchase');
+  }
   try {
     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
     const allRooms = getResultData(response); // 서버에서 받은 채팅방 배열
@@ -380,17 +289,6 @@ onMounted(async () => {
     isLoading.value = false;
   }
 
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
-    purchaseRooms.value = getResultData(response); // 서버에서 받은 채팅방 배열
-  } catch (error) {
-    console.error("API 호출 에러:", error);
-    alert(getErrorMessage(error));
-  } finally {
-    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
-    isLoading.value = false;
-  }
-
   // 전역 SSE로부터 전달되는 실시간 알림 수신 시작
   window.addEventListener('realtime-notification', handleRealtimeNotification);
 });
@@ -398,25 +296,6 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('realtime-notification', handleRealtimeNotification);
 });
-
-// [수정] createChatRoom 함수가 새 모달을 열도록 변경
-const createChatRoom = () => {
-  isCreateModalOpen.value = true;
-};
-
-// 공동구매 채팅방 목록 새로고침 함수
-const refreshPurchaseRooms = async () => {
-  isLoading.value = true;
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/list/${fridgeId.value}`);
-    purchaseRooms.value = getResultData(response);
-  } catch (error) {
-    console.error("API 호출 에러:", error);
-    alert(getErrorMessage(error));
-  } finally {
-    isLoading.value = false;
-  }
-};
 
 // 나의 채팅방 목록 새로고침 함수
 const refreshMyChatRooms = async () => {
@@ -445,23 +324,20 @@ const refreshMyChatRooms = async () => {
   }
 };
 
-// 공동 구매 생성 후 목록 새로고침 함수
-const handleRoomCreated = async () => {
-  await Promise.all([
-    refreshMyChatRooms(),
-    refreshPurchaseRooms()
-  ]);
+// 채팅 목록 새로고침 (참여·나가기·구매 완료 후)
+const refreshRooms = async () => {
+  await refreshMyChatRooms();
 };
 
 // 채팅방 참여 후 목록 새로고침 함수
 const handleRoomJoined = async (roomId) => {
   console.log('채팅방 참여 완료:', roomId);
-  await handleRoomCreated();
+  await refreshRooms();
 };
 
 // 외부에서 호출할 수 있는 함수들을 expose
 defineExpose({
-  handleRoomCreated
+  refreshRooms
 });
 
 const isRoomOpen = (room) => {
@@ -567,7 +443,7 @@ const leaveRoom = async(room) => {
     }
     
     // 목록 새로고침
-    await handleRoomCreated();
+    await refreshRooms();
     
     // 채팅방 선택 초기화 이벤트 emit
     emit('room-left');
@@ -1724,196 +1600,22 @@ async function refreshUnreadCounts() {
   object-fit: cover;
 }
 
+.chat-list-title {
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.empty-purchase-hint {
+  padding: 16px;
+  font-size: 13px;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  text-align: center;
+}
+
 .avatar-gradient {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   font-weight: bold;
-}
-
-.unified-action-bar-container {
-  padding: 10px 10px;
-}
-
-.unified-action-bar {
-  display: flex;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid rgba(59, 130, 246, 0.1);
-  box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-
-.unified-action-bar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.02) 0%, rgba(16, 185, 129, 0.02) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.unified-action-bar:hover {
-  box-shadow: 
-    0 12px 32px rgba(0, 0, 0, 0.12),
-    0 4px 8px rgba(0, 0, 0, 0.08);
-  transform: translateY(-3px);
-  border-color: rgba(59, 130, 246, 0.2);
-}
-
-.unified-action-bar:hover::before {
-  opacity: 1;
-}
-
-.action-segment {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 20px 12px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
-  border-radius: 18px;
-  margin: 2px;
-}
-
-.action-segment-icon {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-.action-segment-text {
-  font-weight: 700;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  letter-spacing: 0.025em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.action-segment-divider {
-  width: 2px;
-  height: 40px;
-  background: linear-gradient(to bottom, 
-    transparent 0%, 
-    rgba(59, 130, 246, 0.2) 20%, 
-    rgba(16, 185, 129, 0.2) 80%, 
-    transparent 100%);
-  margin: 0 4px;
-  border-radius: 1px;
-}
-
-/* 생성 버튼 스타일 */
-.create-segment {
-  color: #1e40af;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
-}
-
-.create-segment:hover {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%);
-  transform: scale(1.02);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.2);
-}
-
-.create-segment:hover .action-segment-icon {
-  transform: rotate(-12deg) scale(1.15);
-  filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
-}
-
-.create-segment:hover .action-segment-text {
-  color: #1d4ed8;
-  text-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-}
-
-/* 새로고침 버튼 스타일 */
-.refresh-segment {
-  color: #15803d;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.02) 100%);
-}
-
-.refresh-segment:hover {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
-  transform: scale(1.02);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
-}
-
-.refresh-segment:hover .action-segment-icon {
-  transform: rotate(180deg) scale(1.15);
-  filter: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.3));
-}
-
-.refresh-segment:hover .action-segment-text {
-  color: #047857;
-  text-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
-}
-
-
-/* 다크모드 대응 */
-@media (prefers-color-scheme: dark) {
-  .unified-action-bar {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    border-color: rgba(59, 130, 246, 0.2);
-    box-shadow: 
-      0 4px 20px rgba(0, 0, 0, 0.3),
-      0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-
-  .unified-action-bar::before {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
-  }
-
-  .unified-action-bar:hover {
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 
-      0 12px 32px rgba(0, 0, 0, 0.4),
-      0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .action-segment-divider {
-    background: linear-gradient(to bottom, 
-      transparent 0%, 
-      rgba(59, 130, 246, 0.3) 20%, 
-      rgba(16, 185, 129, 0.3) 80%, 
-      transparent 100%);
-  }
-
-  .create-segment {
-    color: #93c5fd;
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
-  }
-
-  .create-segment:hover {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%);
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
-  }
-
-  .create-segment:hover .action-segment-text {
-    color: #bfdbfe;
-    text-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
-  }
-
-  .refresh-segment {
-    color: #86efac;
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
-  }
-
-  .refresh-segment:hover {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
-  }
-
-  .refresh-segment:hover .action-segment-text {
-    color: #bbf7d0;
-    text-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
-  }
 }
 </style>
