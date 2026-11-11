@@ -104,6 +104,7 @@
 import { ref, watch, computed } from 'vue';
 import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
+import { notify, notifyError } from './chatFeedback';
 
 // [수정] props: room 객체 대신 roomId를 받도록 변경
 const props = defineProps({
@@ -121,13 +122,12 @@ const error = ref(null);       // 에러 메시지
 
 const joinRoom = async(roomId) => {
   if (!roomId) {
-    alert('채팅방 정보가 올바르지 않습니다.');
     return;
   }
 
   // 방이 가득 찬 경우 참여 불가
   if (isRoomFull.value) {
-    alert('이미 인원이 가득 찬 채팅방입니다.');
+    notifyError('이미 인원이 가득 찬 채팅방입니다.');
     return;
   }
 
@@ -139,7 +139,7 @@ const joinRoom = async(roomId) => {
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${roomId}/join`);
     
     // 성공 메시지 표시
-    alert("채팅방에 성공적으로 참여했습니다.");
+    notify("채팅방에 참여했습니다.");
     
     // 모달 닫기
     closeModal();
@@ -163,7 +163,7 @@ const joinRoom = async(roomId) => {
       errorMessage = err.response.data.message;
     }
     
-    alert(errorMessage);
+    notifyError(errorMessage);
   } finally {
     isLoading.value = false;
   }
