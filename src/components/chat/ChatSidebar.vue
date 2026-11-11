@@ -98,7 +98,7 @@
                v-for="room in sortedMyPurchaseRooms"
                :key="room.roomId"
                class="chat-room-card"
-               @mouseenter="hoveredRoomId = room.roomId"
+               @mouseenter="canHover && (hoveredRoomId = room.roomId)"
                @mouseleave="hoveredRoomId = null"
              >
                <div v-if="hoveredRoomId !== room.roomId" class="room-content" @click="startChat(room)">
@@ -137,6 +137,21 @@
                      >
                        {{ room.unReadCount || 0 }}
                      </v-chip>
+                     <!-- 터치 화면에는 마우스 올리기가 없어서 메뉴로 정보 보기·나가기를 연다 -->
+                     <v-menu v-if="!canHover" location="bottom end">
+                       <template #activator="{ props: menuProps }">
+                         <v-btn v-bind="menuProps" icon="mdi-dots-vertical" variant="text" size="x-small" title="방 메뉴" @click.stop />
+                       </template>
+                       <v-list density="compact">
+                         <v-list-item prepend-icon="mdi-information-outline" title="정보 보기" @click="viewRoomInfo(room, true)" />
+                         <v-list-item
+                           :prepend-icon="room.isCreator ? 'mdi-delete' : 'mdi-exit-to-app'"
+                           :title="room.isCreator ? '삭제' : '나가기'"
+                           base-color="error"
+                           @click="leaveRoom(room)"
+                         />
+                       </v-list>
+                     </v-menu>
                    </div>
                  </div>
                  
@@ -225,6 +240,8 @@ const userProfileImage = computed(() => store.getters.getUserProfileImage);
 
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
+// 마우스가 있는 기기에서만 카드에 올렸을 때 동작 버튼을 보여 준다
+const canHover = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
 const emit = defineEmits(['select-room', 'room-left']);
 const isParticipantforModal = ref(false); // 사용자가 해당 방의 참여자인지 여부를 추적하는 ref 추가
 
@@ -315,7 +332,9 @@ const handleRoomJoined = async () => {
 
 // 외부에서 호출할 수 있는 함수들을 expose
 defineExpose({
-  refreshRooms
+  refreshRooms,
+  // 모바일에서 목록으로 돌아갈 때 선택 표시를 지운다
+  clearSelection: () => { selectedRoomId.value = null; },
 });
 
 const isRoomOpen = (room) => {

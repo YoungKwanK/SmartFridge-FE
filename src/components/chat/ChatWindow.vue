@@ -9,6 +9,7 @@
 
     <template v-else>
       <v-toolbar density="compact">
+        <v-btn v-if="showBack" icon="mdi-arrow-left" variant="text" title="채팅 목록" @click="emit('back')" />
         <v-toolbar-title class="font-weight-bold">{{ selectedRoom.roomName }}</v-toolbar-title>
         <v-spacer></v-spacer>
         
@@ -239,10 +240,12 @@ import { notify, notifyError, confirmAction } from './chatFeedback';
 
 const props = defineProps({
   selectedRoom: { type: Object, default: null },
-  selectedRoomType: { type: String, default: null }
+  selectedRoomType: { type: String, default: null },
+  // 모바일에서 대화 화면만 보일 때 목록으로 돌아가는 버튼
+  showBack: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['order-completed']);
+const emit = defineEmits(['order-completed', 'back']);
 
 // --- 상태 (State) ---
 const messages = ref([]);
