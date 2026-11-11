@@ -381,8 +381,6 @@ const selectRoom = (room, roomType) => {
   };
   
   emit('select-room', roomWithInfo, roomType);
-  selectedRoomId.value = room.roomId;
-  emit('select-room', room, roomType);
   // 선택 시 해당 방의 미읽음 카운트만 초기화 (배지는 서버 상태 기반으로 유지)
   if (roomType === 'manager') {
     // 관리자 채팅 선택 시
@@ -476,7 +474,19 @@ const handleImageError = () => {
 
 // ---------------- 실시간 알림 처리 (전역 SSE 이벤트) ----------------
 function extractRoomIdFromNotification(n) {
-  return n?.roomId ?? n?.chatRoomId ?? n?.room?.id ?? n?.relatedData?.roomId ?? null;
+  const rid = n?.roomId ?? n?.chatRoomId ?? n?.room?.id ?? n?.relatedData?.roomId ?? null;
+  return rid === null ? null : Number(rid);
+}
+
+function syncChatBadges() {
+  const managerUnreadCount = managerRoom.value?.unReadCount || 0;
+  const groupUnreadCount = myPurchaseRooms.value?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
+  store.commit('notification/setGroupChatCount', managerUnreadCount + groupUnreadCount > 0 ? 1 : 0);
+
+  const currentFridgeId = store.getters.getCurrentFridgeId;
+  if (currentFridgeId) {
+    store.dispatch('notification/syncUserManagementBadgeWithUnreadCount', currentFridgeId);
+  }
 }
 
 function handleRealtimeNotification(evt) {
@@ -484,48 +494,27 @@ function handleRealtimeNotification(evt) {
   if (!n) return;
   // 내 메시지는 무시
   if (n.senderEmail && n.senderEmail === myEmail.value) return;
-  const rid = extractRoomIdFromNotification(n);
   const isChatType = n.type === 'MANAGER_CHAT' || n.type === 'GROUP_CHAT' || n.type === 'ROOM_FULL';
   if (!isChatType) return;
 
-  // 방 ID가 있으면 해당 방만 증분
+  // 서버가 알림에 방 id(roomId)를 실어 보내므로 그 방만 올린다
+  const rid = extractRoomIdFromNotification(n);
   if (rid) {
-    // 현재 열려있는 방이면 증가하지 않음
+    // 지금 열려 있는 방은 읽고 있으므로 올리지 않는다
     if (selectedRoomId.value === rid) return;
 
-    if (n.type === 'MANAGER_CHAT') {
-      // 관리자 채팅의 unReadCount 업데이트 (배지는 유저 관리 탭에서 관리)
-      if (managerRoom.value && managerRoom.value.roomId === rid) {
-        // 현재 선택된 방이 아닌 경우에만 unReadCount 증가
-        if (selectedRoomId.value !== rid) {
-          managerRoom.value.unReadCount = (managerRoom.value.unReadCount || 0) + 1;
-        }
-      }
-      return;
-    }
-
-    // GROUP_CHAT / ROOM_FULL
-    const target = myPurchaseRooms.value.find(r => r.roomId === rid);
+    const target = managerRoom.value?.roomId === rid
+      ? managerRoom.value
+      : myPurchaseRooms.value.find(r => r.roomId === rid);
     if (target) {
       target.unReadCount = (target.unReadCount || 0) + 1;
+      syncChatBadges();
       return;
     }
   }
 
-  // 방 ID를 알 수 없거나 목록에 없다면 전체 카운트를 서버에서 동기화
+  // 방 id를 알 수 없거나 목록에 없는 방(새로 참여한 방 등)이면 서버에서 다시 맞춘다
   refreshUnreadCounts();
-
-  // 배지 동기화: 모든 채팅방의 unReadCount 합계로 계산
-  const managerUnreadCount = managerRoom.value?.unReadCount || 0;
-  const groupUnreadCount = myPurchaseRooms.value?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
-  const totalUnreadCount = managerUnreadCount + groupUnreadCount;
-  store.commit('notification/setGroupChatCount', totalUnreadCount > 0 ? 1 : 0);
-  
-  // 유저 관리 배지도 실제 unReadCount와 동기화
-  const currentFridgeId = store.getters.getCurrentFridgeId;
-  if (currentFridgeId) {
-    store.dispatch('notification/syncUserManagementBadgeWithUnreadCount', currentFridgeId);
-  }
 }
 
 async function refreshUnreadCounts() {
@@ -546,18 +535,7 @@ async function refreshUnreadCounts() {
       const found = map.get(room.roomId);
       if (found) room.unReadCount = found.unReadCount || 0;
     });
-
-    // 배지 동기화: 모든 채팅방의 unReadCount 합계로 계산
-    const managerUnreadCount = managerRoom.value?.unReadCount || 0;
-    const groupUnreadCount = rest?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
-    const totalUnreadCount = managerUnreadCount + groupUnreadCount;
-    store.commit('notification/setGroupChatCount', totalUnreadCount > 0 ? 1 : 0);
-    
-    // 유저 관리 배지도 실제 unReadCount와 동기화
-    const currentFridgeId = store.getters.getCurrentFridgeId;
-    if (currentFridgeId) {
-      store.dispatch('notification/syncUserManagementBadgeWithUnreadCount', currentFridgeId);
-    }
+    syncChatBadges();
   } catch (e) {
     // 네트워크 오류는 조용히 무시
   } finally {
