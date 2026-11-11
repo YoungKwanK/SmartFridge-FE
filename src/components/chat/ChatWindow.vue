@@ -232,7 +232,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue';
+import { ref, shallowRef, watch, nextTick, onMounted, onUnmounted, computed } from 'vue';
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
 import axios from 'axios';
@@ -250,8 +250,9 @@ const emit = defineEmits(['order-completed']);
 // --- 상태 (State) ---
 const messages = ref([]);
 const newMessage = ref("");
-const stompClient = ref(null);
-const subscription = ref(null);
+// 클라이언트 객체는 반응형 프록시로 감싸지 않는다 (연결 콜백에서 같은 객체인지 비교하기 위해)
+const stompClient = shallowRef(null);
+const subscription = shallowRef(null);
 const isConnected = ref(false);
 const isSending = ref(false);
 const errorMessage = ref("");
