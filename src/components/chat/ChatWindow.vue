@@ -860,8 +860,8 @@ onUnmounted(() => {
   padding: 0 8px 8px;
 }
 .chat-window-full { 
-  height: calc(100vh - 32px);
-  min-height: calc(100vh - 32px);
+  height: calc(100vh - var(--v-layout-top, 0px) - 32px);
+  min-height: calc(100vh - var(--v-layout-top, 0px) - 32px);
 }
 .chat-container {
   position: relative;

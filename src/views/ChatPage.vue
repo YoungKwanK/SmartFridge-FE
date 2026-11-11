@@ -1,27 +1,27 @@
 <template>
-  <v-app>
-    <v-main class="gradient-background">
-      <v-container fluid class="chat-padding fill-height">
-        <v-row no-gutters class="fill-height">
-          <!-- 모바일(md 미만)에서는 목록과 대화 중 하나만 보여 준다 -->
-          <v-col v-show="!isCompact || !selectedRoom" cols="12" md="4" lg="3" xl="2">
-            <ChatSidebar ref="chatSidebar" @select-room="handleRoomSelect" @room-left="handleRoomLeft" />
-          </v-col>
-          
-          <v-col v-show="!isCompact || selectedRoom" cols="12" md="8" lg="9" xl="10">
-            <ChatWindow 
-              :selected-room="selectedRoom" 
-              :selected-roomType="selectedRoomType"
-              :show-back="isCompact"
-              @order-completed="handleOrderCompleted" 
-              @back="handleBack"
-            />
-          </v-col>
-        </v-row>
-      </v-container>
-      <ChatFeedback />
-    </v-main>
-  </v-app>
+  <!-- App.vue의 v-app/v-main 안에서 그려지므로 v-app을 다시 감싸지 않는다.
+       중첩 v-main은 --v-layout-top을 0으로 덮어써 모바일 앱 바 높이를 알 수 없게 된다. -->
+  <div class="chat-page gradient-background">
+    <v-container fluid class="chat-padding fill-height">
+      <v-row no-gutters class="fill-height">
+        <!-- 모바일(md 미만)에서는 목록과 대화 중 하나만 보여 준다 -->
+        <v-col v-show="!isCompact || !selectedRoom" cols="12" md="4" lg="3" xl="2">
+          <ChatSidebar ref="chatSidebar" @select-room="handleRoomSelect" @room-left="handleRoomLeft" />
+        </v-col>
+        
+        <v-col v-show="!isCompact || selectedRoom" cols="12" md="8" lg="9" xl="10">
+          <ChatWindow 
+            :selected-room="selectedRoom" 
+            :selected-roomType="selectedRoomType"
+            :show-back="isCompact"
+            @order-completed="handleOrderCompleted" 
+            @back="handleBack"
+          />
+        </v-col>
+      </v-row>
+    </v-container>
+    <ChatFeedback />
+  </div>
 </template>
 
 <script setup>
@@ -83,8 +83,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 모바일 상단 앱 바(--v-layout-top) 높이만큼 빼서 화면 밖으로 넘치지 않게 한다 */
+.chat-page {
+  min-height: calc(100vh - var(--v-layout-top, 0px));
+}
 .fill-height {
-  height: 100vh;
+  height: calc(100vh - var(--v-layout-top, 0px));
   overflow: hidden;
 }
 .gradient-background {
