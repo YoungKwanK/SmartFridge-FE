@@ -187,6 +187,14 @@ function startConnectionMonitoring(store) {
   }, 30000);
 }
 
+// 관리자와의 1:1 방은 응답에 isManager(Boolean)가 채워져 있고, 공동구매 방은 비어 있다
+// (응답 순서에 기대지 않고 필드로 구분한다)
+const isManagerRoom = (room) => typeof room?.isManager === 'boolean';
+const splitChatRooms = (allRooms) => ({
+  managerRoom: allRooms.find(isManagerRoom),
+  groupRooms: allRooms.filter(room => !isManagerRoom(room)),
+});
+
 export default {
   namespaced: true,
   state: {
@@ -525,8 +533,7 @@ export default {
           const chatData = await chatResponse.json();
           allRooms = chatData.result || [];
           
-        // 첫 번째 방은 관리자 채팅, 나머지는 그룹 채팅
-        const [managerRoom, ...groupRooms] = allRooms;
+        const { managerRoom, groupRooms } = splitChatRooms(allRooms);
         
         // 모든 채팅방의 unReadCount 합계로 계산
         const managerUnreadCount = managerRoom?.unReadCount || 0;
@@ -544,8 +551,8 @@ export default {
         });
         }
 
-        // 관리자 채팅 미읽음 확인 (채팅방 목록의 첫 번째 방이 관리자 채팅방)
-        const adminHasUnread = allRooms.length > 0 && (allRooms[0]?.unReadCount || 0) > 0;
+        // 관리자 채팅 미읽음 확인
+        const adminHasUnread = (splitChatRooms(allRooms).managerRoom?.unReadCount || 0) > 0;
         
         // 냉장고 진입 시 유저 관리 배지 상태 초기화 (실제 unReadCount 기반)
         commit('setUserManagementBadgeState', { 
@@ -572,8 +579,7 @@ export default {
           const chatData = await chatResponse.json();
           const allRooms = chatData.result || [];
           
-          // 첫 번째 방은 관리자 채팅, 나머지는 그룹 채팅
-          const [managerRoom, ...groupRooms] = allRooms;
+          const { managerRoom, groupRooms } = splitChatRooms(allRooms);
           
           // 모든 채팅방의 unReadCount 합계로 계산
           const managerUnreadCount = managerRoom?.unReadCount || 0;
@@ -601,8 +607,7 @@ export default {
           const chatData = await chatResponse.json();
           const allRooms = chatData.result || [];
           
-          // 첫 번째 방이 관리자 채팅방 (유저 관리 채팅방)
-          const managerRoom = allRooms[0];
+          const { managerRoom } = splitChatRooms(allRooms);
           const hasUnreadMessages = managerRoom && (managerRoom.unReadCount || 0) > 0;
           
           console.log('🚀 냉장고 진입 시 유저 관리 배지 초기 설정 (채팅방 목록 기반):', {
@@ -642,8 +647,7 @@ export default {
           const chatData = await chatResponse.json();
           const allRooms = chatData.result || [];
           
-          // 첫 번째 방이 관리자 채팅방 (유저 관리 채팅방)
-          const managerRoom = allRooms[0];
+          const { managerRoom } = splitChatRooms(allRooms);
           const hasUnreadMessages = managerRoom && (managerRoom.unReadCount || 0) > 0;
           
           // 항상 배지 상태 업데이트 (초기 로드 시에도 배지가 표시되도록)

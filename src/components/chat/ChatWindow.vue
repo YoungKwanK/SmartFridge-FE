@@ -130,7 +130,7 @@
                   </div>
                   
                   <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
-                  <div v-if="shouldShowSentMessageTime(group.messages, msgIndex, senderEmail)" class="message-time-bottom-sent">
+                  <div v-if="shouldShowTime(group.messages, msgIndex)" class="message-time-bottom-sent">
                     {{ formatMessageTime(msg.timestamp) }}
                   </div>
                 </div>
@@ -167,7 +167,7 @@
                   </div>
                   
                   <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
-                  <div v-if="shouldShowMessageTime(group.messages, msgIndex, senderEmail)" class="message-time-bottom">
+                  <div v-if="shouldShowTime(group.messages, msgIndex)" class="message-time-bottom">
                     {{ formatMessageTime(msg.timestamp) }}
                   </div>
                 </div>
@@ -318,13 +318,6 @@ const parseTimestamp = (timestamp) => {
   if (!timestamp) return new Date();
   if (timestamp instanceof Date) return timestamp;
   if (typeof timestamp === 'string') {
-    if (timestamp.includes('시') && timestamp.includes('분')) {
-      const match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2})시\s+(\d{1,2})분/);
-      if (match) {
-        const [, year, month, day, hour, minute] = match;
-        return new Date(year, month - 1, day, hour, minute);
-      }
-    }
     if (timestamp.includes('T')) {
       const date = new Date(timestamp);
       if (!isNaN(date.getTime())) return date;
@@ -414,39 +407,12 @@ const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(prevMsg.timestamp);
 };
 
-const shouldShowMessageTime = (messages, currentIndex, currentUserEmail) => {
-  const currentMsg = messages[currentIndex];
-  
-  // 현재 사용자가 보낸 메시지는 시간 표시 안함 (아래쪽에 별도로 표시)
-  if (currentMsg.senderEmail === currentUserEmail) return false;
-  
-  // 마지막 메시지는 항상 시간 표시
+// 같은 사람이 같은 분에 연달아 보낸 메시지는 마지막 것에만 시간을 표시한다
+const shouldShowTime = (messages, currentIndex) => {
   if (currentIndex === messages.length - 1) return true;
-  
-  const nextMsg = messages[currentIndex + 1];
-  
-  // 다음 메시지 발신자가 다르면 시간 표시
-  if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
-  
-  // 같은 발신자인 경우 시간이 다르면 시간 표시
-  return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
-};
-
-const shouldShowSentMessageTime = (messages, currentIndex, currentUserEmail) => {
   const currentMsg = messages[currentIndex];
-  
-  // 현재 사용자가 보낸 메시지가 아니면 시간 표시 안함
-  if (currentMsg.senderEmail !== currentUserEmail) return false;
-  
-  // 마지막 메시지는 항상 시간 표시
-  if (currentIndex === messages.length - 1) return true;
-  
   const nextMsg = messages[currentIndex + 1];
-  
-  // 다음 메시지 발신자가 다르면 시간 표시
   if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
-  
-  // 같은 발신자인 경우 시간이 다르면 시간 표시
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
 };
 
