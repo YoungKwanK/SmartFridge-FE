@@ -167,7 +167,7 @@
                   @click="deleteFood(food)"
                   class="delete-btn"
                 >
-                  삭제
+                  처리
                 </v-btn>
               </td>
             </tr>
@@ -231,12 +231,12 @@
       @save="handleSave"
     />
 
-    <!-- 삭제 확인 다이얼로그 -->
-    <DeleteConfirmDialog
+    <!-- 식품 처리 다이얼로그 (다 먹었어요 / 버렸어요 / 잘못 등록했어요) -->
+    <FoodFinishDialog
       v-model="deleteDialog"
-      title="식품 삭제 확인"
-      :message="`정말로 '${selectedFood.name || ''}' 식품을 삭제하시겠습니까?`"
-      @confirm="confirmDelete"
+      :food-name="selectedFood.name || ''"
+      :loading="finishingType"
+      @select="handleFinish"
       @cancel="deleteDialog = false"
     />
 
@@ -249,14 +249,21 @@
 import axios from 'axios';
 import FoodFormModal from '../components/Food/FoodFormModal.vue';
 import CommonSnackbar from '../components/common/CommonSnackbar.vue';
-import DeleteConfirmDialog from '../components/common/DeleteConfirmDialog.vue';
+import FoodFinishDialog from '../components/Food/FoodFinishDialog.vue';
 import { getFridgeId } from '@/utils/commonDataHandler';
+
+// 처리 선택지별 완료 메시지와 스낵바 색
+const FINISH_MESSAGES = {
+  소비: { text: '다 먹은 식품으로 기록했어요.', color: 'success' },
+  폐기: { text: '버린 식품으로 기록했어요.', color: 'warning' },
+  잘못등록: { text: '식품을 삭제했어요.', color: 'error' }
+};
 
 export default {
   components: {
     FoodFormModal,
     CommonSnackbar,
-    DeleteConfirmDialog
+    FoodFinishDialog
   },
   data() {
     return {
@@ -265,6 +272,7 @@ export default {
       selectedFood: {},
       isReadOnly: false,
       deleteDialog: false,
+      finishingType: '', // 처리 요청 중인 선택지 ('소비' | '폐기' | '잘못등록')
       isLoading: false,
       activeTab: 'ALL', // 필터 탭 상태
       selectedCategory: 'ALL', // 카테고리 필터 상태
@@ -417,29 +425,44 @@ export default {
         await this.fetchFoodList();
       } catch (error) {
         console.error('식품 저장 실패:', error);
-        this.$refs.snackbar.showError('식품 저장에 실패했습니다: ' + (error.response?.data?.message || error.message));
+        this.$refs.snackbar.showError('식품 저장에 실패했습니다: ' + this.getErrorMessage(error));
       }
     },
     async deleteFood(food) {
       this.selectedFood = food;
       this.deleteDialog = true;
     },
-    async confirmDelete() {
+    // type: '소비' | '폐기' → 기록을 남기고 삭제, '잘못등록' → 기록 없이 삭제
+    async handleFinish(type) {
+      if (this.finishingType) return;
+      const fridgeId = getFridgeId(this.$store);
+      if (!fridgeId) {
+        console.error('Vuex store에서 냉장고 ID를 찾을 수 없습니다.');
+        return;
+      }
+      const baseUrl = `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food`;
+      this.finishingType = type;
       try {
-        const fridgeId = getFridgeId(this.$store);
-        if (!fridgeId) { 
-          console.error('Vuex store에서 냉장고 ID를 찾을 수 없습니다.'); 
-          return; 
+        if (type === '잘못등록') {
+          await axios.delete(`${baseUrl}/delete/${this.selectedFood.id}`);
+        } else {
+          await axios.post(`${baseUrl}/finish/${this.selectedFood.id}`, { result: type });
         }
-        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/delete/${this.selectedFood.id}`);
         this.deleteDialog = false;
         this.selectedFood = {};
         await this.fetchFoodList();
-        this.showSnackbar('식품이 삭제되었습니다.', 'error');
+        const done = FINISH_MESSAGES[type];
+        this.showSnackbar(done.text, done.color);
       } catch (error) {
-        console.error('식품 삭제 실패:', error);
-        this.$refs.snackbar.showError('식품 삭제에 실패했습니다: ' + (error.response?.data?.message || error.message));
+        console.error('식품 처리 실패:', error);
+        this.$refs.snackbar.showError('식품 처리에 실패했습니다: ' + this.getErrorMessage(error));
+      } finally {
+        this.finishingType = '';
       }
+    },
+    // 백엔드 오류 응답(CommonErrorDto)의 status_message를 우선 보여준다
+    getErrorMessage(error) {
+      return error.response?.data?.status_message || error.response?.data?.message || error.message;
     },
     formatDate(dateString) {
       if (!dateString) return 'N/A';
