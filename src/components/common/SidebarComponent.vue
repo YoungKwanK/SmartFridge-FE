@@ -1,11 +1,19 @@
 <template>
-  <!-- v-card를 제거하고 v-navigation-drawer를 최상위 요소로 사용합니다. -->
-  <!-- `app` 속성을 추가하여 Vuetify 레이아웃 시스템에 통합합니다. -->
+  <!-- 모바일(md 미만)에서는 상단 앱 바의 햄버거 버튼으로 드로어를 연다 -->
+  <v-app-bar v-if="isMobile" density="compact" flat border="b" class="mobile-app-bar">
+    <v-app-bar-nav-icon aria-label="메뉴 열기" @click="drawer = !drawer" />
+    <v-app-bar-title>
+      <span class="smartfridge-title gradient-text">SmartFridge</span>
+    </v-app-bar-title>
+  </v-app-bar>
+
+  <!-- 데스크톱에서는 항상 펼쳐 두고, 모바일에서는 본문 위에 잠깐 띄우는 temporary 드로어로 쓴다 -->
   <v-navigation-drawer
-    app
-    permanent
+    v-model="drawer"
+    :permanent="!isMobile"
+    :temporary="isMobile"
     class="custom-drawer"
-  > 
+  >
     <div class="header-container">
       <v-list-item class="pa-0">
         <template v-slot:prepend>
@@ -104,6 +112,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute } from 'vue-router';
+import { useDisplay } from 'vuetify';
 import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
 
@@ -153,9 +162,22 @@ const updateSelectedItem = () => {
   selectedItem.value = [currentValue];
 };
 
+// 모바일 여부: 채팅 화면(ChatPage)과 같은 기준(md 미만)을 쓴다
+const { smAndDown: isMobile } = useDisplay();
+const drawer = ref(!isMobile.value);
+
+// 화면 폭이 바뀌면 데스크톱에서는 펼치고 모바일에서는 접는다
+watch(isMobile, (mobile) => {
+  drawer.value = !mobile;
+});
+
 // 라우트 변경 감지
 watch(() => route.path, () => {
   updateSelectedItem();
+  // 모바일에서 메뉴를 고르면 드로어를 닫는다
+  if (isMobile.value) {
+    drawer.value = false;
+  }
 }, { immediate: true });
 
 // Store에서 사용자 정보 가져오기
@@ -430,6 +452,9 @@ const menuItems = computed(() => {
 }
 .header-container {
   padding: 19px 20px;
+}
+.mobile-app-bar {
+  background: rgba(255, 255, 255, 0.95) !important;
 }
 .smartfridge-title {
   font-weight: 700;
