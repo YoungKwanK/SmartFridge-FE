@@ -204,7 +204,6 @@ const getAvatarColor = (index) => {
 
 // 이미지 로딩 오류 처리
 const handleImageError = (participant) => {
-  console.log('프로필 이미지 로딩 실패:', participant.profileImage);
   // 이미지 로딩 실패 시 profileImage를 null로 설정하여 초기값으로 대체
   participant.profileImage = null;
 };
@@ -221,7 +220,6 @@ const fetchParticipants = async () => {
     // 공동구매 채팅방의 경우 - 채팅방 정보 API에서 참여자 정보 추출
     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/participants/${props.roomId}`);
     const participantsData = getResultData(response);
-    console.log("participantsData", participantsData);
 
     if (participantsData) {
       // map을 사용해 participantsData 배열을 새로운 형식의 배열로 변환한 뒤 한 번에 할당
@@ -257,10 +255,7 @@ const participantCount = computed(() => participants.value.length);
 
 // 모달이 열릴 때 API 호출
 watch(() => props.modelValue, (newValue) => {
-  console.log('ParticipantsModal modelValue 변화:', newValue);
-  console.log('Room ID:', props.roomId, 'Room Type:', props.roomType);
   if (newValue) {
-    console.log('참여자 목록을 가져오는 중...');
     fetchParticipants();
   }
 }, {
@@ -273,7 +268,6 @@ watch(participantCount, (newCount) => {
 });
 
 const closeModal = () => {
-  console.log('참여자 모달 닫기');
   isOpen.value = false;
 };
 </script>

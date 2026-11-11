@@ -130,7 +130,7 @@
                   </div>
                   
                   <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
-                  <div v-if="shouldShowSentMessageTime(group.messages, msgIndex, senderEmail)" class="message-time-bottom-sent">
+                  <div v-if="shouldShowTime(group.messages, msgIndex)" class="message-time-bottom-sent">
                     {{ formatMessageTime(msg.timestamp) }}
                   </div>
                 </div>
@@ -167,7 +167,7 @@
                   </div>
                   
                   <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
-                  <div v-if="shouldShowMessageTime(group.messages, msgIndex, senderEmail)" class="message-time-bottom">
+                  <div v-if="shouldShowTime(group.messages, msgIndex)" class="message-time-bottom">
                     {{ formatMessageTime(msg.timestamp) }}
                   </div>
                 </div>
@@ -189,6 +189,10 @@
       <v-divider />
 
       <div class="input-area">
+        <div v-if="!isConnected && !isLoadingMessages" class="connection-status">
+          <v-progress-circular indeterminate size="14" width="2" class="mr-2" />
+          채팅 서버에 연결 중...
+        </div>
         <div v-if="imagePreview.length > 0" class="image-preview-container">
           <div v-for="(image, index) in imagePreview" :key="index" class="image-preview-item">
             <img :src="image.preview" class="preview-image" />
@@ -204,16 +208,20 @@
           hide-details
           rounded
           density="comfortable"
-          @keyup.enter="sendMessage"
+          @keydown.enter.prevent="onEnter"
         >
           <template #append-inner>
-            <v-btn icon="mdi-image-plus" variant="text" @click="fileInput.click()" />
-            <v-btn icon="mdi-send" variant="text" @click="sendMessage" />
+            <v-btn icon="mdi-image-plus" variant="text" :disabled="isSending" @click="fileInput.click()" />
+            <v-btn icon="mdi-send" variant="text" :loading="isSending" :disabled="!isConnected" @click="sendMessage" />
           </template>
         </v-text-field>
         <input ref="fileInput" type="file" multiple accept="image/*" style="display: none" @change="onFileChange" />
       </div>
     </template>
+
+    <v-snackbar v-model="showError" color="error" timeout="3000" location="top">
+      {{ errorMessage }}
+    </v-snackbar>
 
     <ImageModal 
       v-model="showImageModal" 
@@ -224,7 +232,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted, onUnmounted, computed } from 'vue';
+import { ref, shallowRef, watch, nextTick, onMounted, onUnmounted, computed } from 'vue';
 import SockJS from 'sockjs-client';
 import Stomp from 'webstomp-client';
 import axios from 'axios';
@@ -242,11 +250,14 @@ const emit = defineEmits(['order-completed']);
 // --- 상태 (State) ---
 const messages = ref([]);
 const newMessage = ref("");
-const stompClient = ref(null);
-const subscription = ref(null);
-const token = ref(localStorage.getItem("accessToken"));
+// 클라이언트 객체는 반응형 프록시로 감싸지 않는다 (연결 콜백에서 같은 객체인지 비교하기 위해)
+const stompClient = shallowRef(null);
+const subscription = shallowRef(null);
+const isConnected = ref(false);
+const isSending = ref(false);
+const errorMessage = ref("");
+const showError = ref(false);
 const senderEmail = ref(localStorage.getItem("email"));
-const senderName = ref(localStorage.getItem("name"));
 const newImages = ref([]);
 const imagePreview = ref([]);
 const chatBox = ref(null);
@@ -270,6 +281,20 @@ const isInitialLoad = ref(true);
 // [개선 1] 디바운싱을 위한 타이머 변수
 let debounceTimer;
 
+// 방 세션: 방을 바꾸거나 화면을 떠날 때마다 1씩 올린다.
+// 늦게 도착한 이전 방의 응답·연결 콜백은 세션 번호가 달라서 무시된다.
+let roomSession = 0;
+let reconnectTimer = null;
+let reconnectAttempt = 0;
+const MAX_RECONNECT_DELAY = 10000;
+
+const isCurrentSession = (session) => session === roomSession;
+
+const notifyError = (message) => {
+  errorMessage.value = message;
+  showError.value = true;
+};
+
 const isRoomCreator = computed(() => {
   if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') {
     return false;
@@ -277,9 +302,14 @@ const isRoomCreator = computed(() => {
   return props.selectedRoom.isCreator || false;
 });
 
+const isCompletedLocally = ref(false);
+
 const isRoomOpen = computed(() => {
   if (!props.selectedRoom) {
     return true;
+  }
+  if (isCompletedLocally.value) {
+    return false;
   }
   return props.selectedRoom.isOpen !== undefined ? props.selectedRoom.isOpen : true;
 });
@@ -288,13 +318,6 @@ const parseTimestamp = (timestamp) => {
   if (!timestamp) return new Date();
   if (timestamp instanceof Date) return timestamp;
   if (typeof timestamp === 'string') {
-    if (timestamp.includes('시') && timestamp.includes('분')) {
-      const match = timestamp.match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2})시\s+(\d{1,2})분/);
-      if (match) {
-        const [, year, month, day, hour, minute] = match;
-        return new Date(year, month - 1, day, hour, minute);
-      }
-    }
     if (timestamp.includes('T')) {
       const date = new Date(timestamp);
       if (!isNaN(date.getTime())) return date;
@@ -384,72 +407,48 @@ const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(prevMsg.timestamp);
 };
 
-const shouldShowMessageTime = (messages, currentIndex, currentUserEmail) => {
-  const currentMsg = messages[currentIndex];
-  
-  // 현재 사용자가 보낸 메시지는 시간 표시 안함 (아래쪽에 별도로 표시)
-  if (currentMsg.senderEmail === currentUserEmail) return false;
-  
-  // 마지막 메시지는 항상 시간 표시
+// 같은 사람이 같은 분에 연달아 보낸 메시지는 마지막 것에만 시간을 표시한다
+const shouldShowTime = (messages, currentIndex) => {
   if (currentIndex === messages.length - 1) return true;
-  
+  const currentMsg = messages[currentIndex];
   const nextMsg = messages[currentIndex + 1];
-  
-  // 다음 메시지 발신자가 다르면 시간 표시
   if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
-  
-  // 같은 발신자인 경우 시간이 다르면 시간 표시
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
 };
 
-const shouldShowSentMessageTime = (messages, currentIndex, currentUserEmail) => {
-  const currentMsg = messages[currentIndex];
-  
-  // 현재 사용자가 보낸 메시지가 아니면 시간 표시 안함
-  if (currentMsg.senderEmail !== currentUserEmail) return false;
-  
-  // 마지막 메시지는 항상 시간 표시
-  if (currentIndex === messages.length - 1) return true;
-  
-  const nextMsg = messages[currentIndex + 1];
-  
-  // 다음 메시지 발신자가 다르면 시간 표시
-  if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
-  
-  // 같은 발신자인 경우 시간이 다르면 시간 표시
-  return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
-};
+const getChatBoxElement = () => chatBox.value?.$el || chatBox.value;
 
+// 같은 방을 다시 고르면(목록 새로고침 등) 다시 불러오지 않는다
 watch(
-  [() => props.selectedRoom, () => props.selectedRoomType],
-  async ([newRoom, newRoomType], [oldRoom, oldRoomType]) => {
-    if (oldRoom) {
-      unsubscribe(oldRoom, oldRoomType);
-    }
+  [() => props.selectedRoom?.roomId, () => props.selectedRoomType],
+  async ([newRoomId, newRoomType], [oldRoomId, oldRoomType]) => {
+    if (newRoomId === oldRoomId && newRoomType === oldRoomType) return;
 
+    const session = ++roomSession;
+    disconnect();
     resetChatState();
 
-    if (newRoom && newRoom.roomId) {
-      await loadChatHistory(newRoom, newRoomType);
-      isInitialLoad.value = false;
-      connectWebsocket(newRoom.roomId, newRoomType);
-      
-      nextTick(() => {
-        if (chatBox.value) {
-          const element = chatBox.value.$el || chatBox.value; // Vue 컴포넌트인 경우 $el 사용
-          // [개선 1] 디바운스 적용된 핸들러로 등록
-          if (element && typeof element.removeEventListener === 'function') {
-            element.removeEventListener('scroll', debouncedHandleScroll);
-            element.addEventListener('scroll', debouncedHandleScroll);
-          }
-        }
-      });
-    }
-  },
-  { deep: true }
+    if (!newRoomId || !newRoomType) return;
+
+    const room = props.selectedRoom;
+    await loadChatHistory(room, newRoomType, session);
+    if (!isCurrentSession(session)) return;
+
+    connectWebsocket(room.roomId, newRoomType, session);
+
+    nextTick(() => {
+      const element = getChatBoxElement();
+      // [개선 1] 디바운스 적용된 핸들러로 등록
+      if (element && typeof element.removeEventListener === 'function') {
+        element.removeEventListener('scroll', debouncedHandleScroll);
+        element.addEventListener('scroll', debouncedHandleScroll);
+      }
+    });
+  }
 );
 
 const resetChatState = () => {
+  imagePreview.value.forEach(image => URL.revokeObjectURL(image.preview));
   messages.value = [];
   newMessage.value = "";
   imagePreview.value = [];
@@ -457,14 +456,30 @@ const resetChatState = () => {
   showNewMessageIndicator.value = false;
   participantCount.value = 0;
   closeImageModal();
+  isLoadingMessages.value = false;
   isLoadingMoreMessages.value = false;
   hasMoreMessages.value = true;
   currentPage.value = 0;
   isInitialLoad.value = true;
-  subscription.value = null;
+  isSending.value = false;
+  isCompletedLocally.value = false;
 };
 
-const loadChatHistory = async (room, roomType, isLoadMore = false) => {
+const fetchHistoryPage = async (roomId, roomType, page) => {
+  const url = `${import.meta.env.VITE_API_BASE_URL}/${roomType}/chat/history/${roomId}?page=${page}&size=${pageSize.value}`;
+  const response = await axios.get(url);
+  return getResultData(response);
+};
+
+const markAsRead = async (roomId, roomType) => {
+  try {
+    await axios.post(`${import.meta.env.VITE_API_BASE_URL}/${roomType}/chat/${roomId}/read`);
+  } catch (readError) {
+    console.warn('읽음 처리 실패:', readError);
+  }
+};
+
+const loadChatHistory = async (room, roomType, session, isLoadMore = false) => {
   if (isLoadMore) {
     isLoadingMoreMessages.value = true;
   } else {
@@ -475,58 +490,74 @@ const loadChatHistory = async (room, roomType, isLoadMore = false) => {
   }
 
   try {
-    const url = `${import.meta.env.VITE_API_BASE_URL}/${roomType}/chat/history/${room.roomId}?page=${currentPage.value}&size=${pageSize.value}`;
-    const response = await axios.get(url);
-    const pageData = getResultData(response);
-    const chatMessages = pageData?.content || [];
-    const safeNewMessages = Array.isArray(chatMessages) ? chatMessages : [];
-    
-    if (isLoadMore) {
-      // 더 많은 메시지를 로드할 때는 기존 메시지 앞에 추가 (DESC로 받은 데이터를 역순으로 정렬)
-      const reversedMessages = safeNewMessages.reverse();
-      messages.value = [...reversedMessages, ...messages.value];
-    } else {
-      // 초기 로드일 때는 DESC로 받은 데이터를 ASC로 정렬 (오래된 것부터 최신 순)
-      messages.value = safeNewMessages.reverse();
-      try {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/${roomType}/chat/${room.roomId}/read`);
-      } catch (readError) {
-        console.warn('읽음 처리 실패:', readError);
-      }
-    }
+    const pageData = await fetchHistoryPage(room.roomId, roomType, currentPage.value);
+    // 기다리는 사이 다른 방으로 바뀌었으면 이 응답은 버린다
+    if (!isCurrentSession(session)) return;
 
-    hasMoreMessages.value = !pageData?.last;
-    
+    const chatMessages = Array.isArray(pageData?.content) ? pageData.content : [];
+    // 서버는 최신순(DESC)으로 주므로 화면 표시용으로 오래된 순으로 뒤집는다
+    const ascMessages = [...chatMessages].reverse();
+
     if (isLoadMore) {
+      messages.value = [...ascMessages, ...messages.value];
       currentPage.value++;
     } else {
+      messages.value = ascMessages;
       currentPage.value = 1;
       scrollToBottom();
+      markAsRead(room.roomId, roomType);
     }
+    hasMoreMessages.value = !pageData?.last;
   } catch (error) {
+    if (!isCurrentSession(session)) return;
     console.error("채팅 내역 로딩 실패:", error);
+    notifyError('채팅 내역을 불러오지 못했습니다.');
     if (!isLoadMore) {
       messages.value = [];
     }
   } finally {
-    isLoadingMessages.value = false;
-    isLoadingMoreMessages.value = false;
-    isInitialLoad.value = false;
+    if (isCurrentSession(session)) {
+      isLoadingMessages.value = false;
+      isLoadingMoreMessages.value = false;
+      isInitialLoad.value = false;
+    }
   }
 };
 
+// 연결이 끊긴 동안 놓친 메시지를 최신 페이지에서 찾아 뒤에 붙인다
+const loadMissedMessages = async (roomId, roomType, session) => {
+  const pageData = await fetchHistoryPage(roomId, roomType, 0);
+  if (!isCurrentSession(session)) return;
+
+  const latest = Array.isArray(pageData?.content) ? [...pageData.content].reverse() : [];
+  const last = messages.value[messages.value.length - 1];
+  const lastTime = last ? parseTimestamp(last.timestamp).getTime() : -Infinity;
+  const missed = latest.filter(msg => parseTimestamp(msg.timestamp).getTime() > lastTime);
+  if (missed.length === 0) return;
+
+  messages.value.push(...missed);
+  const el = getChatBoxElement();
+  const isAtBottom = el ? el.scrollHeight - el.clientHeight <= el.scrollTop + 20 : true;
+  if (isAtBottom) {
+    scrollToBottom();
+  } else {
+    showNewMessageIndicator.value = true;
+  }
+  markAsRead(roomId, roomType);
+};
+
 const handleScroll = async () => {
-  const el = chatBox.value?.$el || chatBox.value;
+  const el = getChatBoxElement();
   if (!el) return;
-  
+
   if (el.scrollHeight - el.scrollTop - el.clientHeight < 1) {
     showNewMessageIndicator.value = false;
   }
-  
+
   if (el.scrollTop < 200 && hasMoreMessages.value && !isLoadingMoreMessages.value && !isInitialLoad.value) {
     const previousScrollHeight = el.scrollHeight;
     await loadMoreMessages();
-    
+
     nextTick(() => {
       const newScrollHeight = el.scrollHeight;
       el.scrollTop = newScrollHeight - previousScrollHeight;
@@ -546,69 +577,114 @@ const loadMoreMessages = async () => {
   if (!props.selectedRoom || !props.selectedRoomType || isLoadingMoreMessages.value || !hasMoreMessages.value) {
     return;
   }
-  await loadChatHistory(props.selectedRoom, props.selectedRoomType, true);
+  await loadChatHistory(props.selectedRoom, props.selectedRoomType, roomSession, true);
 };
 
 const scrollToBottom = () => {
   showNewMessageIndicator.value = false;
   nextTick(() => {
-    if (chatBox.value) {
-      const element = chatBox.value.$el || chatBox.value;
-      if (element && typeof element.scrollTop !== 'undefined') {
-        element.scrollTop = element.scrollHeight;
-      }
+    const element = getChatBoxElement();
+    if (element && typeof element.scrollTop !== 'undefined') {
+      element.scrollTop = element.scrollHeight;
     }
   });
 };
 
-const connectWebsocket = (roomId, roomType) => {
-  if (stompClient.value?.connected || !roomType) return;
-  
+const handleIncomingMessage = (message) => {
+  const incoming = JSON.parse(message.body);
+  messages.value.push(incoming);
+
+  if (incoming.senderEmail === senderEmail.value) {
+    scrollToBottom();
+    return;
+  }
+
+  const el = getChatBoxElement();
+  const isAtBottom = el ? el.scrollHeight - el.clientHeight <= el.scrollTop + 20 : true;
+
+  if (isAtBottom) {
+    scrollToBottom();
+  } else {
+    showNewMessageIndicator.value = true;
+  }
+};
+
+// 연결할 때마다 저장소에서 토큰을 새로 읽는다 (axios 인터셉터가 재발급한 토큰을 쓰기 위해)
+const connectWebsocket = (roomId, roomType, session) => {
+  if (!isCurrentSession(session)) return;
+
   const sockJs = new SockJS(`${import.meta.env.VITE_API_BASE_URL}/connect/chat`);
-  stompClient.value = Stomp.over(sockJs);
-  stompClient.value.connect({ Authorization: `Bearer ${token.value}` }, () => {
-    subscription.value = stompClient.value.subscribe(`/topic/chat/${roomType.toUpperCase()}/${roomId}`, (message) => {
-      const newMessage = JSON.parse(message.body);
-      
-      if (!Array.isArray(messages.value)) {
-        messages.value = [];
-      }
-      
-      messages.value.push(newMessage);
-      
-      if (newMessage.senderEmail === senderEmail.value) {
-        scrollToBottom();
+  const client = Stomp.over(sockJs, { debug: false });
+  stompClient.value = client;
+  const authHeader = { Authorization: `Bearer ${localStorage.getItem("accessToken")}` };
+
+  client.connect(authHeader, () => {
+    if (!isCurrentSession(session)) {
+      client.disconnect();
+      return;
+    }
+    subscription.value = client.subscribe(
+      `/topic/chat/${roomType.toUpperCase()}/${roomId}`,
+      handleIncomingMessage,
+      authHeader
+    );
+    isConnected.value = true;
+
+    // 재연결이면 끊겨 있던 동안의 메시지를 채운다
+    if (reconnectAttempt > 0) {
+      reconnectAttempt = 0;
+      loadMissedMessages(roomId, roomType, session).catch(error => {
+        console.warn('놓친 메시지 불러오기 실패:', error);
+      });
+    }
+  }, (error) => {
+    // 일부러 끊은 연결(방 전환·화면 이탈)이면 재연결하지 않는다
+    if (!isCurrentSession(session) || stompClient.value !== client) return;
+    console.warn('채팅 연결이 끊어졌습니다:', error);
+    isConnected.value = false;
+    subscription.value = null;
+    scheduleReconnect(roomId, roomType, session);
+  });
+};
+
+// 지수 백오프로 재연결. 연결 전에 REST 호출을 먼저 해서
+// 토큰이 만료됐다면 axios 인터셉터가 재발급하도록 한다.
+const scheduleReconnect = (roomId, roomType, session) => {
+  clearTimeout(reconnectTimer);
+  const delay = Math.min(1000 * 2 ** reconnectAttempt, MAX_RECONNECT_DELAY);
+  reconnectAttempt++;
+
+  reconnectTimer = setTimeout(async () => {
+    if (!isCurrentSession(session)) return;
+    try {
+      await loadMissedMessages(roomId, roomType, session);
+    } catch (error) {
+      // 방에서 빠졌거나(403/404) 재발급이 실패하면 더 시도하지 않는다
+      const status = error.response?.status;
+      if (status === 401 || status === 403 || status === 404) {
+        notifyError('채팅방에 연결할 수 없습니다. 다시 입장해주세요.');
         return;
       }
-      
-      const el = chatBox.value?.$el || chatBox.value;
-      const isAtBottom = el ? el.scrollHeight - el.clientHeight <= el.scrollTop + 20 : true;
-
-      if (isAtBottom) {
-        scrollToBottom();
-      } else {
-        showNewMessageIndicator.value = true;
-      }
-    }, { Authorization: `Bearer ${token.value}` });
-  });
+    }
+    connectWebsocket(roomId, roomType, session);
+  }, delay);
 };
 
-const unsubscribe = (room, roomType) => {
-  if (!room || !roomType) return;
+const disconnect = () => {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+  reconnectAttempt = 0;
+  isConnected.value = false;
+
+  const client = stompClient.value;
+  const sub = subscription.value;
+  stompClient.value = null;
+  subscription.value = null;
   try {
-    if (subscription.value) {
-      const id = { roomId: room.roomId, roomType };
-      subscription.value.unsubscribe(id);
-      subscription.value = null;
-    }
-    if (stompClient.value?.connected) {
-      stompClient.value.disconnect(() => {});
-      stompClient.value = null;
-    }
+    if (sub) sub.unsubscribe();
+    if (client?.connected) client.disconnect(() => {});
   } catch (error) {
     console.error('구독 해제 중 오류 발생:', error);
-    subscription.value = null;
-    stompClient.value = null;
   }
 };
 
@@ -618,36 +694,58 @@ const changeImage = async (files) => {
   const response = await axios.post(
     `${import.meta.env.VITE_API_BASE_URL}/${props.selectedRoomType}/chat/room/${props.selectedRoom.roomId}/images`,
     formData,
-    { headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token.value}` } }
+    { headers: { 'Content-Type': 'multipart/form-data' } }
   );
   return getResultData(response);
 };
 
-const sendMessage = async () => {
-  if (!props.selectedRoom || (newMessage.value.trim() === "" && newImages.value.length === 0)) return;
+// 한글 조합 중 Enter는 무시한다 (조합 확정 Enter로 마지막 글자가 한 번 더 전송되는 문제)
+const onEnter = (event) => {
+  if (event.isComposing || event.keyCode === 229) return;
+  sendMessage();
+};
 
+const sendMessage = async () => {
+  if (!props.selectedRoom || isSending.value || (newMessage.value.trim() === "" && newImages.value.length === 0)) return;
+
+  if (!stompClient.value?.connected) {
+    notifyError('채팅 서버에 연결 중입니다. 잠시 후 다시 보내주세요.');
+    return;
+  }
+
+  const session = roomSession;
   const currentMessage = newMessage.value;
   const currentImages = [...newImages.value];
-  newMessage.value = "";
-  newImages.value = [];
-  imagePreview.value = [];
+  const currentPreview = [...imagePreview.value];
+  isSending.value = true;
 
   try {
     const imageUrls = currentImages.length > 0 ? await changeImage(currentImages) : [];
-    const message = { 
-      senderEmail: senderEmail.value, 
-      senderName: senderName.value,
-      message: currentMessage, 
-      imageUrls
-    };
-    if (stompClient.value?.connected) {
-      stompClient.value.send(`/publish/chat/${props.selectedRoomType.toUpperCase()}/${props.selectedRoom.roomId}`, JSON.stringify(message));
+    if (!isCurrentSession(session)) return;
+    // 이미지 업로드를 기다리는 사이 연결이 끊겼으면 입력 내용을 남겨 둔다
+    if (!stompClient.value?.connected) {
+      notifyError('연결이 끊어져 메시지를 보내지 못했습니다. 다시 보내주세요.');
+      return;
     }
+    // 발신자는 서버가 STOMP 세션 사용자로 정하므로 본문만 보낸다
+    stompClient.value.send(
+      `/publish/chat/${props.selectedRoomType.toUpperCase()}/${props.selectedRoom.roomId}`,
+      JSON.stringify({ message: currentMessage, imageUrls })
+    );
+    // 보내는 사이 새로 입력한 내용은 지우지 않는다
+    if (newMessage.value === currentMessage) newMessage.value = "";
+    newImages.value = newImages.value.filter(file => !currentImages.includes(file));
+    imagePreview.value = imagePreview.value.filter(image => !currentPreview.includes(image));
+    currentPreview.forEach(image => URL.revokeObjectURL(image.preview));
   } catch (error) {
     console.error('메시지 전송 실패:', error);
-    newMessage.value = currentMessage;
-    newImages.value = currentImages;
-    imagePreview.value = currentImages.map(file => ({ file, preview: URL.createObjectURL(file) }));
+    if (isCurrentSession(session)) {
+      notifyError('메시지를 보내지 못했습니다. 다시 시도해주세요.');
+    }
+  } finally {
+    if (isCurrentSession(session)) {
+      isSending.value = false;
+    }
   }
 };
 
@@ -695,9 +793,10 @@ const completeOrder = async () => {
   try {
     // [개선 2] axios.delete 파라미터 구조 수정
     await axios.delete(
-      `${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${props.selectedRoom.roomId}/complete`,
-      { headers: { 'Authorization': `Bearer ${token.value}` } }
+      `${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${props.selectedRoom.roomId}/complete`
     );
+    // 완료된 방은 다시 고르기 전까지 선택된 방 정보가 그대로라 여기서 닫힘으로 표시한다
+    isCompletedLocally.value = true;
     alert('공동 구매가 완료되었습니다.');
     emit('order-completed');
   } catch (error) {
@@ -709,9 +808,8 @@ const completeOrder = async () => {
 };
 
 const handleBeforeUnload = () => {
-  if (props.selectedRoom && props.selectedRoomType) {
-    unsubscribe(props.selectedRoom, props.selectedRoomType);
-  }
+  roomSession++;
+  disconnect();
 };
 
 onMounted(() => {
@@ -719,7 +817,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  unsubscribe(props.selectedRoom, props.selectedRoomType);
+  roomSession++;
+  disconnect();
+  clearTimeout(debounceTimer);
   window.removeEventListener('beforeunload', handleBeforeUnload);
   
   if (chatBox.value) {
@@ -733,6 +833,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.connection-status {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #64748b;
+  padding: 0 8px 8px;
+}
 .chat-window-full { 
   height: calc(100vh - 32px);
   min-height: calc(100vh - 32px);

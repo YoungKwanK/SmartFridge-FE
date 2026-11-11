@@ -13,7 +13,6 @@
             :alt="userName"
             cover
             class="profile-image"
-            @error="handleImageError"
           />
           <img
             v-else-if="userProfileImage && userProfileImage.startsWith('data:')"
@@ -225,7 +224,7 @@ const userProfileImage = computed(() => store.getters.getUserProfileImage);
 
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
-const emit = defineEmits(['select-room', 'select-roomType', 'room-left']);
+const emit = defineEmits(['select-room', 'room-left']);
 const isParticipantforModal = ref(false); // 사용자가 해당 방의 참여자인지 여부를 추적하는 ref 추가
 
 // [추가] 모달의 상태를 관리할 ref들을 추가합니다.
@@ -254,39 +253,19 @@ const sortedMyPurchaseRooms = computed(() => {
 });
 
 onMounted(async () => {
-  // 초기 데이터 로드
-  await refreshMyChatRooms();
+  try {
+    await loadRooms();
+  } catch (error) {
+    console.error("채팅방 목록 조회 실패:", error);
+  } finally {
+    isLoading.value = false;
+  }
 
   // 게시판 공동구매 글에서 들어온 경우(?roomId=) 그 방을 바로 연다
   const targetRoomId = Number(route.query.roomId);
   const targetRoom = targetRoomId ? myPurchaseRooms.value.find(r => r.roomId === targetRoomId) : null;
   if (targetRoom) {
     selectRoom(targetRoom, 'purchase');
-  }
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
-    const allRooms = getResultData(response); // 서버에서 받은 채팅방 배열
-
-    const [first, ...rest] = allRooms;
-    managerRoom.value = first;
-    myPurchaseRooms.value = rest;
-
-    // 배지 동기화: 모든 채팅방의 unReadCount 합계로 계산
-    const managerUnreadCount = managerRoom.value?.unReadCount || 0;
-    const groupUnreadCount = rest?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
-    const totalUnreadCount = managerUnreadCount + groupUnreadCount;
-    store.commit('notification/setGroupChatCount', totalUnreadCount > 0 ? 1 : 0);
-    
-    // 유저 관리 배지도 실제 unReadCount와 동기화
-    const currentFridgeId = store.getters.getCurrentFridgeId;
-    if (currentFridgeId) {
-      store.dispatch('notification/syncUserManagementBadgeWithUnreadCount', currentFridgeId);
-    }
-  } catch (error) {
-    console.error("API 호출 에러:", error);
-  } finally {
-    // 2. API 호출이 성공하든 실패하든, 마지막에는 로딩 상태를 false로 변경
-    isLoading.value = false;
   }
 
   // 전역 SSE로부터 전달되는 실시간 알림 수신 시작
@@ -297,41 +276,39 @@ onUnmounted(() => {
   window.removeEventListener('realtime-notification', handleRealtimeNotification);
 });
 
-// 나의 채팅방 목록 새로고침 함수
-const refreshMyChatRooms = async () => {
-  try {
-    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
-    const allRooms = getResultData(response);
+// 관리자와의 1:1 방은 응답에 isManager(Boolean)가 채워져 있고, 공동구매 방은 비어 있다
+const isManagerRoom = (room) => typeof room.isManager === 'boolean';
 
-    const [first, ...rest] = allRooms;
-    managerRoom.value = first;
-    myPurchaseRooms.value = rest;
+const fetchRooms = async () => {
+  const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
+  const allRooms = getResultData(response);
+  const rooms = Array.isArray(allRooms) ? allRooms : [];
+  return {
+    manager: rooms.find(isManagerRoom) ?? null,
+    purchase: rooms.filter(room => !isManagerRoom(room)),
+  };
+};
 
-    // 배지 동기화: 모든 채팅방의 unReadCount 합계로 계산
-    const managerUnreadCount = managerRoom.value?.unReadCount || 0;
-    const groupUnreadCount = rest?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
-    const totalUnreadCount = managerUnreadCount + groupUnreadCount;
-    store.commit('notification/setGroupChatCount', totalUnreadCount > 0 ? 1 : 0);
-    
-    // 유저 관리 배지도 실제 unReadCount와 동기화
-    const currentFridgeId = store.getters.getCurrentFridgeId;
-    if (currentFridgeId) {
-      store.dispatch('notification/syncUserManagementBadgeWithUnreadCount', currentFridgeId);
-    }
-  } catch (error) {
-    console.error("API 호출 에러:", error);
-    alert(getErrorMessage(error));
-  }
+// 목록을 새로 받아 화면과 배지를 맞춘다
+const loadRooms = async () => {
+  const { manager, purchase } = await fetchRooms();
+  managerRoom.value = manager;
+  myPurchaseRooms.value = purchase;
+  syncChatBadges();
 };
 
 // 채팅 목록 새로고침 (참여·나가기·구매 완료 후)
 const refreshRooms = async () => {
-  await refreshMyChatRooms();
+  try {
+    await loadRooms();
+  } catch (error) {
+    console.error("채팅방 목록 조회 실패:", error);
+    alert(getErrorMessage(error));
+  }
 };
 
 // 채팅방 참여 후 목록 새로고침 함수
-const handleRoomJoined = async (roomId) => {
-  console.log('채팅방 참여 완료:', roomId);
+const handleRoomJoined = async () => {
   await refreshRooms();
 };
 
@@ -381,8 +358,6 @@ const selectRoom = (room, roomType) => {
   };
   
   emit('select-room', roomWithInfo, roomType);
-  selectedRoomId.value = room.roomId;
-  emit('select-room', room, roomType);
   // 선택 시 해당 방의 미읽음 카운트만 초기화 (배지는 서버 상태 기반으로 유지)
   if (roomType === 'manager') {
     // 관리자 채팅 선택 시
@@ -395,11 +370,7 @@ const selectRoom = (room, roomType) => {
     if (target) target.unReadCount = 0;
   }
 
-  // 배지 동기화: 모든 채팅방의 unReadCount 합계로 계산
-  const managerUnreadCount = managerRoom.value?.unReadCount || 0;
-  const groupUnreadCount = myPurchaseRooms.value?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
-  const totalUnreadCount = managerUnreadCount + groupUnreadCount;
-  store.commit('notification/setGroupChatCount', totalUnreadCount > 0 ? 1 : 0);
+  syncChatBadges();
 };
 
 const startChat = (room) => {
@@ -468,15 +439,22 @@ const leaveRoom = async(room) => {
   }
 };
 
-// 이미지 로딩 오류 처리
-const handleImageError = () => {
-  console.log('프로필 이미지 로딩 실패');
-  // 이미지 로딩 실패 시 fallback으로 사용자 이름 첫 글자 표시
-};
-
 // ---------------- 실시간 알림 처리 (전역 SSE 이벤트) ----------------
 function extractRoomIdFromNotification(n) {
-  return n?.roomId ?? n?.chatRoomId ?? n?.room?.id ?? n?.relatedData?.roomId ?? null;
+  const rid = n?.roomId ?? n?.chatRoomId ?? n?.room?.id ?? n?.relatedData?.roomId ?? null;
+  return rid === null ? null : Number(rid);
+}
+
+function syncChatBadges() {
+  const managerUnreadCount = managerRoom.value?.unReadCount || 0;
+  const groupUnreadCount = myPurchaseRooms.value?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
+  store.commit('notification/setGroupChatCount', managerUnreadCount + groupUnreadCount > 0 ? 1 : 0);
+
+  // 유저 관리 배지도 이미 받은 목록으로 맞춘다 (같은 목록을 다시 조회하지 않음)
+  store.commit('notification/setUserManagementBadgeState', {
+    hasUnreadMessages: managerUnreadCount > 0,
+    isSetByUserManagement: true,
+  });
 }
 
 function handleRealtimeNotification(evt) {
@@ -484,81 +462,44 @@ function handleRealtimeNotification(evt) {
   if (!n) return;
   // 내 메시지는 무시
   if (n.senderEmail && n.senderEmail === myEmail.value) return;
-  const rid = extractRoomIdFromNotification(n);
   const isChatType = n.type === 'MANAGER_CHAT' || n.type === 'GROUP_CHAT' || n.type === 'ROOM_FULL';
   if (!isChatType) return;
 
-  // 방 ID가 있으면 해당 방만 증분
+  // 서버가 알림에 방 id(roomId)를 실어 보내므로 그 방만 올린다
+  const rid = extractRoomIdFromNotification(n);
   if (rid) {
-    // 현재 열려있는 방이면 증가하지 않음
+    // 지금 열려 있는 방은 읽고 있으므로 올리지 않는다
     if (selectedRoomId.value === rid) return;
 
-    if (n.type === 'MANAGER_CHAT') {
-      // 관리자 채팅의 unReadCount 업데이트 (배지는 유저 관리 탭에서 관리)
-      if (managerRoom.value && managerRoom.value.roomId === rid) {
-        // 현재 선택된 방이 아닌 경우에만 unReadCount 증가
-        if (selectedRoomId.value !== rid) {
-          managerRoom.value.unReadCount = (managerRoom.value.unReadCount || 0) + 1;
-        }
-      }
-      return;
-    }
-
-    // GROUP_CHAT / ROOM_FULL
-    const target = myPurchaseRooms.value.find(r => r.roomId === rid);
+    const target = managerRoom.value?.roomId === rid
+      ? managerRoom.value
+      : myPurchaseRooms.value.find(r => r.roomId === rid);
     if (target) {
       target.unReadCount = (target.unReadCount || 0) + 1;
+      syncChatBadges();
       return;
     }
   }
 
-  // 방 ID를 알 수 없거나 목록에 없다면 전체 카운트를 서버에서 동기화
+  // 방 id를 알 수 없거나 목록에 없는 방(새로 참여한 방 등)이면 서버에서 다시 맞춘다
   refreshUnreadCounts();
-
-  // 배지 동기화: 모든 채팅방의 unReadCount 합계로 계산
-  const managerUnreadCount = managerRoom.value?.unReadCount || 0;
-  const groupUnreadCount = myPurchaseRooms.value?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
-  const totalUnreadCount = managerUnreadCount + groupUnreadCount;
-  store.commit('notification/setGroupChatCount', totalUnreadCount > 0 ? 1 : 0);
-  
-  // 유저 관리 배지도 실제 unReadCount와 동기화
-  const currentFridgeId = store.getters.getCurrentFridgeId;
-  if (currentFridgeId) {
-    store.dispatch('notification/syncUserManagementBadgeWithUnreadCount', currentFridgeId);
-  }
 }
 
+// 방 객체는 그대로 두고 안 읽은 수만 서버 값으로 맞춘다 (선택된 방 객체가 바뀌지 않게)
 async function refreshUnreadCounts() {
   if (isRefreshingUnread) return;
   isRefreshingUnread = true;
   try {
-    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/chat/my/rooms/${fridgeId.value}`);
-    const allRooms = getResultData(response) || [];
-    if (!Array.isArray(allRooms) || allRooms.length === 0) return;
-    const [first, ...rest] = allRooms;
-    // manager
-    if (first?.roomId && managerRoom.value?.roomId === first.roomId) {
-      managerRoom.value.unReadCount = first.unReadCount || 0;
+    const { manager, purchase } = await fetchRooms();
+    if (manager && managerRoom.value?.roomId === manager.roomId) {
+      managerRoom.value.unReadCount = manager.unReadCount || 0;
     }
-    // purchase rooms map
-    const map = new Map(rest.map(r => [r.roomId, r]));
+    const counts = new Map(purchase.map(r => [r.roomId, r.unReadCount || 0]));
     myPurchaseRooms.value.forEach((room) => {
-      const found = map.get(room.roomId);
-      if (found) room.unReadCount = found.unReadCount || 0;
+      if (counts.has(room.roomId)) room.unReadCount = counts.get(room.roomId);
     });
-
-    // 배지 동기화: 모든 채팅방의 unReadCount 합계로 계산
-    const managerUnreadCount = managerRoom.value?.unReadCount || 0;
-    const groupUnreadCount = rest?.reduce((sum, r) => sum + (r.unReadCount || 0), 0) || 0;
-    const totalUnreadCount = managerUnreadCount + groupUnreadCount;
-    store.commit('notification/setGroupChatCount', totalUnreadCount > 0 ? 1 : 0);
-    
-    // 유저 관리 배지도 실제 unReadCount와 동기화
-    const currentFridgeId = store.getters.getCurrentFridgeId;
-    if (currentFridgeId) {
-      store.dispatch('notification/syncUserManagementBadgeWithUnreadCount', currentFridgeId);
-    }
-  } catch (e) {
+    syncChatBadges();
+  } catch {
     // 네트워크 오류는 조용히 무시
   } finally {
     isRefreshingUnread = false;
