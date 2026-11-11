@@ -16,6 +16,7 @@
           </v-col>
         </v-row>
       </v-container>
+      <ChatFeedback />
     </v-main>
   </v-app>
 </template>
@@ -26,6 +27,7 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import ChatSidebar from '../components/chat/ChatSidebar.vue'; // 사이드바 컴포넌트 import
 import ChatWindow from '../components/chat/ChatWindow.vue';   // 채팅창 컴포넌트 import
+import ChatFeedback from '../components/chat/ChatFeedback.vue';
 
 const store = useStore();
 const router = useRouter();
@@ -48,7 +50,7 @@ const handleOrderCompleted = () => {
   }
 };
 
-// 채팅방 나가기/삭제 이벤트를 받아서 선택된 채팅방 초기화
+// 보고 있던 채팅방에서 나가거나 방이 삭제되면 대화 화면을 닫는다
 const handleRoomLeft = () => {
   selectedRoom.value = null;
   selectedRoomType.value = null;

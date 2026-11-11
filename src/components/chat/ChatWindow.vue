@@ -219,10 +219,6 @@
       </div>
     </template>
 
-    <v-snackbar v-model="showError" color="error" timeout="3000" location="top">
-      {{ errorMessage }}
-    </v-snackbar>
-
     <ImageModal 
       v-model="showImageModal" 
       :images="modalImages" 
@@ -239,6 +235,7 @@ import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
 import ImageModal from './ImageModal.vue';
 import ParticipantsModal from './ParticipantsModal.vue';
+import { notify, notifyError, confirmAction } from './chatFeedback';
 
 const props = defineProps({
   selectedRoom: { type: Object, default: null },
@@ -255,8 +252,6 @@ const stompClient = shallowRef(null);
 const subscription = shallowRef(null);
 const isConnected = ref(false);
 const isSending = ref(false);
-const errorMessage = ref("");
-const showError = ref(false);
 const senderEmail = ref(localStorage.getItem("email"));
 const newImages = ref([]);
 const imagePreview = ref([]);
@@ -289,11 +284,6 @@ let reconnectAttempt = 0;
 const MAX_RECONNECT_DELAY = 10000;
 
 const isCurrentSession = (session) => session === roomSession;
-
-const notifyError = (message) => {
-  errorMessage.value = message;
-  showError.value = true;
-};
 
 const isRoomCreator = computed(() => {
   if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') {
@@ -752,7 +742,7 @@ const sendMessage = async () => {
 const onFileChange = (event) => {
   const files = Array.from(event.target.files);
   if (newImages.value.length + files.length > 10) {
-    alert('이미지는 최대 10장까지만 선택할 수 있습니다.');
+    notifyError('이미지는 최대 10장까지 보낼 수 있습니다.');
     return;
   }
   newImages.value.push(...files);
@@ -785,7 +775,12 @@ const updateParticipantCount = (count) => {
 const completeOrder = async () => {
   if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase' || !isRoomOpen.value) return;
 
-  const confirmed = confirm('정말로 주문을 완료하시겠습니까? 완료 후에는 취소할 수 없습니다.');
+  const confirmed = await confirmAction({
+    title: '공동구매 완료',
+    message: '주문을 완료할까요?\n완료하면 더 이상 참여할 수 없고 되돌릴 수 없습니다.',
+    confirmText: '완료',
+    color: 'success',
+  });
   if (!confirmed) return;
 
   isCompletingOrder.value = true;
@@ -797,11 +792,11 @@ const completeOrder = async () => {
     );
     // 완료된 방은 다시 고르기 전까지 선택된 방 정보가 그대로라 여기서 닫힘으로 표시한다
     isCompletedLocally.value = true;
-    alert('공동 구매가 완료되었습니다.');
+    notify('공동구매가 완료되었습니다.');
     emit('order-completed');
   } catch (error) {
     console.error("요청 실패:", error);
-    alert('요청에 실패했습니다. 다시 시도해주세요.');
+    notifyError('구매 완료에 실패했습니다. 다시 시도해주세요.');
   } finally {
     isCompletingOrder.value = false;
   }
