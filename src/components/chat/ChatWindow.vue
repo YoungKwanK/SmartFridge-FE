@@ -73,7 +73,7 @@
             </div>
           </div>
           
-          <div v-else-if="groupedMessages.length === 0" class="empty-chat-container">
+          <div v-if="!isLoadingMessages && groupedMessages.length === 0" class="empty-chat-container">
             <div class="empty-chat-content">
               <v-icon size="64" color="grey-lighten-1" class="empty-chat-icon">
                 mdi-chat-outline
@@ -85,14 +85,14 @@
             </div>
           </div>
           
-          <div v-if="!hasMoreMessages && groupedMessages.length > 0" class="no-more-messages">
+          <div v-if="!hasMoreMessages && hasLoadedOlder && groupedMessages.length > 0" class="no-more-messages">
             <div class="no-more-content">
               <v-icon size="24" color="grey-lighten-1">mdi-check-circle-outline</v-icon>
               <span class="no-more-text">모든 메시지를 불러왔습니다</span>
             </div>
           </div>
           
-          <div v-for="(group, groupIndex) in groupedMessages" :key="groupIndex" class="message-group">
+          <div v-for="group in groupedMessages" :key="group.date.toDateString()" class="message-group">
             <div class="date-divider">
               <div class="date-line"></div>
               <div class="date-text">{{ formatDate(group.date) }}</div>
@@ -101,7 +101,7 @@
             
             <div
               v-for="(msg, msgIndex) in group.messages"
-              :key="`${msg.senderEmail}-${msg.timestamp}-${msgIndex}`"
+              :key="messageKey(msg)"
               :class="['message-wrapper', msg.senderEmail === senderEmail ? 'sent' : 'received']"
             >
               <!-- 보낸 메시지 레이아웃: [메시지] [시간] -->
@@ -215,7 +215,7 @@
             <v-btn icon="mdi-send" variant="text" :loading="isSending" :disabled="!isConnected" @click="sendMessage" />
           </template>
         </v-text-field>
-        <input ref="fileInput" type="file" multiple accept="image/*" style="display: none" @change="onFileChange" />
+        <input ref="fileInput" type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp" style="display: none" @change="onFileChange" />
       </div>
     </template>
 
@@ -272,6 +272,7 @@ const hasMoreMessages = ref(true);
 const currentPage = ref(0);
 const pageSize = ref(40);
 const isInitialLoad = ref(true);
+const hasLoadedOlder = computed(() => currentPage.value > 1);
 
 // [개선 1] 디바운싱을 위한 타이머 변수
 let debounceTimer;
@@ -284,6 +285,14 @@ let reconnectAttempt = 0;
 const MAX_RECONNECT_DELAY = 10000;
 
 const isCurrentSession = (session) => session === roomSession;
+
+// 이미지 선택 규칙 (서버 ChatImageService와 같게)
+const MAX_IMAGES = 10;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+// 과거 메시지가 앞에 붙어도 기존 메시지의 key가 바뀌지 않도록 index를 쓰지 않는다
+const messageKey = (msg) => `${msg.senderEmail}-${msg.timestamp}`;
 
 const isRoomCreator = computed(() => {
   if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') {
@@ -444,7 +453,7 @@ const resetChatState = () => {
   imagePreview.value = [];
   newImages.value = [];
   showNewMessageIndicator.value = false;
-  participantCount.value = 0;
+  participantCount.value = props.selectedRoom?.currentParticipants ?? 0;
   closeImageModal();
   isLoadingMessages.value = false;
   isLoadingMoreMessages.value = false;
@@ -741,13 +750,25 @@ const sendMessage = async () => {
 
 const onFileChange = (event) => {
   const files = Array.from(event.target.files);
-  if (newImages.value.length + files.length > 10) {
-    notifyError('이미지는 최대 10장까지 보낼 수 있습니다.');
+  event.target.value = '';
+
+  if (newImages.value.length + files.length > MAX_IMAGES) {
+    notifyError(`이미지는 최대 ${MAX_IMAGES}장까지 보낼 수 있습니다.`);
     return;
   }
+  const invalidType = files.find(file => !ALLOWED_IMAGE_TYPES.includes(file.type));
+  if (invalidType) {
+    notifyError('jpg, png, gif, webp 이미지만 보낼 수 있습니다.');
+    return;
+  }
+  const tooLarge = files.find(file => file.size > MAX_IMAGE_BYTES);
+  if (tooLarge) {
+    notifyError('이미지는 1장당 10MB 이하만 보낼 수 있습니다.');
+    return;
+  }
+
   newImages.value.push(...files);
   imagePreview.value.push(...files.map(file => ({ file, preview: URL.createObjectURL(file) })));
-  event.target.value = '';
 };
 
 const removeImage = (index) => {
