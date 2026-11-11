@@ -98,7 +98,7 @@
                v-for="room in sortedMyPurchaseRooms"
                :key="room.roomId"
                class="chat-room-card"
-               @mouseenter="hoveredRoomId = room.roomId"
+               @mouseenter="canHover && (hoveredRoomId = room.roomId)"
                @mouseleave="hoveredRoomId = null"
              >
                <div v-if="hoveredRoomId !== room.roomId" class="room-content" @click="startChat(room)">
@@ -137,6 +137,21 @@
                      >
                        {{ room.unReadCount || 0 }}
                      </v-chip>
+                     <!-- 터치 화면에는 마우스 올리기가 없어서 메뉴로 정보 보기·나가기를 연다 -->
+                     <v-menu v-if="!canHover" location="bottom end">
+                       <template #activator="{ props: menuProps }">
+                         <v-btn v-bind="menuProps" icon="mdi-dots-vertical" variant="text" size="x-small" title="방 메뉴" @click.stop />
+                       </template>
+                       <v-list density="compact">
+                         <v-list-item prepend-icon="mdi-information-outline" title="정보 보기" @click="viewRoomInfo(room, true)" />
+                         <v-list-item
+                           :prepend-icon="room.isCreator ? 'mdi-delete' : 'mdi-exit-to-app'"
+                           :title="room.isCreator ? '삭제' : '나가기'"
+                           base-color="error"
+                           @click="leaveRoom(room)"
+                         />
+                       </v-list>
+                     </v-menu>
                    </div>
                  </div>
                  
@@ -211,6 +226,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import RoomInfoModal from './RoomInfoModal.vue';
+import { notify, notifyError, confirmAction } from './chatFeedback';
 import axios from 'axios';
 import { getErrorMessage, getFridgeId, getResultData } from '@/utils/commonDataHandler';
 import { useStore } from 'vuex';
@@ -224,6 +240,8 @@ const userProfileImage = computed(() => store.getters.getUserProfileImage);
 
 const selectedRoomId = ref(null);
 const hoveredRoomId = ref(null);
+// 마우스가 있는 기기에서만 카드에 올렸을 때 동작 버튼을 보여 준다
+const canHover = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
 const emit = defineEmits(['select-room', 'room-left']);
 const isParticipantforModal = ref(false); // 사용자가 해당 방의 참여자인지 여부를 추적하는 ref 추가
 
@@ -303,7 +321,7 @@ const refreshRooms = async () => {
     await loadRooms();
   } catch (error) {
     console.error("채팅방 목록 조회 실패:", error);
-    alert(getErrorMessage(error));
+    notifyError(getErrorMessage(error));
   }
 };
 
@@ -314,7 +332,9 @@ const handleRoomJoined = async () => {
 
 // 외부에서 호출할 수 있는 함수들을 expose
 defineExpose({
-  refreshRooms
+  refreshRooms,
+  // 모바일에서 목록으로 돌아갈 때 선택 표시를 지운다
+  clearSelection: () => { selectedRoomId.value = null; },
 });
 
 const isRoomOpen = (room) => {
@@ -384,56 +404,44 @@ const viewRoomInfo = (room, isParticipant) => {
   isParticipantforModal.value = isParticipant; // 참여자 여부를 저장
 };
 
-const leaveRoom = async(room) => {
-  if (!room || !room.roomId) {
-    alert('채팅방 정보가 올바르지 않습니다.');
-    return;
-  }
+const leaveRoom = async (room) => {
+  if (!room?.roomId) return;
 
-  // 방장인 경우 삭제 확인, 일반 참여자인 경우 나가기 확인
+  // 방장이 나가면 방이 삭제된다
   const isCreator = room.isCreator;
   const actionText = isCreator ? '삭제' : '나가기';
-  const confirmMessage = isCreator 
-    ? `정말로 이 채팅방을 삭제하시겠습니까?\n삭제된 채팅방은 복구할 수 없습니다.`
-    : `정말로 이 채팅방에서 나가시겠습니까?`;
-
-  const confirmed = confirm(confirmMessage);
+  const confirmed = await confirmAction(isCreator
+    ? {
+        title: '채팅방 삭제',
+        message: `'${room.roomName}' 방을 삭제할까요?\n방장이 나가면 방과 대화 내용이 모두 삭제되고 복구할 수 없습니다.`,
+        confirmText: '삭제',
+        color: 'error',
+      }
+    : {
+        title: '채팅방 나가기',
+        message: `'${room.roomName}' 방에서 나갈까요?`,
+        confirmText: '나가기',
+        color: 'error',
+      });
   if (!confirmed) return;
 
   isLoading.value = true;
-  
   try {
-    if (isCreator) {
-      // 방장인 경우 채팅방 삭제
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
-      alert('채팅방이 삭제되었습니다.');
-    } else {
-      // 일반 참여자인 경우 나가기
-      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
-      alert('채팅방에서 나갔습니다.');
-    }
-    
-    // 목록 새로고침
+    await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/purchase/chat/${room.roomId}/leave`);
+    notify(isCreator ? '채팅방을 삭제했습니다.' : '채팅방에서 나갔습니다.');
     await refreshRooms();
-    
-    // 채팅방 선택 초기화 이벤트 emit
-    emit('room-left');
-    
-  } catch (error) {
-    console.error("API 호출 에러:", error);
-    
-    // 구체적인 에러 메시지 표시
-    let errorMessage = getErrorMessage(error);
-    
-    if (error.response?.status === 403) {
-      errorMessage = '이 작업을 수행할 권한이 없습니다.';
-    } else if (error.response?.status === 404) {
-      errorMessage = '채팅방을 찾을 수 없습니다.';
-    } else if (error.response?.status === 400) {
-      errorMessage = '잘못된 요청입니다.';
+    // 지금 보고 있던 방일 때만 대화 화면을 닫는다
+    if (selectedRoomId.value === room.roomId) {
+      selectedRoomId.value = null;
+      emit('room-left', room.roomId);
     }
-    
-    alert(`${actionText}에 실패했습니다: ${errorMessage}`);
+  } catch (error) {
+    console.error("채팅방 나가기 실패:", error);
+    const status = error.response?.status;
+    const reason = status === 403 ? '권한이 없습니다.'
+      : status === 404 ? '채팅방을 찾을 수 없습니다.'
+      : getErrorMessage(error);
+    notifyError(`${actionText}에 실패했습니다: ${reason}`);
   } finally {
     isLoading.value = false;
   }

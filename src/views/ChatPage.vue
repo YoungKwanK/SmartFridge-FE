@@ -1,31 +1,37 @@
 <template>
-  <v-app>
-    <v-main class="gradient-background">
-      <v-container fluid class="chat-padding fill-height">
-        <v-row no-gutters class="fill-height">
-          <v-col cols="12" md="4" lg="3" xl="2">
-            <ChatSidebar ref="chatSidebar" @select-room="handleRoomSelect" @room-left="handleRoomLeft" />
-          </v-col>
-          
-          <v-col cols="12" md="8" lg="9" xl="10">
-            <ChatWindow 
-              :selected-room="selectedRoom" 
-              :selected-roomType="selectedRoomType"
-              @order-completed="handleOrderCompleted" 
-            />
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
-  </v-app>
+  <!-- App.vue의 v-app/v-main 안에서 그려지므로 v-app을 다시 감싸지 않는다.
+       중첩 v-main은 --v-layout-top을 0으로 덮어써 모바일 앱 바 높이를 알 수 없게 된다. -->
+  <div class="chat-page gradient-background">
+    <v-container fluid class="chat-padding fill-height">
+      <v-row no-gutters class="fill-height">
+        <!-- 모바일(md 미만)에서는 목록과 대화 중 하나만 보여 준다 -->
+        <v-col v-show="!isCompact || !selectedRoom" cols="12" md="4" lg="3" xl="2">
+          <ChatSidebar ref="chatSidebar" @select-room="handleRoomSelect" @room-left="handleRoomLeft" />
+        </v-col>
+        
+        <v-col v-show="!isCompact || selectedRoom" cols="12" md="8" lg="9" xl="10">
+          <ChatWindow 
+            :selected-room="selectedRoom" 
+            :selected-roomType="selectedRoomType"
+            :show-back="isCompact"
+            @order-completed="handleOrderCompleted" 
+            @back="handleBack"
+          />
+        </v-col>
+      </v-row>
+    </v-container>
+    <ChatFeedback />
+  </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useDisplay } from 'vuetify';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import ChatSidebar from '../components/chat/ChatSidebar.vue'; // 사이드바 컴포넌트 import
 import ChatWindow from '../components/chat/ChatWindow.vue';   // 채팅창 컴포넌트 import
+import ChatFeedback from '../components/chat/ChatFeedback.vue';
 
 const store = useStore();
 const router = useRouter();
@@ -34,6 +40,7 @@ const router = useRouter();
 const selectedRoom = ref(null);
 const selectedRoomType = ref(null);
 const chatSidebar = ref(null);
+const { smAndDown: isCompact } = useDisplay();
 
 // 사이드바에서 채팅방을 선택했을 때 호출될 함수
 const handleRoomSelect = (room, roomType) => {
@@ -48,10 +55,16 @@ const handleOrderCompleted = () => {
   }
 };
 
-// 채팅방 나가기/삭제 이벤트를 받아서 선택된 채팅방 초기화
+// 보고 있던 채팅방에서 나가거나 방이 삭제되면 대화 화면을 닫는다
 const handleRoomLeft = () => {
   selectedRoom.value = null;
   selectedRoomType.value = null;
+};
+
+// 모바일에서 목록으로 돌아가기: 방을 닫아야 그 방 알림이 다시 온다
+const handleBack = () => {
+  chatSidebar.value?.clearSelection();
+  handleRoomLeft();
 };
 
 // 페이지 진입 시 채팅 알림 제거 및 냉장고 ID 확인
@@ -70,8 +83,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 모바일 상단 앱 바(--v-layout-top) 높이만큼 빼서 화면 밖으로 넘치지 않게 한다 */
+.chat-page {
+  min-height: calc(100vh - var(--v-layout-top, 0px));
+}
 .fill-height {
-  height: 100vh;
+  height: calc(100vh - var(--v-layout-top, 0px));
   overflow: hidden;
 }
 .gradient-background {
