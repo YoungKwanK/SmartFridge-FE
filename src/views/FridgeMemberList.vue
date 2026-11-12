@@ -1,457 +1,233 @@
 <template>
-  <v-app>
-    <v-main class="member-list-background">
-      <v-container fluid class="member-list-container">
-        <!-- 헤더 섹션 -->
-        <div class="page-header">
-          <div class="header-content">
-            <div class="header-info">
-              <h1 class="page-title">
-                <v-icon class="title-icon" color="primary">mdi-account-group</v-icon>
-                유저 관리 & 채팅
-              </h1>
-              <p class="page-subtitle">냉장고 멤버들과 소통하고 관리하세요</p>
-            </div>
-          </div>
+  <div class="members-page">
+    <header class="page-head">
+      <h1 class="page-title">멤버 관리</h1>
+      <p class="page-desc">멤버에게 1:1로 메시지를 보내고, 관리자 권한을 넘기거나 내보낼 수 있어요.</p>
+    </header>
+
+    <div class="members-grid">
+      <!-- 멤버 목록 -->
+      <section class="panel member-panel" aria-labelledby="member-list-title">
+        <header class="panel-head">
+          <h2 id="member-list-title" class="panel-title">
+            멤버 <span class="count sf-num">{{ filteredUsers.length }}</span>
+          </h2>
+        </header>
+        <v-text-field
+          v-model="searchQuery"
+          placeholder="이름이나 이메일로 찾기"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          density="compact"
+          hide-details
+          clearable
+          class="member-search"
+        />
+
+        <ul class="member-list">
+          <li
+            v-for="user in filteredUsers"
+            :key="user.email"
+            class="member-row"
+            :class="{ 'is-selected': selectedUser && selectedUser.email === user.email }"
+          >
+            <button
+              type="button"
+              class="member-main"
+              :disabled="user.role === 'MANAGER'"
+              :aria-label="user.role === 'MANAGER' ? `${user.name} (관리자)` : `${user.name}님과 대화하기`"
+              @click="selectUser(user)"
+            >
+              <span class="member-avatar" aria-hidden="true">
+                <img
+                  v-if="user.profileImage && (user.profileImage.startsWith('http') || user.profileImage.startsWith('data:'))"
+                  :src="user.profileImage"
+                  alt=""
+                  @error="handleImageError(user)"
+                />
+                <span v-else>{{ user.initial }}</span>
+              </span>
+              <span class="member-text">
+                <span class="member-name">
+                  {{ user.name }}
+                  <span v-if="user.role === 'MANAGER'" class="role-tag">관리자</span>
+                </span>
+                <span class="member-email">{{ user.email }}</span>
+              </span>
+              <span v-if="user.unReadCount > 0" class="unread-pill sf-num" :aria-label="`안 읽은 메시지 ${user.unReadCount}개`">
+                {{ user.unReadCount > 99 ? '99+' : user.unReadCount }}
+              </span>
+            </button>
+
+            <v-menu v-if="user.role !== 'MANAGER' && currentUserRole === 'MANAGER'" location="bottom end">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon="mdi-dots-vertical"
+                  variant="text"
+                  size="small"
+                  class="member-more"
+                  :aria-label="`${user.name} 관리`"
+                />
+              </template>
+              <v-list density="compact" min-width="180">
+                <v-list-item prepend-icon="mdi-account-star-outline" title="관리자로 지정" @click="promoteToAdmin(user)" />
+                <v-list-item prepend-icon="mdi-account-remove-outline" title="냉장고에서 내보내기" base-color="error" @click="removeUser(user)" />
+              </v-list>
+            </v-menu>
+          </li>
+        </ul>
+        <p v-if="!filteredUsers.length" class="empty-hint">
+          {{ searchQuery ? '찾는 멤버가 없어요.' : '아직 다른 멤버가 없어요. 초대 링크를 보내 보세요.' }}
+        </p>
+      </section>
+
+      <!-- 1:1 대화 -->
+      <section class="panel chat-panel" aria-label="1:1 대화">
+        <header class="chat-head">
+          <h2 class="panel-title">{{ selectedUser ? `${selectedUser.name}님과 대화` : '1:1 대화' }}</h2>
+        </header>
+
+        <div v-if="!selectedUser" class="chat-empty">
+          <v-icon size="40" color="medium-emphasis" aria-hidden="true">mdi-message-outline</v-icon>
+          <p class="empty-title">대화할 멤버를 고르세요</p>
+          <p>왼쪽 목록에서 멤버를 누르면 여기서 바로 메시지를 주고받을 수 있어요.</p>
         </div>
 
-        <v-row>
-          <v-col cols="12" md="4">
-            <v-card class="user-list-card">
-              <v-card-item class="card-header">
-                <div class="d-flex align-center justify-space-between">
-                  <v-card-title class="card-title">
-                    <v-icon class="card-icon" color="primary">mdi-account-multiple</v-icon>
-                    사용자 목록
-                  </v-card-title>
-                </div>
-              </v-card-item>
-              <v-divider></v-divider>
+        <div v-else class="chat-body">
+          <div ref="chatContainerRef" class="chat-scroll" @scroll="handleScroll">
+            <div v-if="isLoadingMoreMessages" class="chat-note">
+              <v-progress-circular indeterminate color="primary" size="20" width="2" />
+              이전 메시지를 불러오는 중이에요
+            </div>
+            <div v-if="!hasMoreMessages && chatMessages.length > 0" class="chat-note">대화의 처음이에요</div>
+            <div v-if="!chatMessages.length && !isLoadingMoreMessages" class="chat-note">아직 대화가 없어요. 먼저 인사를 건네 보세요.</div>
 
-              <!-- 새로운 검색 영역 -->
-              <div class="search-container">
-                <div class="search-wrapper">
-                  <v-text-field
-                    v-model="searchQuery"
-                    placeholder="사용자 검색..."
-                    variant="solo"
-                    density="comfortable"
-                    hide-details
-                    clearable
-                    class="modern-search-field"
-                    rounded="xl"
-                    elevation="2"
-                  >
-                    <template #prepend-inner>
-                      <v-icon color="primary" class="search-icon">mdi-magnify</v-icon>
-                    </template>
-                  </v-text-field>
-                  
-                  <div v-if="searchQuery" class="search-stats">
-                    <v-chip 
-                      color="primary" 
-                      variant="tonal" 
-                      size="small"
-                      class="search-count-chip"
-                    >
-                      <v-icon start size="small">mdi-account-multiple</v-icon>
-                      {{ filteredUsers.length }}명
-                    </v-chip>
-                  </div>
-                </div>
+            <template v-for="(message, index) in chatMessages" :key="index">
+              <div v-if="shouldShowDateSeparator(message, chatMessages[index - 1])" class="date-sep">
+                <span>{{ formatDate(message.timestamp) }}</span>
               </div>
 
-              <v-list
-                class="user-list-container"
-                lines="two"
+              <div
+                v-if="message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail"
+                class="msg is-mine"
               >
-                <v-list-item
-                  v-for="user in filteredUsers"
-                  :key="user.email"
-                  class="user-list-item"
-                  @click="user.role !== 'MANAGER' && selectUser(user)"
-                  :class="{
-                    'selected-user':
-                      selectedUser && selectedUser.email === user.email,
-                    'manager-user': user.role === 'MANAGER',
-                  }"
-                  :style="{
-                    cursor: user.role === 'MANAGER' ? 'default' : 'pointer',
-                  }"
+                <div
+                  v-if="message.senderEmail !== senderEmail && shouldShowSenderName(chatMessages, index, senderEmail)"
+                  class="msg-sender"
                 >
-                  <template v-slot:prepend>
-                    <div class="avatar-container">
-                      <v-avatar
-                        class="avatar-gradient"
-                        size="48"
-                        style="margin-right: 5px"
-                      >
-                        <v-img
-                          v-if="user.profileImage && user.profileImage.startsWith('http')"
-                          :src="user.profileImage"
-                          :alt="user.name"
-                          cover
-                          class="profile-image"
-                          @error="handleImageError(user)"
-                        />
-                        <img
-                          v-else-if="user.profileImage && user.profileImage.startsWith('data:')"
-                          :src="user.profileImage"
-                          :alt="user.name"
-                          class="profile-image"
-                        />
-                        <span v-else class="text-white font-weight-bold">{{
-                          user.initial
-                        }}</span>
-                      </v-avatar>
-                      <!-- 안읽은 메시지 개수 배지 -->
-                      <div
-                        v-if="user.unReadCount > 0"
-                        class="unread-badge"
-                      >
-                        <span class="badge-content">{{ user.unReadCount }}</span>
-                      </div>
-                    </div>
-                  </template>
-
-                  <v-list-item-title class="user-name">{{
-                    user.name
-                  }}</v-list-item-title>
-                  <v-list-item-subtitle class="user-email">
-                    {{ user.email }}
-                  </v-list-item-subtitle>
-
-                  <template v-slot:append>
-                    <div class="user-actions">
-                      <v-chip
-                        :color="getRoleChipColor(user.role)"
-                        variant="elevated"
-                        size="small"
-                        class="role-chip"
-                      >
-                        {{ user.role }}
-                      </v-chip>
-
-                      <v-menu
-                        v-if="
-                          user.role !== 'MANAGER' &&
-                          currentUserRole === 'MANAGER'
-                        "
-                      >
-                        <template v-slot:activator="{ props }">
-                          <v-btn
-                            icon="mdi-dots-vertical"
-                            variant="text"
-                            size="small"
-                            v-bind="props"
-                            @click.stop
-                            class="action-menu-btn"
-                          >
-                            <v-icon>mdi-dots-vertical</v-icon>
-                          </v-btn>
-                        </template>
-                        <v-list class="action-menu">
-                          <v-list-item @click="promoteToAdmin(user)" class="menu-item">
-                            <template v-slot:prepend>
-                              <v-icon color="success" class="menu-icon">mdi-account-star</v-icon>
-                            </template>
-                            <v-list-item-title>관리자 승격</v-list-item-title>
-                          </v-list-item>
-
-                          <v-list-item
-                            @click="removeUser(user)"
-                            class="menu-item text-error"
-                          >
-                            <template v-slot:prepend>
-                              <v-icon color="error" class="menu-icon">mdi-account-remove</v-icon>
-                            </template>
-                            <v-list-item-title class="text-error"
-                              >사용자 제거</v-list-item-title
-                            >
-                          </v-list-item>
-                        </v-list>
-                      </v-menu>
-
-                      <div
-                        v-else-if="user.role === 'MANAGER'"
-                        class="spacer"
-                      ></div>
-                      <div
-                        v-else-if="currentUserRole !== 'MANAGER'"
-                        class="spacer"
-                      ></div>
-                    </div>
-                  </template>
-                </v-list-item>
-              </v-list>
-            </v-card>
-          </v-col>
-
-          <v-col cols="12" md="8">
-            <v-card class="chat-card">
-              <v-card-item class="chat-header">
-                <v-card-title class="chat-title">
-                  <v-icon class="chat-icon" color="primary">mdi-message-text</v-icon>
-                  채팅방
-                  <span v-if="selectedUser" class="chat-subtitle">
-                    - {{ selectedUser.name }}님과의 대화
+                  {{ message.senderName }}
+                </div>
+                <div class="msg-line">
+                  <span v-if="shouldShowSentMessageTime(chatMessages, index, senderEmail)" class="msg-time">
+                    {{ formatTime(message.timestamp) }}
                   </span>
-                </v-card-title>
-              </v-card-item>
-              <v-divider></v-divider>
-
-              <div class="chat-messages">
-                <div
-                  v-if="!selectedUser"
-                  class="empty-chat-state"
-                >
-                  <div class="empty-chat-content">
-                    <v-icon size="64" color="grey-lighten-1" class="empty-icon">
-                      mdi-message-outline
-                    </v-icon>
-                    <div class="empty-text">채팅할 사용자를 선택해주세요</div>
-                    <div class="empty-subtext">왼쪽 목록에서 사용자를 선택하면 대화를 시작할 수 있습니다</div>
-                  </div>
-                </div>
-
-                <div v-else class="chat-container">
-                  <div
-                    class="chat-messages-container"
-                    ref="chatContainerRef"
-                    @scroll="handleScroll"
-                  >
-                    <!-- 더 많은 메시지 로딩 인디케이터 -->
-                    <div v-if="isLoadingMoreMessages" class="load-more-container">
-                      <div class="load-more-content">
-                        <v-progress-circular
-                          indeterminate
-                          color="primary"
-                          size="32"
-                          width="3"
-                          class="load-more-spinner"
-                        ></v-progress-circular>
-                        <p class="load-more-text">과거 메시지를 불러오는 중...</p>
-                      </div>
-                    </div>
-                    
-                    <!-- 더 이상 로드할 메시지가 없을 때 표시 -->
-                    <div v-if="!hasMoreMessages && chatMessages.length > 0" class="no-more-messages">
-                      <div class="no-more-content">
-                        <v-icon size="24" color="grey-lighten-1">mdi-check-circle-outline</v-icon>
-                        <span class="no-more-text">모든 메시지를 불러왔습니다</span>
-                      </div>
-                    </div>
-                    
-                    <template v-for="(message, index) in chatMessages" :key="index">
-                      <!-- 날짜 구분선 -->
-                      <div
-                        v-if="shouldShowDateSeparator(message, chatMessages[index - 1])"
-                        class="date-separator"
+                  <div class="msg-content">
+                    <div v-if="message.imageUrls && message.imageUrls.length" class="msg-images" :class="`count-${Math.min(message.imageUrls.length, 4)}`">
+                      <button
+                        v-for="(url, imgIndex) in message.imageUrls"
+                        :key="imgIndex"
+                        type="button"
+                        class="msg-image"
+                        aria-label="사진 크게 보기"
+                        @click="openImageModal(message.imageUrls, imgIndex)"
                       >
-                        <div class="date-separator-line"></div>
-                        <span class="date-separator-text">{{ formatDate(message.timestamp) }}</span>
-                        <div class="date-separator-line"></div>
-                      </div>
-                      
-                      <!-- 메시지 -->
-                      <div
-                        :class="[
-                          'message-wrapper',
-                          message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail ? 'sent' : 'received',
-                        ]"
-                      >
-                        <!-- 보낸 메시지 레이아웃: [메시지] [시간] -->
-                        <div v-if="message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail" class="sent-message-layout">
-                          <div class="sent-message-container">
-                            <!-- 현재 사용자가 아닌 사람이 보낸 메시지인 경우에만 이름 표시 -->
-                            <div v-if="message.senderEmail !== senderEmail && shouldShowSenderName(chatMessages, index, senderEmail)" class="sender-name-top-sent">
-                              {{ message.senderName }}
-                            </div>
-                            
-                            <div class="message-content-container">
-                              <!-- 이미지 -->
-                              <div
-                                v-if="message.imageUrls && message.imageUrls.length > 0"
-                                :class="['image-container', `image-count-${message.imageUrls.length}`]"
-                              >
-                                <div 
-                                  v-for="(url, imgIndex) in message.imageUrls" 
-                                  :key="imgIndex" 
-                                  class="image-wrapper"
-                                >
-                                  <img 
-                                    :src="url" 
-                                    alt="이미지" 
-                                    class="chat-image clickable" 
-                                    @click="openImageModal(message.imageUrls, imgIndex)"
-                                  />
-                                </div>
-                              </div>
-                              <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
-                              <div v-if="message.message && message.message.trim()" class="message-bubble">
-                                <div class="message-text">{{ message.message }}</div>
-                              </div>
-                            </div>
-                            
-                            <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
-                            <div v-if="shouldShowSentMessageTime(chatMessages, index, senderEmail)" class="message-time-bottom-sent">
-                              {{ formatTime(message.timestamp) }}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <!-- 받은 메시지 레이아웃: [이름] [메시지] [시간] -->
-                        <div v-else class="received-message-layout">
-                          <div class="received-message-container">
-                            <!-- 이름은 첫 번째 메시지이거나 이전 메시지와 발신자가 다를 때만 표시 -->
-                            <div v-if="shouldShowSenderName(chatMessages, index, senderEmail)" class="sender-name-top">
-                              {{ message.senderName }}
-                            </div>
-                            
-                            <div class="message-content-container">
-                              <!-- 이미지 -->
-                              <div
-                                v-if="message.imageUrls && message.imageUrls.length > 0"
-                                :class="['image-container', `image-count-${message.imageUrls.length}`]"
-                              >
-                                <div 
-                                  v-for="(url, imgIndex) in message.imageUrls" 
-                                  :key="imgIndex" 
-                                  class="image-wrapper"
-                                >
-                                  <img 
-                                    :src="url" 
-                                    alt="이미지" 
-                                    class="chat-image clickable" 
-                                    @click="openImageModal(message.imageUrls, imgIndex)"
-                                  />
-                                </div>
-                              </div>
-                              <!-- 메시지 버블 (텍스트가 있을 때만 표시) -->
-                              <div v-if="message.message && message.message.trim()" class="message-bubble">
-                                <div class="message-text">{{ message.message }}</div>
-                              </div>
-                            </div>
-                            
-                            <!-- 시간은 마지막 메시지이거나 다음 메시지와 시간이 다를 때만 표시 -->
-                            <div v-if="shouldShowMessageTime(chatMessages, index, senderEmail)" class="message-time-bottom">
-                              {{ formatTime(message.timestamp) }}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-
-                  <!-- 새로운 메시지 표시기 -->
-                  <v-fade-transition>
-                    <div v-if="showNewMessageIndicator" class="new-message-indicator">
-                      <v-btn small rounded color="primary" @click="scrollToBottom">
-                        <v-icon left>mdi-arrow-down</v-icon>
-                        새로운 메시지
-                      </v-btn>
+                        <img :src="url" alt="" />
+                      </button>
                     </div>
-                  </v-fade-transition>
+                    <p v-if="message.message && message.message.trim()" class="bubble">{{ message.message }}</p>
+                  </div>
                 </div>
               </div>
 
-              <v-divider></v-divider>
-              <div class="input-area">
-                <div
-                  v-if="imagePreview.length > 0"
-                  class="image-preview-container"
-                >
-                  <div
-                    v-for="(image, index) in imagePreview"
-                    :key="index"
-                    class="image-preview-item"
-                  >
-                    <img :src="image.preview" class="preview-image" />
-                    <v-btn
-                      icon
-                      x-small
-                      color="error"
-                      class="remove-image-btn"
-                      @click="removeImage(index)"
-                    >
-                      <v-icon small>mdi-close</v-icon>
-                    </v-btn>
-                  </div>
+              <div v-else class="msg is-theirs">
+                <div v-if="shouldShowSenderName(chatMessages, index, senderEmail)" class="msg-sender">
+                  {{ message.senderName }}
                 </div>
-
-                <v-text-field
-                  v-model="newMessage"
-                  placeholder="메시지를 입력하세요..."
-                  variant="solo"
-                  hide-details
-                  rounded
-                  density="comfortable"
-                  @keyup.enter="sendMessage"
-                  class="message-input"
-                >
-                  <template #append-inner>
-                    <v-btn
-                      v-if="selectedUser"
-                      icon="mdi-image-plus"
-                      variant="text"
-                      @click="fileInput.click()"
-                      class="input-btn"
-                    >
-                      <v-icon>mdi-image-plus</v-icon>
-                    </v-btn>
-                    <v-btn
-                      v-if="selectedUser"
-                      icon="mdi-send"
-                      variant="text"
-                      @click="sendMessage"
-                      class="input-btn send-btn"
-                    >
-                      <v-icon>mdi-send</v-icon>
-                    </v-btn>
-                  </template>
-                </v-text-field>
-
-                <input
-                  ref="fileInput"
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  style="display: none"
-                  @change="onFileChange"
-                />
+                <div class="msg-line">
+                  <div class="msg-content">
+                    <div v-if="message.imageUrls && message.imageUrls.length" class="msg-images" :class="`count-${Math.min(message.imageUrls.length, 4)}`">
+                      <button
+                        v-for="(url, imgIndex) in message.imageUrls"
+                        :key="imgIndex"
+                        type="button"
+                        class="msg-image"
+                        aria-label="사진 크게 보기"
+                        @click="openImageModal(message.imageUrls, imgIndex)"
+                      >
+                        <img :src="url" alt="" />
+                      </button>
+                    </div>
+                    <p v-if="message.message && message.message.trim()" class="bubble">{{ message.message }}</p>
+                  </div>
+                  <span v-if="shouldShowMessageTime(chatMessages, index, senderEmail)" class="msg-time">
+                    {{ formatTime(message.timestamp) }}
+                  </span>
+                </div>
               </div>
-            </v-card>
-          </v-col>
-        </v-row>
+            </template>
+          </div>
 
-        <v-card class="guide-card">
-          <v-card-item class="guide-header">
-            <v-card-title class="guide-title">사용 안내</v-card-title>
-          </v-card-item>
-          <v-divider></v-divider>
-          <v-list class="guide-list">
-            <v-list-item v-for="(item, i) in guide" :key="i" density="compact" class="guide-item">
-              <template v-slot:prepend>
-                <v-icon color="primary" class="guide-icon">
-                  mdi-information
-                </v-icon>
-              </template>
-              <v-list-item-title class="guide-text">{{
-                item
-              }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-card>
-      </v-container>
-    </v-main>
+          <v-fade-transition>
+            <v-btn
+              v-if="showNewMessageIndicator"
+              class="new-msg-btn"
+              color="primary"
+              variant="flat"
+              size="small"
+              rounded="pill"
+              prepend-icon="mdi-arrow-down"
+              @click="scrollToBottom"
+            >
+              새 메시지
+            </v-btn>
+          </v-fade-transition>
+        </div>
 
-    <!-- 이미지 모달 -->
-    <ImageModal 
-      v-model="showImageModal" 
-      :images="modalImages" 
-      :start-index="modalStartIndex" 
-    />
-  </v-app>
+        <footer class="composer">
+          <div v-if="imagePreview.length > 0" class="preview-row">
+            <div v-for="(image, index) in imagePreview" :key="index" class="preview-item">
+              <img :src="image.preview" alt="보낼 사진" />
+              <button type="button" class="preview-remove" aria-label="사진 빼기" @click="removeImage(index)">
+                <v-icon size="14">mdi-close</v-icon>
+              </button>
+            </div>
+          </div>
+          <div class="composer-row">
+            <v-btn
+              icon="mdi-image-plus-outline"
+              variant="text"
+              :disabled="!selectedUser"
+              aria-label="사진 첨부"
+              @click="fileInput.click()"
+            />
+            <v-text-field
+              v-model="newMessage"
+              :placeholder="selectedUser ? '메시지 입력' : '먼저 대화할 멤버를 고르세요'"
+              :disabled="!selectedUser"
+              variant="outlined"
+              density="compact"
+              hide-details
+              rounded="xl"
+              class="composer-input"
+              @keyup.enter="sendMessage"
+            />
+            <v-btn
+              icon="mdi-send"
+              color="primary"
+              variant="flat"
+              :disabled="!selectedUser"
+              aria-label="보내기"
+              @click="sendMessage"
+            />
+          </div>
+          <input ref="fileInput" type="file" multiple accept="image/*" class="d-none" @change="onFileChange" />
+        </footer>
+      </section>
+    </div>
+
+    <ImageModal v-model="showImageModal" :images="modalImages" :start-index="modalStartIndex" />
+  </div>
 </template>
 
 <script setup>
@@ -519,39 +295,6 @@ const modalStartIndex = ref(0);
 
 // --- 데이터 ---
 const users = ref([]);
-const guide = ref([
-  "왼쪽에서 사용자를 선택하면 오른쪽에서 채팅할 수 있습니다.",
-  "관리자는 사용자 권한을 변경하거나 제거할 수 있습니다.",
-  "검색을 사용하여 원하는 사용자를 쉽게 찾을 수 있습니다.",
-]);
-
-// --- 유틸리티 함수 ---
-const generateDefaultAvatar = (name, size = 48) => {
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  
-  // 그라데이션 배경 생성
-  const gradient = ctx.createLinearGradient(0, 0, size, size);
-  gradient.addColorStop(0, '#667eea');
-  gradient.addColorStop(1, '#764ba2');
-  
-  // 원형 배경 그리기
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
-  ctx.fill();
-  
-  // 텍스트 그리기
-  ctx.fillStyle = 'white';
-  ctx.font = `bold ${size * 0.4}px Arial`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(name.charAt(0).toUpperCase(), size / 2, size / 2);
-  
-  return canvas.toDataURL();
-};
 
 // --- API 함수 ---
 const fetchUsers = async () => {
@@ -567,18 +310,9 @@ const fetchUsers = async () => {
     users.value = userData.map((user) => {
       const userName = user.memberName || user.nickname || "이름 없음";
       
-      // 프로필 이미지 유효성 검사 (올바른 필드명 사용)
-      let profileImage;
-      if (user.memberProfileImage && user.memberProfileImage.trim() !== '') {
-        // URL이 유효한지 확인
-        if (user.memberProfileImage.startsWith('http') || user.memberProfileImage.startsWith('data:')) {
-          profileImage = user.memberProfileImage;
-        } else {
-          profileImage = generateDefaultAvatar(userName);
-        }
-      } else {
-        profileImage = generateDefaultAvatar(userName);
-      }
+      // 유효한 이미지 주소가 없으면 null → 템플릿에서 이름 첫 글자로 표시
+      const rawImage = (user.memberProfileImage || '').trim();
+      const profileImage = rawImage.startsWith('http') || rawImage.startsWith('data:') ? rawImage : null;
       
       return {
         name: userName,
@@ -671,8 +405,6 @@ watch(selectedUser, async (newUser, oldUser) => {
   }
 });
 
-// --- 헬퍼 함수 ---
-const getRoleChipColor = (role) => (role === "MANAGER" ? "red" : "green");
 
 // 채팅 내역 로딩 함수 (페이징 지원)
 const loadChatHistory = async (user, isLoadMore = false) => {
@@ -775,8 +507,8 @@ const loadMoreMessages = async () => {
 
 // 이미지 로딩 오류 처리
 const handleImageError = (user) => {
-  // 기본 아바타로 변경
-  user.profileImage = generateDefaultAvatar(user.name);
+  // 이미지를 못 불러오면 이름 첫 글자로 표시
+  user.profileImage = null;
 };
 
 // 날짜와 시간 포맷팅 함수들
@@ -1298,1174 +1030,451 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 전체 배경 */
-.member-list-background {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  position: relative;
+.members-page {
+  max-width: 1280px;
+  min-height: 100%;
+  padding: 32px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
 }
 
-.member-list-container {
-  padding: 16px;
-  min-height: 100vh;
-}
-
-/* 모바일 반응형 */
-@media (max-width: 768px) {
-  .member-list-container {
-    padding: 8px;
-  }
-}
-
-/* 페이지 헤더 레이아웃 */
-.page-header {
-  margin-bottom: 24px;
-  text-align: left;
-}
-
-.header-content {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.page-head {
+  margin-bottom: 20px;
 }
 
 .page-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 8px 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-}
-
-.title-icon {
-  font-size: 2rem !important;
-}
-
-.page-subtitle {
-  font-size: 1rem;
-  color: #666;
   margin: 0;
-  font-weight: 500;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
 }
 
-/* 카드 레이아웃 개선 */
-.user-list-card,
-.chat-card,
-.guide-card {
-  height: 100%;
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
+.page-desc {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--sf-text-sub);
 }
 
-.card-header,
-.chat-header,
-.guide-header {
-  padding: 20px 24px 16px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+.members-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
 }
 
-.card-title,
-.chat-title,
-.guide-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.card-icon,
-.chat-icon {
-  font-size: 1.5rem !important;
-}
-
-/* 새로운 검색 컨테이너 */
-.search-container {
-  padding: 20px 24px 16px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
-}
-
-.search-wrapper {
-  position: relative;
+.panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  min-width: 0;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
 }
 
-
-/* 검색 통계 */
-.search-stats {
-  display: flex;
-  justify-content: center;
-  animation: fadeInUp 0.3s ease-out;
+.panel-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.count {
+  margin-left: 4px;
+  color: var(--sf-text-faint);
 }
 
-.search-count-chip {
-  background: rgba(102, 126, 234, 0.1) !important;
-  color: #667eea !important;
-  font-weight: 600 !important;
-  font-size: 12px !important;
-  padding: 8px 16px !important;
-  border-radius: 20px !important;
-  border: 1px solid rgba(102, 126, 234, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15) !important;
+/* 멤버 목록 */
+.member-panel {
+  padding: 20px 0 8px;
+  max-height: calc(100vh - 180px);
 }
 
-.search-count-chip .v-icon {
-  font-size: 14px !important;
-  margin-right: 6px !important;
+.member-panel .panel-head,
+.member-search {
+  flex: 0 0 auto;
+  margin: 0 20px 12px;
 }
 
-/* 아바타 컨테이너와 배지 스타일 */
-.avatar-container {
+.member-list {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.member-row {
   position: relative;
-  display: inline-block;
-}
-
-
-.profile-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.unread-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  z-index: 10;
-  background: linear-gradient(135deg, #ff4757, #ff3742);
-  color: white;
-  border-radius: 50%;
-  min-width: 24px;
-  height: 24px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border: 3px solid white;
-  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
-  font-weight: 700;
-  font-size: 11px;
 }
 
-.badge-content {
-  font-size: 11px;
-  font-weight: bold;
-  line-height: 1;
-  padding: 0 4px;
-}
-/* 사용자 목록 레이아웃 */
-.user-list-container {
-  padding: 8px 16px 16px;
-  max-height: 400px;
-  overflow-y: auto;
+.member-row.is-selected {
+  background: var(--sf-mint-soft);
 }
 
-.user-list-container .v-list-item {
-  border-radius: 24px !important;
-  margin: 8px 0 !important;
-  padding: 20px !important;
-  background: rgba(255, 255, 255, 0.8) !important;
-  backdrop-filter: blur(5px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
-  transition: all 0.3s ease !important;
+.member-row.is-selected::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sf-primary);
 }
 
-.user-list-item {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 24px;
-  margin: 8px 0;
-  padding: 20px;
-  transition: all 0.3s ease;
+.member-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 8px 10px 20px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.user-list-item:hover {
-  border-color: #667eea;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.selected-user {
-  border-color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
-  transform: translateY(-2px);
-}
-
-.manager-user {
-  opacity: 0.7;
+.member-main:disabled {
   cursor: default;
 }
 
-.manager-user:hover {
-  transform: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.member-row:not(.is-selected) .member-main:not(:disabled):hover {
+  background: #FAFBFC;
 }
 
-/* 아바타 */
-.user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.avatar-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-weight: bold;
-  font-size: 18px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-}
-
-.user-avatar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border-radius: 50%;
-}
-
-.avatar-text {
-  color: white;
-  font-weight: 700;
-  font-size: 16px;
-  position: relative;
-  z-index: 1;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.profile-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  position: relative;
-  z-index: 1;
-}
-
-/* 사용자 정보 */
-.user-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.user-email {
-  font-size: 14px;
-  color: #666;
-}
-
-/* 사용자 액션 */
-.user-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.role-chip {
-  font-weight: 700;
-  font-size: 11px;
-  border-radius: 20px !important;
-  padding: 6px 12px !important;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.action-menu-btn {
-  color: #666;
-  transition: all 0.2s ease;
-  border-radius: 50% !important;
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-}
-
-.action-menu-btn:hover {
-  color: #667eea;
-  background: rgba(102, 126, 234, 0.1) !important;
-  transform: scale(1.1);
-}
-
-.action-menu {
-  border-radius: 20px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(20px);
-  padding: 8px;
-}
-
-.menu-item {
-  border-radius: 16px;
-  margin: 4px;
-  transition: all 0.2s ease;
-  padding: 12px 16px !important;
-}
-
-.menu-item:hover {
-  background: rgba(102, 126, 234, 0.08) !important;
-  transform: translateX(4px);
-}
-
-.menu-icon {
-  font-size: 18px !important;
-}
-
-.spacer {
+.member-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
-}
-
-/* 채팅 영역 레이아웃 */
-.chat-messages {
-  height: 400px;
+  border-radius: 50%;
   overflow: hidden;
+  background: var(--sf-mint-soft);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sf-primary);
 }
 
-.chat-container {
-  position: relative;
-  height: 400px;
-}
-
-.chat-messages-container {
-  height: 400px;
-  overflow-y: auto;
-  padding: 24px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  position: relative;
-}
-
-.chat-messages-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(148, 163, 184, 0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
-  z-index: 0;
-}
-
-/* 더 많은 메시지 로딩 인디케이터 스타일 */
-.load-more-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  margin: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  position: relative;
-  z-index: 1;
-}
-
-.load-more-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.load-more-spinner {
-  margin: 0;
-}
-
-.load-more-text {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin: 0;
-  font-weight: 500;
-}
-
-/* 더 이상 로드할 메시지가 없을 때 스타일 */
-.no-more-messages {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  margin: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.no-more-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.no-more-text {
-  font-size: 0.85rem;
-  color: #9ca3af;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-}
-
-.chat-subtitle {
-  font-size: 14px;
-  color: #666;
-  font-weight: 400;
-  margin-left: 8px;
-}
-
-/* 빈 채팅 상태 레이아웃 */
-.empty-chat-state {
-  height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  position: relative;
-}
-
-.empty-chat-state::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(148, 163, 184, 0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
-  z-index: 0;
-}
-
-.empty-chat-content {
-  text-align: center;
-  color: #666;
-  position: relative;
-  z-index: 1;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  padding: 32px;
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.empty-icon {
-  margin-bottom: 16px;
-  color: #94a3b8;
-}
-
-.empty-text {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.empty-subtext {
-  font-size: 14px;
-  color: #666;
-}
-
-.message-wrapper {
-  margin: 8px 16px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-  animation: fadeInUp 0.3s ease-out;
-  gap: 4px;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 보낸 메시지 레이아웃 */
-.sent-message-layout {
-  display: flex;
-  justify-content: flex-end;
-}
-
-/* 보낸 메시지 컨테이너 */
-.sent-message-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  max-width: 75%;
-}
-
-/* 받은 메시지 레이아웃 */
-.received-message-layout {
-  display: flex;
-  justify-content: flex-start;
-}
-
-/* 받은 메시지 컨테이너 */
-.received-message-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  max-width: 75%;
-}
-
-/* 메시지 컨텐츠 컨테이너 */
-.message-content-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.sent-message-layout .message-content-container {
-  align-items: flex-end;
-}
-
-.received-message-layout .message-content-container {
-  align-items: flex-start;
-}
-
-/* 메시지 버블 */
-.message-bubble {
-  padding: 12px 16px;
-  border-radius: 18px;
-  word-break: break-word;
-  backdrop-filter: blur(10px);
-  position: relative;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  min-width: 60px;
-}
-
-.message-bubble:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-
-/* 보낸 메시지 하단 시간 */
-.message-time-bottom-sent {
-  font-size: 0.65rem;
-  opacity: 0.7;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-  color: rgba(26, 115, 232, 0.8);
-  background: rgba(26, 115, 232, 0.1);
-  backdrop-filter: blur(5px);
-  padding: 1px 6px;
-  border-radius: 8px;
-  display: inline-block;
-  white-space: nowrap;
-  margin-top: 2px;
-  align-self: flex-end;
-  border: 1px solid rgba(26, 115, 232, 0.2);
-}
-
-/* 받은 메시지 상단 이름 */
-.sender-name-top {
-  font-size: 0.8rem;
-  opacity: 0.9;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  color: #5f6368;
-  margin-bottom: 4px;
-  align-self: flex-start;
-}
-
-/* 보낸 메시지 상단 이름 (이전 관리자) */
-.sender-name-top-sent {
-  font-size: 0.8rem;
-  opacity: 0.9;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  color: rgba(26, 115, 232, 0.8);
-  margin-bottom: 4px;
-  align-self: flex-end;
-  text-align: right;
-}
-
-/* 받은 메시지 하단 시간 */
-.message-time-bottom {
-  font-size: 0.65rem;
-  opacity: 0.7;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-  color: #5f6368;
-  background: rgba(95, 99, 104, 0.1);
-  backdrop-filter: blur(5px);
-  padding: 1px 6px;
-  border-radius: 8px;
-  display: inline-block;
-  white-space: nowrap;
-  margin-top: 2px;
-  align-self: flex-start;
-}
-
-/* 보낸 메시지 버블 스타일 */
-.sent-message-layout .message-bubble {
-  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
-  color: #ffffff;
-  border-bottom-right-radius: 6px;
-  box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.sent-message-layout .message-bubble:hover {
-  background: linear-gradient(135deg, #1557b0 0%, #1248a0 100%);
-  box-shadow: 0 6px 20px rgba(26, 115, 232, 0.35);
-  transform: translateY(-1px);
-}
-
-/* 받은 메시지 버블 스타일 */
-.received-message-layout .message-bubble {
-  background: rgba(255, 255, 255, 0.95);
-  color: #2c2c2c;
-  border-bottom-left-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8eaed;
-}
-
-.received-message-layout .message-bubble:hover {
-  background: rgba(248, 249, 250, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
-}
-
-
-/* 메시지 텍스트 스타일 */
-.message-text {
-  font-size: 0.95rem;
-  line-height: 1.5;
-  font-weight: 400;
-  letter-spacing: 0.01em;
-  word-break: break-word;
-  margin: 0;
-}
-
-.sent-message-layout .message-text {
-  color: #ffffff;
-  font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.received-message-layout .message-text {
-  color: #2c2c2c;
-  font-weight: 400;
-}
-
-/* 메시지 시간 스타일 */
-.message-time {
-  font-size: 0.65rem;
-  opacity: 0.7;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-  background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(5px);
-  padding: 1px 6px;
-  border-radius: 8px;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-
-/* 이미지 컨테이너 스타일 */
-.image-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0;
-  max-width: 420px; /* 2열로 배치할 때 적절한 크기 */
-}
-
-.image-wrapper {
-  flex: 0 0 auto;
-}
-
-.chat-image { 
-  width: 200px; 
-  height: 150px; 
-  object-fit: cover; 
-  border-radius: 12px; 
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: block;
-}
-
-/* 이미지 개수별 크기 조정 */
-.image-container.image-count-1 .chat-image {
-  width: 250px;
-  height: 180px;
-}
-
-.image-container.image-count-2 .chat-image {
-  width: 180px;
-  height: 135px;
-}
-
-.image-container.image-count-3 .chat-image,
-.image-container.image-count-4 .chat-image {
-  width: 130px;
-  height: 100px;
-}
-
-/* 5개 이상일 때는 더 작게 */
-.image-container[class*="image-count-"]:not(.image-count-1):not(.image-count-2):not(.image-count-3):not(.image-count-4) .chat-image {
-  width: 100px;
-  height: 80px;
-}
-
-/* 모바일 반응형 */
-@media (max-width: 768px) {
-  .image-container {
-    max-width: 300px;
-  }
-  
-  .image-container.image-count-1 .chat-image {
-    width: 200px;
-    height: 150px;
-  }
-  
-  .image-container.image-count-2 .chat-image {
-    width: 140px;
-    height: 105px;
-  }
-  
-  .image-container.image-count-3 .chat-image,
-  .image-container.image-count-4 .chat-image {
-    width: 90px;
-    height: 70px;
-  }
-  
-  .image-container[class*="image-count-"]:not(.image-count-1):not(.image-count-2):not(.image-count-3):not(.image-count-4) .chat-image {
-    width: 70px;
-    height: 55px;
-  }
-}
-/* 입력 영역 레이아웃 */
-.input-area {
-  padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(226, 232, 240, 0.5);
-  border-radius: 0 0 24px 24px;
-}
-
-.image-preview-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 0 4px 12px;
-}
-
-.image-preview-item {
-  position: relative;
-  width: 60px;
-  height: 60px;
-}
-
-.preview-image {
+.member-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.remove-image-btn {
-  position: absolute !important;
-  top: -4px !important;
-  right: -4px !important;
-  width: 20px !important;
-  height: 20px !important;
-  min-width: 20px !important;
-  background-color: #ff4444 !important;
-  box-shadow: 0 2px 8px rgba(255, 68, 68, 0.3) !important;
+.member-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
 }
 
-.remove-image-btn .v-icon {
-  font-size: 16px !important;
-  color: white !important;
-}
-
-.message-input {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.input-btn {
-  color: #667eea;
-  transition: all 0.2s ease;
-  border-radius: 50% !important;
-  width: 40px !important;
-  height: 40px !important;
-  min-width: 40px !important;
-}
-
-.input-btn:hover {
-  background: rgba(102, 126, 234, 0.1) !important;
-  transform: scale(1.1);
-}
-
-.send-btn:hover {
-  background: rgba(34, 197, 94, 0.1) !important;
-  color: #10b981 !important;
-}
-
-/* 날짜 구분선 스타일 */
-.date-separator {
+.member-name {
   display: flex;
   align-items: center;
-  margin: 16px 0;
-  padding: 0 20px;
-}
-
-.date-separator-line {
-  flex: 1;
-  height: 1px;
-  background-color: #e0e0e0;
-}
-
-.date-separator-text {
-  padding: 8px 16px;
-  font-size: 0.75rem;
-  color: #666;
-  background: rgba(248, 249, 250, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  white-space: nowrap;
+  gap: 6px;
+  font-size: 15px;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--sf-text);
 }
 
-/* 새로운 메시지 표시기 스타일 */
-.new-message-indicator {
+.role-tag {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--sf-bg);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-text-sub);
+}
+
+.member-email {
+  font-size: 13px;
+  color: var(--sf-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.unread-pill {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--sf-expired);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+}
+
+.member-more {
+  margin-right: 8px;
+  color: var(--sf-text-faint);
+}
+
+.empty-hint {
+  margin: 8px 20px 16px;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+/* 대화 */
+.chat-panel {
+  height: calc(100vh - 180px);
+  min-height: 480px;
+  overflow: hidden;
+}
+
+.chat-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--sf-line);
+}
+
+.chat-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.chat-empty p {
+  margin: 0;
+}
+
+.empty-title {
+  margin-top: 8px !important;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.chat-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--sf-bg);
+}
+
+.chat-scroll {
+  height: 100%;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.chat-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 0 16px;
+  font-size: 13px;
+  color: var(--sf-text-faint);
+}
+
+.date-sep {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.date-sep span {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--sf-surface);
+  font-size: 12px;
+  color: var(--sf-text-sub);
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 6px;
+}
+
+.msg.is-mine {
+  align-items: flex-end;
+}
+
+.msg.is-theirs {
+  align-items: flex-start;
+}
+
+.msg-sender {
+  margin: 8px 4px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-sub);
+}
+
+.msg-line {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: min(72%, 520px);
+}
+
+.msg-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.is-mine .msg-content {
+  align-items: flex-end;
+}
+
+.bubble {
+  margin: 0;
+  padding: 9px 13px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.is-mine .bubble {
+  border-bottom-right-radius: 4px;
+  background: var(--sf-primary);
+  color: #fff;
+}
+
+.is-theirs .bubble {
+  border-bottom-left-radius: 4px;
+  background: var(--sf-surface);
+  color: var(--sf-text);
+  box-shadow: 0 0 0 1px var(--sf-line);
+}
+
+.msg-time {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--sf-text-faint);
+}
+
+.msg-images {
+  display: grid;
+  gap: 4px;
+  width: min(260px, 100%);
+}
+
+.msg-images.count-2,
+.msg-images.count-3,
+.msg-images.count-4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.msg-image {
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--sf-line);
+  cursor: zoom-in;
+}
+
+.msg-image img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.new-msg-btn {
   position: absolute;
-  bottom: 16px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
-  opacity: 0.9;
 }
 
-.new-message-indicator .v-btn {
-  border-radius: 24px !important;
-  padding: 8px 20px !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3) !important;
+.composer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--sf-line);
+  background: var(--sf-surface);
 }
 
-/* 가이드 카드 레이아웃 */
-.guide-card {
-  margin-top: 24px;
-}
-
-.guide-header {
-  padding: 20px 24px 16px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-
-.guide-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #333;
-  margin: 0;
+.composer-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-.guide-list {
-  padding: 16px 24px 24px;
-  background: rgba(255, 255, 255, 0.8);
+.composer-input {
+  flex: 1;
 }
 
-.guide-list .v-list-item {
-  border-radius: 24px !important;
-  margin: 8px 0 !important;
-  padding: 16px 20px !important;
-  background: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+.preview-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  overflow-x: auto;
 }
 
-.guide-item {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 24px;
-  margin: 8px 0;
-  padding: 16px 20px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.preview-item {
+  position: relative;
+  flex-shrink: 0;
 }
 
-.guide-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border-color: rgba(102, 126, 234, 0.2);
+.preview-item img {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  object-fit: cover;
 }
 
-.guide-icon {
-  color: #667eea;
-}
-
-.guide-text {
-  color: #333;
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-/* Vuetify v-list-item 둥근 모서리 강제 적용 */
-.user-list-container .v-list-item.rounded-0,
-.guide-list .v-list-item.rounded-0 {
-  border-radius: 24px !important;
-}
-
-/* Vuetify v-list-item 내부 요소들 스타일링 */
-.user-list-container .v-list-item__content,
-.guide-list .v-list-item__content {
-  padding: 0 !important;
-}
-
-.user-list-container .v-list-item__prepend,
-.guide-list .v-list-item__prepend {
-  margin-right: 16px !important;
-}
-
-.user-list-container .v-list-item__append,
-.guide-list .v-list-item__append {
-  margin-left: 16px !important;
-}
-
-/* 다크모드 스타일 */
-@media (prefers-color-scheme: dark) {
-  .load-more-container {
-    background: rgba(30, 41, 59, 0.8);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .load-more-text {
-    color: #9ca3af;
-  }
-  
-  .no-more-content {
-    background: rgba(30, 41, 59, 0.6);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  
-  .no-more-text {
-    color: #6b7280;
-  }
-}
-
-/* 이미지 클릭 가능 스타일 */
-.chat-image.clickable {
+.preview-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--sf-surface);
+  border-radius: 50%;
+  background: var(--sf-text);
+  color: #fff;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.chat-image.clickable:hover {
-  transform: scale(1.05) translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  border-color: rgba(255, 255, 255, 0.5);
+@media (max-width: 960px) {
+  .members-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .member-panel {
+    max-height: 360px;
+  }
+
+  .chat-panel {
+    height: 70vh;
+  }
 }
 
-/* 반응형 레이아웃 */
-@media (max-width: 768px) {
-  .member-list-container {
-    padding: 8px;
+@media (max-width: 600px) {
+  .members-page {
+    padding: 16px 12px 32px;
   }
-  
-  .page-header {
-    margin-bottom: 16px;
-  }
-  
-  .header-content {
-    padding: 16px;
-    border-radius: 20px;
-  }
-  
+
   .page-title {
-    font-size: 1.5rem;
-    flex-direction: column;
-    gap: 8px;
+    font-size: 22px;
   }
-  
-  .title-icon {
-    font-size: 1.75rem !important;
-  }
-  
-  .page-subtitle {
-    font-size: 0.9rem;
-  }
-  
-  /* 모바일 검색 필드 스타일 */
-  .search-container {
-    padding: 16px 20px 12px;
-  }
-  
-  .search-count-chip {
-    font-size: 11px !important;
-    padding: 6px 12px !important;
-  }
-  
-  .user-list-container {
-    max-height: 300px;
-    padding: 6px 12px 12px;
-  }
-  
-  .user-list-item {
-    padding: 12px;
-    margin: 6px 0;
-  }
-  
-  .chat-messages,
-  .chat-container,
-  .chat-messages-container {
-    height: 300px;
-  }
-  
-  .empty-chat-state {
-    height: 300px;
-  }
-  
-  .empty-chat-content {
-    padding: 24px;
-    border-radius: 20px;
-  }
-  
-  .input-area {
-    padding: 12px 16px;
-  }
-  
-  .guide-list {
-    padding: 12px 16px 16px;
-  }
-  
-  .guide-item {
-    padding: 10px 12px;
-    margin: 6px 0;
-  }
-}
 
-@media (max-width: 480px) {
-  .member-list-container {
-    padding: 4px;
-  }
-  
-  .header-content {
-    padding: 12px;
-    border-radius: 16px;
-  }
-  
-  .page-title {
-    font-size: 1.25rem;
-  }
-  
-  .title-icon {
-    font-size: 1.5rem !important;
-  }
-  
-  .page-subtitle {
-    font-size: 0.85rem;
-  }
-  
-  /* 작은 화면 검색 필드 스타일 */
-  .search-container {
-    padding: 12px 16px 8px;
-  }
-  
-  .search-count-chip {
-    font-size: 10px !important;
-    padding: 4px 8px !important;
-  }
-  
-  .user-list-container {
-    max-height: 250px;
-    padding: 4px 8px 8px;
-  }
-  
-  .user-list-item {
-    padding: 10px;
-    margin: 4px 0;
-  }
-  
-  .chat-messages,
-  .chat-container,
-  .chat-messages-container {
-    height: 250px;
-  }
-  
-  .empty-chat-state {
-    height: 250px;
-  }
-  
-  .empty-chat-content {
-    padding: 16px;
-    border-radius: 16px;
-  }
-  
-  .input-area {
-    padding: 8px 12px;
-  }
-  
-  .guide-list {
-    padding: 8px 12px 12px;
-  }
-  
-  .guide-item {
-    padding: 8px 10px;
-    margin: 4px 0;
+  .msg-line {
+    max-width: 85%;
   }
 }
 </style>
+

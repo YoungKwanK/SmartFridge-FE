@@ -3,34 +3,31 @@
     <div class="header-info">
       <div class="fridge-title-section">
         <h1 class="fridge-title">{{ fridge.fridgeName }}</h1>
-        <div class="fridge-type-badge">
-          <v-chip 
-            :color="getTypeColor(fridge.type)" 
-            size="small" 
-            variant="elevated"
-            class="type-chip"
-          >
-            <v-icon start size="16">{{ getTypeIcon(fridge.type) }}</v-icon>
-            {{ getTypeText(fridge.type) }}
-          </v-chip>
-        </div>
+        <span class="type-tag" :class="`is-${(fridge.type || 'member').toLowerCase()}`">
+          <v-icon size="14" aria-hidden="true">{{ getTypeIcon(fridge.type) }}</v-icon>
+          {{ getTypeText(fridge.type) }}
+        </span>
       </div>
-      <p class="fridge-subtitle">{{ fridge.description }}</p>
+      <p v-if="fridge.description" class="fridge-subtitle">{{ fridge.description }}</p>
     </div>
     <div class="header-actions">
-      <div class="notification-icon" @click="showNotificationModal = true">
-        <div class="icon-container">
-          <v-icon color="amber" size="28">
-            mdi-bell-ring
-          </v-icon>
-          <div 
-            v-if="notificationCount > 0" 
-            class="notification-badge"
+      <button
+        type="button"
+        class="notification-icon"
+        :aria-label="notificationCount > 0 ? `새 알림 ${notificationCount}개 보기` : '알림 보기'"
+        @click="showNotificationModal = true"
+      >
+        <span class="icon-container">
+          <v-icon size="24" aria-hidden="true">mdi-bell-outline</v-icon>
+          <span
+            v-if="notificationCount > 0"
+            class="notification-badge sf-num"
+            aria-hidden="true"
           >
-            {{ notificationCount }}
-          </div>
-        </div>
-      </div>
+            {{ notificationCount > 99 ? '99+' : notificationCount }}
+          </span>
+        </span>
+      </button>
     </div>
 
     <!-- 알림 모달 -->
@@ -83,13 +80,13 @@
               </div>
               <!-- 읽지 않은 알림 표시 -->
               <div v-if="!notification.isRead" class="unread-indicator">
-                <v-icon size="12" color="red">mdi-circle</v-icon>
+                <v-icon size="10" color="error">mdi-circle</v-icon>
               </div>
             </div>
           </div>
           <div v-else class="no-notifications">
-            <v-icon size="40" color="grey-lighten-2">mdi-bell-off</v-icon>
-            <p class="no-notifications-text">수신된 알림이 없습니다</p>
+            <v-icon size="36" color="medium-emphasis">mdi-bell-off-outline</v-icon>
+            <p class="no-notifications-text">새 알림이 없어요</p>
           </div>
         </v-card-text>
         
@@ -308,19 +305,10 @@ onUnmounted(() => {
 // 전역 SSE 연결이 App.vue에서 관리되므로 별도 연결 코드 제거
 
 // 냉장고 타입 관련 함수들
-const getTypeColor = (type) => {
-  switch (type) {
-    case 'MANAGER': return 'success';  // 관리자: 초록색
-    case 'COMMON': return 'info';      // 일반: 파란색
-    default: return 'grey';
-  }
-};
-
 const getTypeIcon = (type) => {
   switch (type) {
-    case 'MANAGER': return 'mdi-account-cog';  // 관리자: 설정 아이콘
-    case 'COMMON': return 'mdi-account';       // 일반: 사용자 아이콘
-    default: return 'mdi-account';
+    case 'MANAGER': return 'mdi-account-cog-outline';  // 관리자: 설정 아이콘
+    default: return 'mdi-account-outline';             // 일반 멤버
   }
 };
 
@@ -488,68 +476,78 @@ const getNotificationColor = (type) => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 32px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 16px;
+  padding: 4px 0 8px;
 }
 
 .header-info {
   flex: 1;
+  min-width: 0;
 }
 
 .fridge-title-section {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .fridge-title {
   font-size: 28px;
-  font-weight: 700;
-  color: #333;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--sf-text);
   margin: 0;
 }
 
-.fridge-type-badge {
-  flex-shrink: 0;
+.type-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--sf-radius-sm);
+  background: var(--sf-surface);
+  border: 1px solid var(--sf-line);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-text-sub);
 }
 
-.type-chip {
-  font-weight: 600;
+.type-tag.is-manager {
+  background: var(--sf-mint-soft);
+  border-color: transparent;
+  color: var(--sf-primary);
 }
 
 .fridge-subtitle {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
+  font-size: 15px;
+  color: var(--sf-text-sub);
+  margin: 6px 0 0;
+  max-width: 60ch;
 }
 
 .header-actions {
   display: flex;
-  gap: 16px;
+  gap: 8px;
   align-items: center;
 }
 
 .notification-icon {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--sf-line);
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-surface);
+  color: var(--sf-text);
   cursor: pointer;
-  padding: 12px;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  background: rgba(255, 193, 7, 0.1);
 }
 
 .notification-icon:hover {
-  background: rgba(255, 193, 7, 0.2);
-  transform: translateY(-2px);
+  border-color: var(--sf-line-strong);
 }
 
 .icon-container {
@@ -561,51 +559,27 @@ const getNotificationColor = (type) => {
 
 .notification-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background: linear-gradient(135deg, #ff4757, #ff3742);
-  color: white;
-  border-radius: 50%;
-  width: 22px;
-  height: 22px;
+  top: -7px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--sf-expired);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
-  border: 2px solid white;
-}
-
-.notification-label {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 960px) {
-  .dashboard-header {
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .header-actions {
-    align-self: flex-end;
-  }
-  
-  .fridge-title-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
+  border: 2px solid var(--sf-surface);
+  box-sizing: border-box;
+  line-height: 1;
 }
 
 @media (max-width: 600px) {
   .fridge-title {
-    font-size: 24px;
+    font-size: 22px;
   }
 }
 
@@ -667,8 +641,8 @@ const getNotificationColor = (type) => {
 }
 
 .notification-item.unread {
-  background-color: #f0f9eb; /* 읽지 않은 알림 배경색 */
-  border-left: 4px solid #4caf50; /* 읽지 않은 알림 테두리 */
+  background-color: var(--sf-mint-soft);
+  border-left: 3px solid var(--sf-primary);
 }
 
 .notification-item.unread:hover {
@@ -832,8 +806,8 @@ const getNotificationColor = (type) => {
 
 
 .notification-item.unread {
-  background-color: #f0f9eb; /* 읽지 않은 알림 배경색 */
-  border-left: 4px solid #4caf50; /* 읽지 않은 알림 테두리 */
+  background-color: var(--sf-mint-soft);
+  border-left: 3px solid var(--sf-primary);
 }
 
 .notification-item.unread:hover {

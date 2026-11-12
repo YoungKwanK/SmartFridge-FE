@@ -39,7 +39,7 @@
             <template v-slot:subtitle>
               <v-progress-linear
                 :model-value="(roomDetails.currentParticipants / roomDetails.maxParticipants) * 100"
-                :color="isRoomFull ? 'red' : 'green'"
+                :color="isRoomFull ? 'medium-emphasis' : 'cta'"
                 height="8"
                 rounded
                 class="my-1"
@@ -77,22 +77,22 @@
 
       <v-divider></v-divider>
 
-      <v-card-actions class="pa-4 justify-center">
+      <v-card-actions class="pa-4 justify-end">
         <v-btn v-if="isParticipant" color="primary"  variant="flat" @click="closeModal" min-width="100">
           확인
         </v-btn>
         <v-btn 
           v-if="!isParticipant" 
-          color="primary"  
+          color="cta"  
           variant="flat" 
           @click="joinRoom(roomId)" 
           min-width="100"
           :loading="isLoading"
           :disabled="isRoomFull"
         >
-          {{ isRoomFull ? '인원 마감' : '참여' }}
+          {{ isRoomFull ? '인원이 다 찼어요' : '공동구매 참여하기' }}
         </v-btn>
-        <v-btn v-if="!isParticipant" color="secondary"  variant="flat" @click="closeModal" min-width="100">
+        <v-btn v-if="!isParticipant" variant="text" @click="closeModal" min-width="100">
           취소
         </v-btn>
       </v-card-actions>
@@ -249,7 +249,7 @@ const isRoomFull = computed(() => {
 }
 
 .toggle-button {
-  color: #1976D2;
+  color: var(--sf-primary);
   cursor: pointer;
   font-weight: 500;
   margin-left: 8px;

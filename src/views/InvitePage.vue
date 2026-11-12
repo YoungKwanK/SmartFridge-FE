@@ -1,15 +1,20 @@
 <template>
-  <div class="invite-page">
-    <template v-if="errorMessage">
-      <v-icon size="64" color="error">mdi-alert-circle-outline</v-icon>
-      <p class="invite-message">{{ errorMessage }}</p>
-      <v-btn color="primary" @click="goToFridgeList">내 냉장고 목록으로</v-btn>
-    </template>
-    <template v-else>
-      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
-      <p class="invite-message">냉장고에 참여하는 중입니다...</p>
-    </template>
-  </div>
+  <main class="invite-page">
+    <section class="invite-panel" aria-live="polite">
+      <template v-if="errorMessage">
+        <v-icon size="40" color="error" aria-hidden="true">mdi-link-variant-off</v-icon>
+        <h1 class="invite-title">초대 링크로 들어가지 못했어요</h1>
+        <p class="invite-message">{{ errorMessage }}</p>
+        <p class="invite-hint">링크가 만료됐을 수 있어요. 냉장고 관리자에게 새 링크를 받아 주세요.</p>
+        <v-btn color="primary" variant="flat" @click="goToFridgeList">내 냉장고 목록으로</v-btn>
+      </template>
+      <template v-else>
+        <v-progress-circular indeterminate color="primary" size="40" width="3" />
+        <h1 class="invite-title">냉장고에 들어가는 중이에요</h1>
+        <p class="invite-message">잠시만 기다려 주세요.</p>
+      </template>
+    </section>
+  </main>
 </template>
 
 <script>
@@ -82,18 +87,41 @@ export default {
 
 <style scoped>
 .invite-page {
+  display: grid;
+  place-items: center;
   min-height: 100vh;
+  padding: 16px;
+  background: var(--sf-bg);
+}
+
+.invite-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 16px;
+  width: min(400px, 100%);
+  padding: 36px 32px 32px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
   text-align: center;
 }
 
+.invite-title {
+  margin: 20px 0 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--sf-text);
+}
+
 .invite-message {
-  font-size: 16px;
-  color: #666;
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--sf-text-sub);
+}
+
+.invite-hint {
+  margin: 4px 0 24px;
+  font-size: 13px;
+  color: var(--sf-text-faint);
 }
 </style>

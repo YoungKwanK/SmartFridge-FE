@@ -1,182 +1,121 @@
 <template>
-  <v-app>
-    <div class="login-page-wrapper">
-      <!-- 상단 로고 -->
-      <div class="top-logo">
-        <img 
-          src="@/assets/images/SFlogo/smartFridge_logo.png" 
-          alt="SmartFridge Logo"
-          class="top-logo-image"
-        />
-        <span class="top-logo-text">SmartFridge</span>
-      </div>
+  <div class="login-page">
+    <header class="brand">
+      <img src="@/assets/images/SFlogo/smartFridge_logo.png" alt="" class="brand-logo" />
+      <span class="brand-name">SmartFridge</span>
+    </header>
 
-      <!-- 통합된 배경 컨테이너 -->
-      <div class="unified-background">
-        <div class="content-wrapper">
-          <!-- 프로모션 콘텐츠 영역 -->
-          <div class="promotion-content-area">
-            <div class="promotion-content">
-              <div class="promotion-text">
-                <h1 class="promotion-title">
-                  함께 나누는<br>
-                  스마트 냉장고
-                </h1>
-                <p class="promotion-subtitle">
-                  가족, 룸메이트, 동료들과 냉장고 속 식재료를 효율적으로 공유하고 관리하세요.
-                </p>
-                <p class="promotion-description">
-                  음식을 낭비를 줄이고 더 건강한 식생활을 만들어보세요.
-                </p>
-              </div>
-              
-              <!-- 기능 카드들 -->
-              <div class="feature-cards">
-                <div class="feature-card">
-                  <v-icon class="feature-icon" color="white" size="24">mdi-clock-outline</v-icon>
-                  <span class="feature-text">실시간 재고 관리</span>
-                </div>
-                <div class="feature-card">
-                  <v-icon class="feature-icon" color="white" size="24">mdi-account-group-outline</v-icon>
-                  <span class="feature-text">유통기한 알림</span>
-                </div>
-                <div class="feature-card">
-                  <v-icon class="feature-icon" color="white" size="24">mdi-chart-line</v-icon>
-                  <span class="feature-text">그룹 공유 기능</span>
-                </div>
-                <div class="feature-card">
-                  <v-icon class="feature-icon" color="white" size="24">mdi-heart-outline</v-icon>
-                  <span class="feature-text">함께 나누어 더 즐거운 식생활</span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <main class="login-layout">
+      <!-- 서비스가 하는 일을 실제 화면 모양으로 보여준다 -->
+      <section class="intro" aria-labelledby="intro-title">
+        <h1 id="intro-title" class="intro-title">
+          같이 쓰는 냉장고,<br>누구 건지 언제까지인지<br>한눈에 보여요
+        </h1>
+        <p class="intro-desc">
+          식품을 넣을 때 이름과 유통기한을 남기면, 곧 상하는 것부터 먼저 알려드려요.
+          남는 식재료는 멤버와 나누고, 필요한 건 함께 사요.
+        </p>
 
-          <!-- 로그인 콘텐츠 영역 -->
-          <div class="login-content-area">
-            <div class="login-wrapper">
-              <!-- 로그인 카드 -->
-              <v-card class="login-card elevation-5">
-                <v-card-text class="pa-8">
-                  <!-- 로그인 헤더 -->
-                  <div class="login-header mb-6">
-                    <h2 class="login-title">{{ isAdminLogin ? '관리자 로그인' : '로그인' }}</h2>
-                    <p class="login-subtitle">
-                      {{ isAdminLogin ? '관리자 계정으로 로그인하세요' : '소셜 계정으로 스마트 냉장고 관리를 시작해보세요' }}
-                    </p>
-                  </div>
-
-                  <!-- 에러 메시지 표시 -->
-                  <v-alert
-                    v-if="errorMessage"
-                    type="error"
-                    variant="tonal"
-                    class="mb-6"
-                    :text="errorMessage"
-                    closable
-                    @click:close="errorMessage = ''"
-                  ></v-alert>
-
-                  <!-- 관리자 전용 이메일/비밀번호 로그인 폼 -->
-                  <v-form v-if="isAdminLogin" @submit.prevent="doLogin" ref="loginForm">
-                    <div class="form-group mb-4">
-                      <label class="form-label">이메일</label>
-                      <v-text-field
-                        v-model="email"
-                        type="email"
-                        variant="outlined"
-                        placeholder="이메일을 입력하세요"
-                        :rules="emailRules"
-                        required
-                        color="primary"
-                        bg-color="grey-lighten-5"
-                        hide-details="auto"
-                      ></v-text-field>
-                    </div>
-                    
-                    <div class="form-group mb-6">
-                      <label class="form-label">비밀번호</label>
-                      <v-text-field
-                        v-model="password"
-                        :type="showPassword ? 'text' : 'password'"
-                        variant="outlined"
-                        placeholder="비밀번호를 입력하세요"
-                        :append-inner-icon="showPassword ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
-                        @click:append-inner="showPassword = !showPassword"
-                        :rules="passwordRules"
-                        required
-                        color="primary"
-                        bg-color="grey-lighten-5"
-                        hide-details="auto"
-                      ></v-text-field>
-                    </div>
-                    
-                    <v-btn 
-                      type="submit" 
-                      color="primary" 
-                      block 
-                      size="large"
-                      :loading="isLoading"
-                      class="login-btn mb-6"
-                      elevation="0"
-                    >
-                      로그인
-                    </v-btn>
-                  </v-form>
-
-                  <!-- 소셜 로그인 버튼들 -->
-                  <div v-else class="social-login-section mb-6">
-                    <div class="social-buttons-row">
-                      <v-btn
-                        variant="outlined"
-                        class="social-btn google-btn"
-                        @click="googleLogin()"
-                        :loading="socialLoading.google"
-                        size="small"
-                      >
-                        <v-icon class="social-icon google-icon">mdi-google</v-icon>
-                        Google
-                      </v-btn>
-                      
-                      <v-btn
-                        variant="outlined"
-                        class="social-btn kakao-btn"
-                        @click="kakaoLogin()"
-                        :loading="socialLoading.kakao"
-                        size="small"
-                      >
-                        <span class="social-icon kakao-icon">K</span>
-                        Kakao
-                      </v-btn>
-                      
-                      <v-btn
-                        variant="outlined"
-                        class="social-btn naver-btn"
-                        @click="naverLogin()"
-                        :loading="socialLoading.naver"
-                        size="small"
-                      >
-                        <span class="social-icon naver-icon">N</span>
-                        Naver
-                      </v-btn>
-                    </div>
-                  </div>
-
-                </v-card-text>
-              </v-card>
-            </div>
-          </div>
+        <div class="sample" aria-label="오늘 확인할 식품 예시">
+          <p class="sample-title">오늘 먼저 확인할 식품</p>
+          <ul class="sample-list">
+            <FoodRow v-for="food in sampleFoods" :key="food.id" :food="food" show-shared />
+          </ul>
         </div>
-      </div>
-    </div>
-  </v-app>
+      </section>
+
+      <!-- 로그인 -->
+      <section class="login-panel" aria-labelledby="login-title">
+        <h2 id="login-title" class="login-title">{{ isAdminLogin ? '관리자 로그인' : '시작하기' }}</h2>
+        <p class="login-desc">
+          {{ isAdminLogin ? '관리자 계정의 이메일과 비밀번호를 입력하세요.' : '쓰던 계정으로 바로 로그인할 수 있어요.' }}
+        </p>
+
+        <v-alert
+          v-if="errorMessage"
+          type="error"
+          variant="tonal"
+          class="mb-4"
+          :text="errorMessage"
+          closable
+          @click:close="errorMessage = ''"
+        />
+
+        <!-- 관리자 전용 이메일/비밀번호 로그인 폼 -->
+        <v-form v-if="isAdminLogin" ref="loginForm" class="admin-form" @submit.prevent="doLogin">
+          <v-text-field
+            v-model="email"
+            type="email"
+            label="이메일"
+            variant="outlined"
+            :rules="emailRules"
+            required
+            hide-details="auto"
+            autocomplete="username"
+          />
+          <v-text-field
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            label="비밀번호"
+            variant="outlined"
+            :append-inner-icon="showPassword ? 'mdi-eye-outline' : 'mdi-eye-off-outline'"
+            :rules="passwordRules"
+            required
+            hide-details="auto"
+            autocomplete="current-password"
+            @click:append-inner="showPassword = !showPassword"
+          />
+          <v-btn type="submit" color="primary" variant="flat" block size="large" :loading="isLoading">
+            로그인
+          </v-btn>
+        </v-form>
+
+        <!-- 소셜 로그인: 각 서비스의 버튼 색을 따른다 -->
+        <div v-else class="social-buttons">
+          <button type="button" class="social-btn kakao" :disabled="socialLoading.kakao" @click="kakaoLogin()">
+            <span class="social-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M12 3C6.48 3 2 6.48 2 10.77c0 2.76 1.84 5.18 4.6 6.55l-.94 3.44c-.08.3.26.54.52.37l4.1-2.72c.57.06 1.14.1 1.72.1 5.52 0 10-3.48 10-7.74S17.52 3 12 3z"/></svg>
+            </span>
+            {{ socialLoading.kakao ? '카카오로 이동 중' : '카카오로 계속하기' }}
+          </button>
+          <button type="button" class="social-btn naver" :disabled="socialLoading.naver" @click="naverLogin()">
+            <span class="social-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.56 12.84 8.17 2H2v20h6.44V11.16L15.83 22H22V2h-6.44z"/></svg>
+            </span>
+            {{ socialLoading.naver ? '네이버로 이동 중' : '네이버로 계속하기' }}
+          </button>
+          <button type="button" class="social-btn google" :disabled="socialLoading.google" @click="googleLogin()">
+            <span class="social-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.74-6-6.1s2.7-6.1 6-6.1c1.88 0 3.14.8 3.86 1.49l2.63-2.54C16.8 3.4 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.54 0 9.2-3.9 9.2-9.38 0-.63-.07-1.11-.15-1.6H12z"/></svg>
+            </span>
+            {{ socialLoading.google ? 'Google로 이동 중' : 'Google로 계속하기' }}
+          </button>
+        </div>
+
+        <p v-if="!isAdminLogin" class="login-note">
+          처음이면 로그인할 때 계정이 만들어져요. 냉장고는 로그인한 뒤 만들거나 초대 링크로 들어갈 수 있어요.
+        </p>
+      </section>
+    </main>
+  </div>
 </template>
+
 <script>
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import FoodRow from '@/components/Food/FoodRow.vue';
+
+// 첫 화면에 보여줄 예시 식품 (오늘 기준으로 날짜를 만든다)
+const daysFromNow = (days, hour = 21) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  d.setHours(hour, 0, 0, 0);
+  return d.toISOString();
+};
 
 export default {
   name: 'LoginPage',
+  components: { FoodRow },
   data() {
     return {
       email: "",
@@ -219,6 +158,13 @@ export default {
   },
   
   computed: {
+    sampleFoods() {
+      return [
+        { id: 1, name: '우유 1L', registeredName: '305호 민지', quantity: 1, category: '유제품', storageType: '냉장', shareable: false, expirationDateTime: daysFromNow(-1) },
+        { id: 2, name: '두부', registeredName: '307호 준호', quantity: 2, category: '가공식품', storageType: '냉장', shareable: true, expirationDateTime: daysFromNow(0, 23) },
+        { id: 3, name: '시금치 한 단', registeredName: '310호 서연', quantity: 1, category: '채소', storageType: '냉장', shareable: false, expirationDateTime: daysFromNow(2) }
+      ];
+    },
     // /admin/login 에서만 이메일/비밀번호 폼을 보여줌
     isAdminLogin() {
       return this.$route.path === '/admin/login';
@@ -365,443 +311,214 @@ export default {
 </script>
 
 <style scoped>
-/* 전체 페이지 래퍼 */
-.login-page-wrapper {
+.login-page {
   min-height: 100vh;
-  width: 100%;
-  position: relative;
-  overflow-x: hidden;
+  background: var(--sf-bg);
+  padding: 24px clamp(16px, 4vw, 56px) 48px;
 }
 
-/* 상단 로고 */
-.top-logo {
-  position: absolute;
-  top: 24px;
-  left: 32px;
+.brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  z-index: 10;
-}
-
-.top-logo-image {
-  height: 32px;
-  width: auto;
-}
-
-.top-logo-text {
-  color: white;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-/* 통합된 배경 컨테이너 */
-.unified-background {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  width: 100vw;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  margin: 0;
-  overflow-x: hidden;
-  position: relative;
-}
-
-/* 콘텐츠 래퍼 */
-.content-wrapper {
-  display: flex;
-  width: 100%;
-  max-width: 1400px;
-  min-height: 100vh;
-  align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 0 20px;
 }
 
-/* 프로모션 콘텐츠 영역 */
-.promotion-content-area {
-  flex: 1;
-  max-width: 60%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 40px 80px 60px;
-  color: white;
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
 }
 
-/* 로그인 콘텐츠 영역 */
-.login-content-area {
-  flex: 0 0 auto;
-  width: 100%;
-  max-width: 450px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-}
-
-.promotion-content {
-  max-width: 500px;
-}
-
-.promotion-title {
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 24px;
-  color: white;
-}
-
-.promotion-subtitle {
+.brand-name {
   font-size: 18px;
-  font-weight: 400;
-  line-height: 1.5;
-  margin-bottom: 16px;
-  color: rgba(255, 255, 255, 0.9);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-primary);
 }
 
-.promotion-description {
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.5;
-  margin-bottom: 48px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* 기능 카드들 */
-.feature-cards {
+.login-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.feature-card {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 400px);
+  gap: clamp(32px, 6vw, 96px);
   align-items: center;
-  gap: 12px;
-  transition: all 0.3s ease;
+  max-width: 1120px;
+  margin: clamp(32px, 8vh, 96px) auto 0;
 }
 
-.feature-card:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+/* 소개 */
+.intro-title {
+  margin: 0;
+  font-size: clamp(32px, 4.2vw, 48px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  color: var(--sf-text);
 }
 
-.feature-icon {
-  opacity: 0.9;
+.intro-desc {
+  max-width: 34em;
+  margin: 20px 0 0;
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--sf-text-sub);
 }
 
-.feature-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
+.sample {
+  max-width: 480px;
+  margin-top: 36px;
+  padding: 20px 20px 8px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  border-left: 4px solid var(--sf-soon);
+  box-shadow: var(--sf-shadow);
 }
 
-/* 기존 섹션 스타일 제거됨 - 통합된 배경 사용 */
-
-.login-wrapper {
-  width: 100%;
-  max-width: 400px;
+.sample-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-text);
 }
 
-/* 로그인 카드 */
-.login-card {
-  background: white !important;
-  border-radius: 24px !important;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1) !important;
-  border: none !important;
+.sample-list {
+  margin: 0;
+  padding: 0;
 }
 
-/* 로그인 헤더 */
-.login-header {
-  text-align: center;
+/* 로그인 */
+.login-panel {
+  padding: 32px 28px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
 }
 
 .login-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #2c3e50;
-  margin-bottom: 8px;
-}
-
-.login-subtitle {
-  font-size: 14px;
-  color: #7f8c8d;
-  font-weight: 400;
   margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
 }
 
-/* 폼 그룹 */
-.form-group {
-  margin-bottom: 20px;
+.login-desc {
+  margin: 8px 0 24px;
+  font-size: 15px;
+  color: var(--sf-text-sub);
 }
 
-.form-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: #2c3e50;
-  margin-bottom: 8px;
-}
-
-/* 입력 필드 */
-.v-text-field .v-field {
-  border-radius: 8px !important;
-  background-color: #f8f9fa !important;
-  border: 1px solid #e9ecef !important;
-}
-
-.v-text-field .v-field--focused {
-  border-color: #667eea !important;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-}
-
-.v-text-field input::placeholder {
-  color: #adb5bd !important;
-  font-size: 14px;
-}
-
-/* 로그인 버튼 */
-.login-btn {
-  height: 48px !important;
-  font-size: 16px !important;
-  font-weight: 600 !important;
-  text-transform: none !important;
-  border-radius: 8px !important;
-  background: #20B2AA !important;
-  color: white !important;
-  box-shadow: none !important;
-  transition: all 0.3s ease !important;
-}
-
-.login-btn:hover {
-  background: #1a9b94 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(32, 178, 170, 0.3) !important;
-}
-
-/* 소셜 로그인 버튼들 */
-.social-buttons-row {
+.admin-form {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .social-btn {
-  flex: 1;
-  height: 36px !important;
-  text-transform: none !important;
-  font-weight: 500 !important;
-  font-size: 12px !important;
-  border-radius: 6px !important;
-  border: 1px solid #e9ecef !important;
-  transition: all 0.3s ease !important;
-}
-
-.social-icon {
-  margin-right: 4px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.google-btn {
-  color: #4285f4 !important;
-  border-color: #e9ecef !important;
-}
-
-.google-btn:hover {
-  background-color: #4285f4 !important;
-  color: white !important;
-  border-color: #4285f4 !important;
-}
-
-.google-icon {
-  color: #4285f4;
-}
-
-.google-btn:hover .google-icon {
-  color: white !important;
-}
-
-.kakao-btn {
-  color: #3c1e1e !important;
-  background-color: #fee500 !important;
-  border-color: #fee500 !important;
-}
-
-.kakao-btn:hover {
-  background-color: #fdd835 !important;
-  border-color: #fdd835 !important;
-}
-
-.kakao-icon {
-  background: #3c1e1e;
-  color: #fee500;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  font-weight: 900;
+  height: 52px;
+  border: none;
+  border-radius: var(--sf-radius-md);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.naver-btn {
-  color: white !important;
-  background-color: #03c75a !important;
-  border-color: #03c75a !important;
+.social-btn:disabled {
+  opacity: 0.7;
+  cursor: progress;
 }
 
-.naver-btn:hover {
-  background-color: #02b050 !important;
-  border-color: #02b050 !important;
+.social-mark {
+  position: absolute;
+  left: 18px;
+  display: grid;
+  place-items: center;
 }
 
-.naver-icon {
-  background: white;
-  color: #03c75a;
-  border-radius: 2px;
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 900;
+.social-btn.kakao {
+  background: #FEE500;
+  color: rgba(0, 0, 0, 0.85);
 }
 
-/* 반응형 디자인 */
-@media (max-width: 1200px) {
-  .content-wrapper {
-    padding: 0 15px;
-  }
-  
-  .promotion-content-area {
-    padding: 60px 30px 60px 40px;
-  }
-  
-  .promotion-title {
-    font-size: 40px;
-  }
+.social-btn.naver {
+  background: #03C75A;
+  color: #FFFFFF;
 }
 
-@media (max-width: 960px) {
-  .content-wrapper {
-    flex-direction: column;
-    justify-content: center;
-    padding: 0;
+.social-btn.google {
+  background: var(--sf-surface);
+  color: var(--sf-text);
+  border: 1px solid var(--sf-line-strong);
+}
+
+.social-btn:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.login-note {
+  margin: 20px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--sf-text-faint);
+}
+
+@media (max-width: 900px) {
+  .login-layout {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 28px;
   }
-  
-  .promotion-content-area {
-    display: none;
+
+  .sample {
+    max-width: none;
+    margin-top: 24px;
   }
-  
-  .login-content-area {
-    flex: 1;
-    width: 100%;
-    max-width: 500px;
-    padding: 40px 20px;
+
+  /* 모바일: 제목 → 로그인 → 예시 순서 */
+  .intro {
+    display: contents;
   }
-  
-  .top-logo {
-    position: relative;
-    top: 0;
-    left: 0;
-    justify-content: center;
-    padding: 24px 0;
+
+  .intro-title,
+  .intro-desc {
+    order: 1;
   }
-  
-  .unified-background {
-    width: 100%;
+
+  .login-panel {
+    order: 2;
+  }
+
+  .sample {
+    order: 3;
+  }
+
+  .intro-desc {
+    margin-top: -12px;
   }
 }
 
 @media (max-width: 600px) {
-  .top-logo {
-    padding: 16px 0;
+  .login-page {
+    padding: 16px 16px 32px;
   }
-  
-  .top-logo-image {
-    height: 28px;
-  }
-  
-  .top-logo-text {
-    font-size: 18px;
-  }
-  
-  .login-content-area {
-    padding: 20px;
-  }
-  
-  .promotion-title {
-    font-size: 36px;
-  }
-  
-  .promotion-subtitle {
-    font-size: 16px;
-  }
-  
-  .feature-cards {
-    grid-template-columns: 1fr;
-  }
-  
-  .social-buttons-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .social-btn {
-    height: 40px !important;
-    font-size: 14px !important;
-  }
-}
 
-/* 애니메이션 */
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
+  .intro-desc {
+    font-size: 15px;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+
+  .login-panel {
+    padding: 24px 20px;
   }
-}
-
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.login-card {
-  animation: slideInRight 0.6s ease-out;
-}
-
-.promotion-content {
-  animation: slideInLeft 0.6s ease-out;
-}
-
-/* 포커스 상태 */
-.v-btn:focus-visible {
-  outline: 2px solid #667eea;
-  outline-offset: 2px;
-}
-
-.v-text-field input:focus {
-  outline: none;
 }
 </style>

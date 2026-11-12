@@ -1,300 +1,217 @@
 <template>
-  <v-dialog v-model="dialog" max-width="700px" persistent scrollable>
-    <v-card class="food-form-modal">
-      <!-- 헤더 섹션 -->
-      <div class="modal-header">
-        <div class="header-content">
-          <div class="header-icon">
-            <v-icon size="32" color="primary">mdi-food-apple</v-icon>
-          </div>
-          <div class="header-text">
-                      <h2 class="modal-title">{{ getModalTitle() }}</h2>
-          <p class="modal-subtitle">{{ getModalSubtitle() }}</p>
+  <v-dialog v-model="dialog" max-width="640px" persistent scrollable>
+    <v-card class="food-form">
+      <header class="form-head">
+        <div>
+          <h2 class="form-title">{{ getModalTitle() }}</h2>
+          <p class="form-desc">{{ getModalSubtitle() }}</p>
+        </div>
+        <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeModal" />
+      </header>
+
+      <v-card-text class="form-body">
+        <div class="field">
+          <label class="field-label" for="food-name">식품 이름</label>
+          <v-text-field
+            id="food-name"
+            v-model="formData.name"
+            placeholder="예: 서울우유 1L"
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            :rules="[v => !!v || '식품 이름을 입력하세요']"
+            :disabled="readOnly"
+          />
+        </div>
+
+        <div class="field">
+          <span id="food-category-label" class="field-label">종류</span>
+          <div class="chip-group" role="radiogroup" aria-labelledby="food-category-label">
+            <button
+              v-for="category in categories"
+              :key="category"
+              type="button"
+              role="radio"
+              class="choice-chip"
+              :class="{ 'is-on': formData.category === category }"
+              :aria-checked="formData.category === category"
+              :disabled="readOnly"
+              @click="formData.category = category"
+            >
+              <span aria-hidden="true">{{ emojiOf(category) }}</span>{{ category }}
+            </button>
           </div>
         </div>
-        <v-btn icon="mdi-close" variant="text" @click="closeModal" class="close-btn"></v-btn>
-      </div>
 
-      <v-divider></v-divider>
-
-      <v-card-text class="pa-6">
-        <v-container fluid class="pa-0">
-          <v-row>
-            <!-- 식품명 -->
-            <v-col cols="12">
-              <div class="form-section">
-                <label class="form-label">
-                  <v-icon size="18" color="primary" class="mr-2">mdi-tag</v-icon>
-                  식품명 *
-                </label>
-                <v-text-field
-                  v-model="formData.name"
-                  placeholder="식품명을 입력해주세요"
-                  variant="outlined"
-                  density="comfortable"
-                  hide-details="auto"
-                  class="custom-input"
-                  :rules="[v => !!v || '식품명을 입력해주세요']"
-                  :disabled="readOnly"
-                ></v-text-field>
-              </div>
-            </v-col>
-
-                         <!-- 수량과 보관위치 -->
-             <v-col cols="12" md="6">
-               <div class="form-section">
-                 <label class="form-label">
-                   <v-icon size="18" color="success" class="mr-2">mdi-scale</v-icon>
-                   수량 *
-                 </label>
-                 <div class="quantity-input">
-                   <v-btn 
-                     icon="mdi-minus" 
-                     variant="outlined" 
-                     size="small"
-                     @click="decreaseQuantity"
-                     :disabled="formData.quantity <= 1"
-                     class="quantity-btn"
-                   ></v-btn>
-                   <v-text-field
-                     v-model.number="formData.quantity"
-                     type="number"
-                     min="1"
-                     variant="outlined"
-                     density="comfortable"
-                     hide-details="auto"
-                     class="quantity-field"
-                     :rules="[v => v > 0 || '수량은 1개 이상이어야 합니다']"
-                     :disabled="readOnly"
-                   ></v-text-field>
-                   <v-btn 
-                     icon="mdi-plus" 
-                     variant="outlined" 
-                     size="small"
-                     @click="increaseQuantity"
-                     class="quantity-btn"
-                   ></v-btn>
-                 </div>
-               </div>
-             </v-col>
-
-             <v-col cols="12" md="6">
-               <div class="form-section">
-                 <label class="form-label">
-                   <v-icon size="18" color="info" class="mr-2">mdi-fridge</v-icon>
-                   보관위치 *
-                 </label>
-                 <v-select
-                   :items="storageTypes"
-                   v-model="formData.storageType"
-                   placeholder="보관위치를 선택해주세요"
-                   variant="outlined"
-                   density="comfortable"
-                   hide-details="auto"
-                   class="custom-input"
-                   item-title="name"
-                   item-value="value"
-                   :rules="[v => !!v || '보관위치를 선택해주세요']"
-                   :disabled="readOnly"
-                 ></v-select>
-               </div>
-             </v-col>
-
-             <!-- 유통기한 날짜와 시간 -->
-             <v-col cols="12" md="6">
-               <div class="form-section">
-                  <label class="form-label">
-                    <v-icon size="18" color="warning" class="mr-2">mdi-calendar</v-icon>
-                    유통기한 날짜 *
-                  </label>
-                 <v-text-field
-                   v-model="formData.expirationDate"
-                   type="date"
-                   variant="outlined"
-                   density="comfortable"
-                   hide-details="auto"
-                   class="custom-input"
-                   placeholder="날짜를 선택하세요"
-                   :min="getTodayDate()"
-                   :rules="getExpirationRules()"
-                   :disabled="readOnly"
-                 ></v-text-field>
-               </div>
-             </v-col>
-
-             <v-col cols="12" md="6">
-               <div class="form-section">
-                 <label class="form-label">
-                   <v-icon size="18" color="warning" class="mr-2">mdi-clock</v-icon>
-                   유통기한 시간 (선택사항)
-                 </label>
-                 <v-text-field
-                   v-model="formData.expirationTime"
-                   type="time"
-                   variant="outlined"
-                   density="comfortable"
-                   hide-details="auto"
-                   class="custom-input"
-                   placeholder="시간을 선택하세요 (선택하지 않으면 23:59로 설정됩니다)"
-                   :disabled="readOnly"
-                 ></v-text-field>
-               </div>
-             </v-col>
-
-             <!-- 카테고리 -->
-             <v-col cols="12" md="6">
-               <div class="form-section">
-                 <label class="form-label">
-                   <v-icon size="18" color="purple" class="mr-2">mdi-shape</v-icon>
-                   카테고리 *
-                 </label>
-                 <v-select
-                   :items="categories"
-                   v-model="formData.category"
-                   placeholder="카테고리를 선택해주세요"
-                   variant="outlined"
-                   density="comfortable"
-                   hide-details="auto"
-                   class="custom-input"
-                   item-title="name"
-                   item-value="value"
-                   :rules="[v => !!v || '카테고리를 선택해주세요']"
-                   :disabled="readOnly"
-                 ></v-select>
-               </div>
-             </v-col>
-
-            <!-- 메모 -->
-            <v-col cols="12">
-              <div class="form-section">
-                <label class="form-label">
-                  <v-icon size="18" color="grey" class="mr-2">mdi-note-text</v-icon>
-                  메모
-                </label>
-                <v-textarea
-                  v-model="formData.memo"
-                  placeholder="식품에 대한 메모를 입력해주세요"
-                  rows="3"
-                  variant="outlined"
-                  density="comfortable"
-                  hide-details="auto"
-                  class="custom-input"
-                  :disabled="readOnly"
-                ></v-textarea>
-              </div>
-            </v-col>
-
-            <!-- 공유 설정 -->
-            <v-col cols="12">
-              <div class="share-section">
-                <v-checkbox
-                  v-model="formData.shareable"
-                  label="다른 멤버와 공유"
-                  color="primary"
-                  hide-details="auto"
-                  class="share-checkbox"
-                  :disabled="readOnly"
-                >
-                  <template v-slot:label>
-                    <div class="checkbox-label">
-                      <v-icon size="20" color="primary" class="mr-2">mdi-share-variant</v-icon>
-                      <span>다른 멤버와 공유</span>
-                      <span class="checkbox-description">체크하면 냉장고 멤버들과 식품 정보를 공유합니다</span>
-                    </div>
-                  </template>
-                </v-checkbox>
-              </div>
-            </v-col>
-
-            <!-- 목록에 담기 (등록 모드에서만) -->
-            <v-col v-if="isCreateMode" cols="12" class="d-flex justify-end">
-              <v-btn
-                variant="tonal"
-                color="primary"
-                :prepend-icon="editingIndex !== null ? 'mdi-check' : 'mdi-plus'"
-                class="action-btn"
-                :disabled="editingIndex === null && pendingFoods.length >= maxCount"
-                @click="addToList"
+        <div class="field-row">
+          <div class="field">
+            <span id="food-storage-label" class="field-label">보관</span>
+            <div class="segmented" role="radiogroup" aria-labelledby="food-storage-label">
+              <button
+                v-for="storage in storageTypes"
+                :key="storage"
+                type="button"
+                role="radio"
+                :class="{ 'is-on': formData.storageType === storage }"
+                :aria-checked="formData.storageType === storage"
+                :disabled="readOnly"
+                @click="formData.storageType = storage"
               >
-                {{ editingIndex !== null ? '목록에 반영' : '목록에 담기' }}
-              </v-btn>
-              <v-btn
-                v-if="editingIndex !== null"
-                variant="text"
-                class="action-btn ml-2"
-                @click="cancelItemEdit"
-              >
-                수정 취소
-              </v-btn>
-            </v-col>
-          </v-row>
-        </v-container>
-
-        <!-- 담은 식품 목록 -->
-        <div v-if="isCreateMode && pendingFoods.length > 0" class="pending-section">
-          <div class="pending-header">
-            <v-icon size="18" color="primary" class="mr-2">mdi-format-list-bulleted</v-icon>
-            담은 식품 {{ pendingFoods.length }}개
-            <span class="pending-limit">(최대 {{ maxCount }}개)</span>
+                {{ storage }}
+              </button>
+            </div>
           </div>
-          <div
-            v-for="(item, index) in pendingFoods"
-            :key="index"
-            class="pending-item"
-            :class="{ 'is-editing': editingIndex === index }"
+
+          <div class="field">
+            <span id="food-qty-label" class="field-label">수량</span>
+            <div class="stepper" role="group" aria-labelledby="food-qty-label">
+              <button type="button" aria-label="하나 줄이기" :disabled="readOnly || formData.quantity <= 1" @click="decreaseQuantity">
+                <v-icon size="18">mdi-minus</v-icon>
+              </button>
+              <input
+                v-model.number="formData.quantity"
+                type="number"
+                min="1"
+                class="sf-num"
+                aria-label="수량"
+                :disabled="readOnly"
+              />
+              <button type="button" aria-label="하나 늘리기" :disabled="readOnly" @click="increaseQuantity">
+                <v-icon size="18">mdi-plus</v-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="food-exp-date">유통기한</label>
+          <div v-if="!readOnly" class="quick-dates">
+            <button v-for="d in quickDays" :key="d.days" type="button" class="quick-chip" @click="setExpiryInDays(d.days)">
+              {{ d.label }}
+            </button>
+          </div>
+          <div class="field-row is-tight">
+            <v-text-field
+              id="food-exp-date"
+              v-model="formData.expirationDate"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+              hide-details="auto"
+              :min="getTodayDate()"
+              :rules="getExpirationRules()"
+              :disabled="readOnly"
+            />
+            <v-text-field
+              v-model="formData.expirationTime"
+              type="time"
+              variant="outlined"
+              density="comfortable"
+              hide-details="auto"
+              aria-label="유통기한 시각 (선택)"
+              :disabled="readOnly"
+            />
+          </div>
+          <p class="field-hint">시각을 비워 두면 그날 23:59까지로 저장돼요.</p>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="food-memo">메모 <span class="optional">선택</span></label>
+          <v-textarea
+            id="food-memo"
+            v-model="formData.memo"
+            placeholder="예: 반 남음, 금요일에 먹을 거예요"
+            rows="2"
+            auto-grow
+            variant="outlined"
+            density="comfortable"
+            hide-details="auto"
+            :disabled="readOnly"
+          />
+        </div>
+
+        <div class="share-row">
+          <div>
+            <p class="share-title">다른 멤버와 나눠 먹기</p>
+            <p class="share-desc">켜면 공유 식품 목록에 올라가서 다른 멤버도 볼 수 있어요.</p>
+          </div>
+          <v-switch
+            v-model="formData.shareable"
+            color="primary"
+            inset
+            hide-details
+            density="compact"
+            aria-label="다른 멤버와 나눠 먹기"
+            :disabled="readOnly"
+          />
+        </div>
+
+        <div v-if="isCreateMode" class="list-actions">
+          <v-btn
+            v-if="editingIndex !== null"
+            variant="text"
+            @click="cancelItemEdit"
           >
-            <div class="pending-info">
-              <span class="pending-name">{{ item.name }}</span>
-              <span v-if="getItemSummary(item)" class="pending-meta">· {{ getItemSummary(item) }}</span>
-              <span v-if="!isItemComplete(item)" class="pending-warning">
-                <v-icon size="14" color="warning">mdi-alert</v-icon> {{ getMissingFields(item).join(', ') }} 입력 필요
-              </span>
-              <v-chip v-if="item.shareable" size="x-small" color="primary" variant="tonal" class="ml-2">공유</v-chip>
-            </div>
-            <div class="pending-actions">
-              <v-btn icon="mdi-pencil" size="small" variant="text" @click="editListItem(index)"></v-btn>
-              <v-btn icon="mdi-delete" size="small" variant="text" color="error" @click="removeListItem(index)"></v-btn>
-            </div>
-          </div>
+            고치기 취소
+          </v-btn>
+          <v-btn
+            variant="tonal"
+            color="primary"
+            :prepend-icon="editingIndex !== null ? 'mdi-check' : 'mdi-plus'"
+            :disabled="editingIndex === null && pendingFoods.length >= maxCount"
+            @click="addToList"
+          >
+            {{ editingIndex !== null ? '목록에 반영' : '하나 더 담기' }}
+          </v-btn>
         </div>
+
+        <section v-if="isCreateMode && pendingFoods.length > 0" class="pending" aria-labelledby="pending-title">
+          <h3 id="pending-title" class="pending-title">
+            담은 식품 <span class="sf-num">{{ pendingFoods.length }}</span>
+            <span class="pending-limit">최대 {{ maxCount }}개</span>
+          </h3>
+          <ul class="pending-list">
+            <li
+              v-for="(item, index) in pendingFoods"
+              :key="index"
+              class="pending-item"
+              :class="{ 'is-editing': editingIndex === index }"
+            >
+              <span class="pending-emoji" aria-hidden="true">{{ emojiOf(item.category) }}</span>
+              <span class="pending-info">
+                <span class="pending-name">
+                  {{ item.name }}
+                  <span v-if="item.shareable" class="share-tag">공유</span>
+                </span>
+                <span v-if="!isItemComplete(item)" class="pending-warning">
+                  {{ getMissingFields(item).join(', ') }} 입력이 필요해요
+                </span>
+                <span v-else class="pending-meta">{{ getItemSummary(item) }}</span>
+              </span>
+              <v-btn icon="mdi-pencil-outline" size="small" variant="text" :aria-label="`${item.name} 고치기`" @click="editListItem(index)" />
+              <v-btn icon="mdi-close" size="small" variant="text" :aria-label="`${item.name} 빼기`" @click="removeListItem(index)" />
+            </li>
+          </ul>
+        </section>
       </v-card-text>
 
-      <!-- 액션 버튼 -->
-      <v-divider></v-divider>
-      
-      <v-card-actions class="pa-6">
-        <div class="action-buttons">
-          <div class="right-buttons">
-            <v-btn 
-              variant="outlined" 
-              @click="closeModal"
-              class="action-btn cancel-btn"
-            >
-              {{ readOnly ? '닫기' : '취소' }}
-            </v-btn>
-            <v-btn 
-              v-if="!readOnly"
-              color="primary" 
-              @click="save"
-              class="action-btn save-btn"
-              :loading="isLoading"
-              prepend-icon="mdi-check"
-            >
-              {{ getSaveButtonText() }}
-            </v-btn>
-          </div>
-        </div>
+      <v-card-actions class="form-actions">
+        <v-spacer />
+        <v-btn variant="text" @click="closeModal">{{ readOnly ? '닫기' : '취소' }}</v-btn>
+        <v-btn v-if="!readOnly" color="primary" variant="flat" :loading="isLoading" @click="save">
+          {{ getSaveButtonText() }}
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 
-  <!-- CommonSnackbar 컴포넌트 추가 -->
   <CommonSnackbar ref="snackbar" />
 </template>
 
 <script>
 import axios from 'axios';
 import CommonSnackbar from '../common/CommonSnackbar.vue';
+import { categoryEmoji } from '@/utils/foodFreshness';
 
 export default {
   components: {
@@ -324,6 +241,14 @@ export default {
         shareable: false
       },
       storageTypes: [],
+      // 유통기한 빠른 선택
+      quickDays: [
+        { days: 0, label: '오늘' },
+        { days: 3, label: '3일 뒤' },
+        { days: 7, label: '1주 뒤' },
+        { days: 14, label: '2주 뒤' },
+        { days: 30, label: '한 달 뒤' }
+      ],
       categories: [],
       isLoading: false,
       // 여러 개 등록: 담은 식품 목록과 수정 중인 항목 위치
@@ -392,15 +317,15 @@ export default {
   methods: {
     getModalTitle() {
       if (this.readOnly) {
-        return '식품 상세 정보';
+        return '식품 정보';
       }
-      return this.isEditMode ? '식품 수정' : '새로운 식품 등록';
+      return this.isEditMode ? '식품 정보 수정' : '식품 등록';
     },
     getModalSubtitle() {
       if (this.readOnly) {
-        return '등록된 식품의 자세한 정보를 확인할 수 있습니다';
+        return '누가 언제 넣었는지, 언제까지인지 확인하세요.';
       }
-      return this.isEditMode ? '식품 정보를 수정해주세요' : '냉장고에 새로운 식품을 추가해주세요';
+      return this.isEditMode ? '바뀐 내용만 고치면 돼요.' : '여러 개를 넣을 땐 "하나 더 담기"로 모아서 한 번에 등록하세요.';
     },
     async fetchEnums() {
       try {
@@ -414,6 +339,16 @@ export default {
         console.error("카테고리 및 보관위치 목록을 불러오는 데 실패했습니다.", error);
         this.$refs.snackbar.showError("카테고리 및 보관위치 목록을 불러오는 데 실패했습니다.");
       }
+    },
+    emojiOf(category) {
+      return categoryEmoji(category);
+    },
+    setExpiryInDays(days) {
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      this.formData.expirationDate = `${d.getFullYear()}-${month}-${day}`;
     },
     increaseQuantity() {
       this.formData.quantity++;
@@ -613,239 +548,350 @@ export default {
 </script>
 
 <style scoped>
-.food-form-modal {
-  border-radius: 16px;
-  overflow: hidden;
+.food-form {
+  border-radius: var(--sf-radius-lg) !important;
 }
 
-.modal-header {
+.form-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  padding: 24px 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  gap: 12px;
+  padding: 24px 16px 8px 24px;
 }
 
-.header-content {
-  display: flex;
-  align-items: center;
+.form-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--sf-text);
+}
+
+.form-desc {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.form-body {
+  padding: 12px 24px 8px !important;
+}
+
+.field {
+  margin-bottom: 20px;
+  min-width: 0;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-text);
+}
+
+.optional {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--sf-text-faint);
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--sf-text-faint);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 
-.header-icon {
+.field-row.is-tight {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 8px;
+}
+
+.field-row > .field {
+  margin-bottom: 20px;
+}
+
+/* 종류 칩 */
+.chip-group {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-}
-
-.modal-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 4px 0;
-}
-
-.modal-subtitle {
-  font-size: 14px;
-  margin: 0;
-  opacity: 0.9;
-}
-
-.close-btn {
-  color: white;
-}
-
-.form-section {
-  margin-bottom: 24px;
-}
-
-.form-label {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-  font-size: 14px;
-}
-
-.custom-input {
-  border-radius: 12px;
-}
-
-.quantity-input {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.quantity-btn {
-  border-radius: 8px;
-  min-width: 40px;
-}
-
-.quantity-field {
-  flex: 1;
-  border-radius: 12px;
-}
-
-.share-section {
-  background: rgba(102, 126, 234, 0.05);
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(102, 126, 234, 0.1);
-}
-
-.share-checkbox {
-  margin: 0;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.checkbox-description {
-  font-size: 12px;
-  color: #666;
-  font-weight: 400;
-  margin-left: 28px;
-  opacity: 0.8;
+.choice-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--sf-line-strong);
+  border-radius: 999px;
+  background: var(--sf-surface);
+  font: inherit;
+  font-size: 14px;
+  color: var(--sf-text);
+  cursor: pointer;
 }
 
-.pending-section {
-  margin-top: 16px;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  border-radius: 12px;
+.choice-chip:hover:not(:disabled) {
+  border-color: var(--sf-text-faint);
+}
+
+.choice-chip.is-on {
+  border-color: var(--sf-primary);
+  background: var(--sf-mint-soft);
+  font-weight: 600;
+  color: var(--sf-primary);
+}
+
+.choice-chip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* 보관 */
+.segmented {
+  display: flex;
+  height: 44px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--sf-bg);
+}
+
+.segmented button {
+  flex: 1;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.segmented button.is-on {
+  background: var(--sf-surface);
+  box-shadow: 0 1px 3px rgba(34, 34, 34, 0.12);
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+/* 수량 */
+.stepper {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid var(--sf-line-strong);
+  border-radius: 10px;
   overflow: hidden;
 }
 
-.pending-header {
+.stepper button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 100%;
+  border: none;
+  background: none;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.stepper button:disabled {
+  color: var(--sf-line-strong);
+  cursor: default;
+}
+
+.stepper input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  border-inline: 1px solid var(--sf-line);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--sf-text);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.stepper input::-webkit-outer-spin-button,
+.stepper input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* 유통기한 빠른 선택 */
+.quick-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.quick-chip {
+  height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--sf-bg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.quick-chip:hover {
+  background: var(--sf-line);
+  color: var(--sf-text);
+}
+
+/* 공유 */
+.share-row {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-bg);
+}
+
+.share-title {
+  margin: 0;
+  font-size: 15px;
   font-weight: 600;
-  font-size: 14px;
-  color: #333;
-  background: rgba(102, 126, 234, 0.05);
+  color: var(--sf-text);
+}
+
+.share-desc {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--sf-text-sub);
+}
+
+.list-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* 담은 식품 */
+.pending {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sf-line);
+}
+
+.pending-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-text);
 }
 
 .pending-limit {
-  margin-left: 6px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
-  color: #888;
+  color: var(--sf-text-faint);
+}
+
+.pending-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .pending-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 8px 8px 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  gap: 10px;
+  padding: 8px 4px 8px 10px;
+  border-radius: 10px;
+}
+
+.pending-item + .pending-item {
+  margin-top: 2px;
 }
 
 .pending-item.is-editing {
-  background: rgba(102, 126, 234, 0.1);
+  background: var(--sf-mint-soft);
+}
+
+.pending-emoji {
+  font-size: 20px;
 }
 
 .pending-info {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex: 1;
+  flex-direction: column;
   min-width: 0;
-  font-size: 14px;
 }
 
 .pending-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
   font-weight: 600;
-  color: #333;
-  word-break: break-all;
+  color: var(--sf-text);
+}
+
+.share-tag {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--sf-mint-soft);
+  font-size: 12px;
+  color: var(--sf-primary);
 }
 
 .pending-meta {
-  color: #666;
+  font-size: 13px;
+  color: var(--sf-text-faint);
 }
 
 .pending-warning {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  color: #e65100;
   font-size: 13px;
-}
-
-.pending-actions {
-  display: flex;
-  flex-shrink: 0;
-}
-
-.action-buttons {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  width: 100%;
-}
-
-.right-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.action-btn {
-  border-radius: 12px;
   font-weight: 600;
-  text-transform: none;
-  padding: 12px 24px;
-  height: auto;
-  min-height: 44px;
+  color: var(--sf-soon-ink);
 }
 
-.cancel-btn {
-  border: 2px solid #ddd;
-  color: #666;
+.form-actions {
+  padding: 12px 24px 20px !important;
+  border-top: 1px solid var(--sf-line);
 }
 
-.save-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-  color: white !important;
-  font-weight: 700;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-/* 반응형 디자인 */
 @media (max-width: 600px) {
-  .modal-header {
-    padding: 20px 24px;
+  .form-head {
+    padding: 20px 8px 4px 16px;
   }
-  
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+
+  .form-body {
+    padding: 8px 16px !important;
   }
-  
-  .action-buttons {
-    flex-direction: column;
-    gap: 16px;
+
+  .field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
-  
-  .right-buttons {
-    width: 100%;
-    justify-content: stretch;
-  }
-  
-  .action-btn {
-    flex: 1;
+
+  .form-actions {
+    padding: 12px 16px 16px !important;
   }
 }
 </style>

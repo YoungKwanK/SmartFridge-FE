@@ -1,258 +1,169 @@
 <template>
-  <div class="post-detail-container">
-    <!-- 헤더 섹션 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-info">
-          <v-btn @click="goBack" prepend-icon="mdi-arrow-left" variant="text" class="back-btn">
-            뒤로가기
-          </v-btn>
-          <h1 class="page-title">게시글</h1>
-        </div>
-        <div class="header-actions" v-if="postDetail">
-          <!-- 본인이 작성한 게시글인 경우에만 수정/삭제 버튼 표시 -->
-          <div v-if="isAuthor" class="author-actions">
-            <v-btn @click="openEditModal" color="primary" variant="outlined" class="edit-btn">
-              <v-icon>mdi-pencil</v-icon>
-              수정
-            </v-btn>
-            <v-btn @click="openDeleteDialog" color="error" variant="outlined" class="delete-btn">
-              <v-icon>mdi-delete</v-icon>
-              삭제
-            </v-btn>
-          </div>
-          <!-- 냉장고 관리자에게만, 공지사항일 때만 상단 고정 버튼 표시 -->
-          <v-btn
-            v-if="canPin"
-            @click="togglePin"
-            :color="postDetail.pinned ? 'error' : 'grey'"
-            variant="outlined"
-            :loading="isPinning"
-            class="pin-btn"
-          >
-            <v-icon>{{ postDetail.pinned ? 'mdi-pin-off' : 'mdi-pin' }}</v-icon>
-            {{ postDetail.pinned ? '고정 해제' : '상단 고정' }}
-          </v-btn>
-          <v-btn @click="toggleLike" :color="postDetail.isLiked ? 'red' : 'grey'" variant="outlined" class="like-btn">
-            <v-icon>{{ postDetail.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
-            좋아요 {{ postDetail.likeCount }}
-          </v-btn>
-        </div>
+  <div class="post-page">
+    <nav class="post-nav">
+      <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="goBack">목록으로</v-btn>
+      <div v-if="postDetail && (isAuthor || canPin)" class="nav-actions">
+        <v-btn
+          v-if="canPin"
+          variant="text"
+          :prepend-icon="postDetail.pinned ? 'mdi-pin-off-outline' : 'mdi-pin-outline'"
+          :loading="isPinning"
+          @click="togglePin"
+        >
+          {{ postDetail.pinned ? '고정 풀기' : '맨 위에 고정' }}
+        </v-btn>
+        <v-menu v-if="isAuthor" location="bottom end">
+          <template #activator="{ props }">
+            <v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" aria-label="글 관리" />
+          </template>
+          <v-list density="compact" min-width="160">
+            <v-list-item prepend-icon="mdi-pencil-outline" title="글 수정" @click="openEditModal" />
+            <v-list-item prepend-icon="mdi-trash-can-outline" title="글 삭제" base-color="error" @click="openDeleteDialog" />
+          </v-list>
+        </v-menu>
       </div>
-    </div>
+    </nav>
 
-    <!-- 메인 콘텐츠 -->
-    <v-card class="main-content-card" v-if="postDetail">
-      <!-- 게시글 헤더 -->
-      <v-card-title class="post-header">
-        <div class="post-title-section">
-          <h2 class="post-title">
-            <v-icon v-if="postDetail.pinned" size="22" color="error" class="pin-icon">mdi-pin</v-icon>
-            {{ postDetail.title }}
-          </h2>
-          <div class="post-meta">
-            <span class="post-author">{{ postDetail.writer }}</span>
-            <span class="post-category">{{ postDetail.categoryName }}</span>
-            <span class="post-date">{{ formatDate(postDetail.createdDate) }}</span>
-          </div>
+    <article v-if="postDetail" class="post panel">
+      <header class="post-head">
+        <p class="post-board">
+          <span>{{ postDetail.categoryName }}</span>
+          <span v-if="postDetail.pinned" class="pin-tag">고정</span>
+        </p>
+        <h1 class="post-title">{{ postDetail.title }}</h1>
+        <div class="post-meta">
+          <span class="post-author">{{ postDetail.writer }}</span>
+          <span class="sf-num">{{ formatDate(postDetail.createdDate) }}</span>
+          <span class="sf-num">조회 {{ postDetail.viewCount }}</span>
         </div>
-        <div class="post-stats">
-          <div class="stat-item">
-            <v-icon size="16" color="blue">mdi-eye</v-icon>
-            <span>{{ postDetail.viewCount }}</span>
+      </header>
+
+      <!-- 공동구매 모집 -->
+      <section v-if="purchase" class="purchase" aria-label="공동구매 모집 현황">
+        <div class="purchase-info">
+          <p class="purchase-state" :class="{ 'is-open': purchaseStatus.canJoin }">{{ purchaseStatus.label }}</p>
+          <p class="purchase-count sf-num">
+            <strong>{{ purchase.currentParticipants }}</strong> / {{ purchase.maxParticipants }}명 참여
+          </p>
+          <div
+            class="purchase-bar"
+            role="progressbar"
+            :aria-valuenow="purchase.currentParticipants"
+            aria-valuemin="0"
+            :aria-valuemax="purchase.maxParticipants"
+            :aria-label="`모집 인원 ${purchase.maxParticipants}명 중 ${purchase.currentParticipants}명`"
+          >
+            <span :style="{ width: `${Math.min(100, (purchase.currentParticipants / Math.max(1, purchase.maxParticipants)) * 100)}%` }" />
           </div>
-          <div class="stat-item">
-            <v-icon size="16" color="red">mdi-heart</v-icon>
-            <span>{{ postDetail.likeCount }}</span>
-          </div>
-          <div class="stat-item">
-            <v-icon size="16" color="green">mdi-comment</v-icon>
-            <span>{{ postDetail.commentCount }}</span>
-          </div>
+          <a v-if="purchase.productUrl" :href="purchase.productUrl" target="_blank" rel="noopener noreferrer" class="purchase-link">
+            <v-icon size="16" aria-hidden="true">mdi-open-in-new</v-icon>
+            상품 페이지 열기
+          </a>
         </div>
-      </v-card-title>
+        <v-btn
+          v-if="purchase.isJoined"
+          color="primary"
+          variant="flat"
+          size="large"
+          prepend-icon="mdi-chat-outline"
+          @click="goToChatRoom"
+        >
+          채팅방으로 가기
+        </v-btn>
+        <v-btn
+          v-else
+          color="cta"
+          variant="flat"
+          size="large"
+          :disabled="!purchaseStatus.canJoin"
+          :loading="isJoining"
+          @click="joinPurchase"
+        >
+          {{ purchaseStatus.canJoin ? '공동구매 참여하기' : '참여할 수 없어요' }}
+        </v-btn>
+      </section>
 
-      <!-- 게시글 내용 -->
-      <v-card-text class="post-content">
-        <div class="content-text" v-html="processedContent"></div>
-      </v-card-text>
+      <div class="post-body" v-html="processedContent" />
 
-      <!-- 공동구매 모집 정보 -->
-      <v-card-text v-if="purchase" class="purchase-section">
-        <div class="purchase-box">
-          <div class="purchase-info">
-            <div class="purchase-title">
-              <v-icon size="20" color="primary">mdi-cart-outline</v-icon>
-              <span>공동구매 모집</span>
-              <v-chip size="small" :color="purchaseStatus.color" variant="flat" class="ml-2">
-                {{ purchaseStatus.label }}
-              </v-chip>
-            </div>
-            <div class="purchase-meta">
-              <span>
-                <v-icon size="16">mdi-account-group</v-icon>
-                {{ purchase.currentParticipants }} / {{ purchase.maxParticipants }}명
+      <footer class="post-foot">
+        <button
+          type="button"
+          class="like-btn"
+          :class="{ 'is-liked': postDetail.isLiked }"
+          :aria-pressed="!!postDetail.isLiked"
+          @click="toggleLike"
+        >
+          <v-icon size="20" aria-hidden="true">{{ postDetail.isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon>
+          좋아요 <span class="sf-num">{{ postDetail.likeCount }}</span>
+        </button>
+      </footer>
+    </article>
+
+    <!-- 댓글 -->
+    <section id="comments-section" class="comments panel" aria-labelledby="comments-title">
+      <h2 id="comments-title" class="comments-title">
+        댓글 <span class="sf-num">{{ postDetail?.commentCount || 0 }}</span>
+      </h2>
+
+      <div v-if="isLoadingComments" class="state-box">
+        <v-progress-circular indeterminate color="primary" size="28" />
+      </div>
+
+      <ul v-else-if="comments && comments.length > 0" class="comment-list">
+        <li v-for="comment in comments" :id="`comment-${comment.id}`" :key="comment.id" class="comment">
+          <span class="comment-avatar" aria-hidden="true">{{ (comment.writer || '?').charAt(0) }}</span>
+          <div class="comment-main">
+            <div class="comment-head">
+              <span class="comment-author">{{ comment.writer }}</span>
+              <span class="comment-date sf-num">{{ formatDate(comment.createdDate) }}</span>
+              <span v-if="isCommentAuthor(comment) && editingCommentId !== comment.id" class="comment-tools">
+                <button type="button" class="text-btn" @click="startEditComment(comment)">수정</button>
+                <button type="button" class="text-btn is-danger" @click="deleteComment(comment.id)">삭제</button>
               </span>
-              <a
-                v-if="purchase.productUrl"
-                :href="purchase.productUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="purchase-link"
-              >
-                <v-icon size="16">mdi-link-variant</v-icon> 상품 보러가기
-              </a>
             </div>
-          </div>
-          <v-btn
-            v-if="purchase.isJoined"
-            color="primary"
-            variant="flat"
-            prepend-icon="mdi-chat-outline"
-            @click="goToChatRoom"
-          >
-            채팅방으로 이동
-          </v-btn>
-          <v-btn
-            v-else
-            color="primary"
-            variant="flat"
-            prepend-icon="mdi-account-plus"
-            :disabled="!purchaseStatus.canJoin"
-            :loading="isJoining"
-            @click="joinPurchase"
-          >
-            {{ purchaseStatus.canJoin ? '참여하기' : '참여 불가' }}
-          </v-btn>
-        </div>
-      </v-card-text>
-    </v-card>
 
-    <!-- 댓글 섹션 -->
-    <v-card class="comments-card">
-      <v-card-title class="comments-header" id="comments-section">
-        <div class="comments-title-section">
-          <v-icon color="primary" size="24" class="mr-2">mdi-comment-multiple</v-icon>
-          <h3>댓글 ({{ postDetail?.commentCount || 0 }})</h3>
-        </div>
-      </v-card-title>
-
-      <!-- 댓글 작성 폼 -->
-      <v-card-text class="comment-form-section">
-        <div class="comment-input-container">
-          <v-textarea
-            v-model="newComment"
-            placeholder="댓글을 작성해주세요..."
-            variant="outlined"
-            rows="3"
-            class="comment-input"
-            hide-details
-          ></v-textarea>
-          <v-btn 
-            @click="submitComment" 
-            color="primary" 
-            :disabled="!newComment.trim()"
-            class="comment-submit-btn"
-          >
-            댓글 작성
-          </v-btn>
-        </div>
-      </v-card-text>
-
-      <!-- 댓글 목록 -->
-      <v-card-text class="comments-list">
-        <div v-if="isLoadingComments" class="loading-container">
-          <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
-          <p class="loading-text">댓글을 불러오는 중...</p>
-        </div>
-
-        <div v-else-if="comments && comments.length > 0" class="comment-list">
-          <div v-for="comment in comments" :key="comment.id" class="comment-item" :id="`comment-${comment.id}`">
-            <!-- 수정 모드가 아닐 때 -->
-            <div v-if="editingCommentId !== comment.id">
-              <div class="comment-header">
-                <div class="comment-author-section">
-                  <v-avatar size="32" color="primary" class="comment-avatar">
-                    <v-icon color="white" size="16">mdi-account</v-icon>
-                  </v-avatar>
-                  <span class="comment-author">{{ comment.writer }}</span>
-                </div>
-                <div class="comment-actions">
-                  <span class="comment-date">{{ formatDate(comment.createdDate) }}</span>
-                  <!-- 댓글 작성자 본인만 수정/삭제 가능하도록 처리 -->
-                  <div v-if="isCommentAuthor(comment)" class="comment-buttons">
-                    <v-btn @click="startEditComment(comment)" size="small" variant="text" color="primary" class="action-btn">
-                      <v-icon size="16">mdi-pencil</v-icon>
-                      수정
-                    </v-btn>
-                    <v-btn @click="deleteComment(comment.id)" size="small" variant="text" color="error" class="action-btn">
-                      <v-icon size="16">mdi-delete</v-icon>
-                      삭제
-                    </v-btn>
-                  </div>
-                </div>
-              </div>
-              <div class="comment-content">{{ comment.content }}</div>
-            </div>
-            
-            <!-- 수정 모드일 때 -->
-            <div v-else class="comment-edit-form">
+            <p v-if="editingCommentId !== comment.id" class="comment-body">{{ comment.content }}</p>
+            <div v-else class="comment-edit">
               <v-textarea
                 v-model="editingCommentContent"
                 variant="outlined"
                 rows="2"
-                class="comment-edit-input"
+                auto-grow
                 hide-details
-              ></v-textarea>
+                aria-label="댓글 수정"
+              />
               <div class="comment-edit-actions">
-                <v-btn @click="updateComment(comment.id)" size="small" color="primary" class="save-btn">
-                  <v-icon size="16">mdi-check</v-icon>
-                  저장
-                </v-btn>
-                <v-btn @click="cancelEditComment" size="small" variant="outlined" class="cancel-btn">
-                  <v-icon size="16">mdi-close</v-icon>
-                  취소
-                </v-btn>
+                <v-btn size="small" variant="text" @click="cancelEditComment">취소</v-btn>
+                <v-btn size="small" color="primary" variant="flat" @click="updateComment(comment.id)">저장</v-btn>
               </div>
             </div>
           </div>
-          
-          <!-- 댓글 페이징 -->
-          <div v-if="commentTotalPages > 1" class="comment-pagination">
-            <v-btn 
-              @click="refreshComments" 
-              :disabled="commentPage === 1"
-              variant="outlined" 
-              size="small"
-              class="pagination-btn"
-            >
-              <v-icon size="16">mdi-rewind</v-icon>
-              처음으로
-            </v-btn>
-            <span class="page-info">
-              {{ commentPage }} / {{ commentTotalPages }} 페이지
-            </span>
-            <v-btn 
-              @click="loadMoreComments" 
-              :disabled="commentPage >= commentTotalPages"
-              variant="outlined" 
-              size="small"
-              class="pagination-btn"
-            >
-              <v-icon size="16">mdi-fast-forward</v-icon>
-              더보기
-            </v-btn>
-          </div>
-        </div>
+        </li>
+      </ul>
 
-        <div v-else class="no-comments">
-          <v-icon size="48" color="grey-lighten-2" class="mb-3">mdi-comment-outline</v-icon>
-          <p class="no-comments-text">아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!</p>
-        </div>
-      </v-card-text>
-    </v-card>
+      <p v-else class="empty-text">아직 댓글이 없어요. 첫 댓글을 남겨 보세요.</p>
 
-    <!-- 수정 모달 -->
+      <div v-if="commentTotalPages > 1" class="comment-paging">
+        <v-btn size="small" variant="text" :disabled="commentPage === 1" @click="refreshComments">처음으로</v-btn>
+        <span class="sf-num">{{ commentPage }} / {{ commentTotalPages }}</span>
+        <v-btn size="small" variant="text" :disabled="commentPage >= commentTotalPages" @click="loadMoreComments">댓글 더 보기</v-btn>
+      </div>
+
+      <div class="composer">
+        <v-textarea
+          v-model="newComment"
+          placeholder="댓글을 입력하세요"
+          variant="outlined"
+          rows="2"
+          auto-grow
+          max-rows="6"
+          hide-details
+          aria-label="댓글 입력"
+        />
+        <v-btn color="primary" variant="flat" :disabled="!newComment.trim()" @click="submitComment">댓글 남기기</v-btn>
+      </div>
+    </section>
+
     <PostFormModal
       v-model="showEditModal"
       :editing-post="editingPost"
@@ -260,22 +171,19 @@
       @save="handlePostUpdate"
     />
 
-    <!-- 게시글 삭제 확인 다이얼로그 -->
     <DeleteConfirmDialog
       v-model="showDeleteDialog"
-      title="게시글 삭제 확인"
+      title="글을 삭제할까요?"
       :message="deleteMessage"
       @confirm="deletePost"
       @cancel="showDeleteDialog = false"
     />
 
-    <!-- Snackbar 컴포넌트 추가 -->
     <CommonSnackbar ref="commonSnackbar" />
 
-    <!-- 로딩 상태 -->
     <div v-if="isLoading" class="loading-overlay">
-      <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
-      <p class="loading-text">게시글을 불러오는 중...</p>
+      <v-progress-circular indeterminate color="primary" size="40" />
+      <p>글을 불러오는 중이에요</p>
     </div>
   </div>
 </template>
@@ -821,568 +729,391 @@ export default {
 </script>
 
 <style scoped>
-.post-detail-container {
-  padding: 32px;
-  margin-left: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  position: relative;
+.post-page {
+  max-width: 800px;
+  min-height: 100%;
+  padding: 20px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
 }
 
-.post-detail-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.1;
-  z-index: -1;
-}
-
-.page-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin-bottom: 24px;
-}
-
-.header-content {
+.post-nav {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
+  margin: 0 0 12px -12px;
 }
 
-.header-info {
+.nav-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 4px;
 }
 
-.back-btn {
-  color: #666;
-  font-weight: 500;
-  transition: all 0.3s ease;
+.panel {
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
 }
 
-.back-btn:hover {
-  color: #1976d2;
-  transform: translateX(-2px);
+.post {
+  padding: 28px 32px 20px;
+  margin-bottom: 16px;
 }
 
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin: 0;
-}
-
-.header-actions {
+.post-board {
   display: flex;
   align-items: center;
-}
-
-.author-actions {
-  display: flex;
-  gap: 12px;
-  margin-right: 16px;
-}
-
-.edit-btn, .delete-btn {
-  border-radius: 12px;
-  text-transform: none;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 14px;
   font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: var(--sf-primary);
 }
 
-.edit-btn:hover, .delete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.pin-icon {
-  margin-right: 4px;
-  vertical-align: -3px;
-}
-
-.pin-btn {
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  margin-right: 8px;
-}
-
-.like-btn {
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.like-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.main-content-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.post-header {
-  padding: 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.post-title-section {
-  flex: 1;
+.pin-tag {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--sf-bg);
+  font-size: 12px;
+  color: var(--sf-text-sub);
 }
 
 .post-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 16px 0;
-  line-height: 1.4;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
+  word-break: keep-all;
 }
 
 .post-meta {
   display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 16px;
   flex-wrap: wrap;
-}
-
-.post-author, .post-date {
+  gap: 4px 14px;
+  margin-top: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--sf-line);
   font-size: 14px;
-  color: #666;
-  font-weight: 500;
+  color: var(--sf-text-faint);
 }
 
-.post-category {
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  color: #1976d2;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+.post-author {
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
+  color: var(--sf-text-sub);
 }
 
-.post-stats {
-  display: flex;
-  gap: 20px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-  padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.post-content {
-  padding: 24px;
-}
-
-.purchase-section {
-  padding: 0 24px 24px;
-}
-
-.purchase-box {
+/* 공동구매 */
+.purchase {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 16px 20px;
-  border: 1px solid rgba(var(--v-theme-primary), 0.3);
-  border-radius: 12px;
-  background: rgba(var(--v-theme-primary), 0.05);
+  gap: 20px;
+  margin-top: 20px;
+  padding: 18px 20px;
+  border: 1px solid #FFD9C2;
+  border-radius: var(--sf-radius-md);
+  background: #FFF7F2;
 }
 
-.purchase-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 16px;
+.purchase-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.purchase-meta {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 6px;
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.7);
+.purchase-state {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sf-text-sub);
+}
+
+.purchase-state.is-open {
+  color: #B4461A;
+}
+
+.purchase-count {
+  margin: 2px 0 8px;
+  font-size: 15px;
+  color: var(--sf-text-sub);
+}
+
+.purchase-count strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--sf-text);
+}
+
+.purchase-bar {
+  height: 6px;
+  max-width: 280px;
+  border-radius: 999px;
+  background: #FBE3D5;
+  overflow: hidden;
+}
+
+.purchase-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--sf-cta);
 }
 
 .purchase-link {
-  color: rgb(var(--v-theme-primary));
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-primary);
   text-decoration: none;
 }
 
 .purchase-link:hover {
   text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.content-text {
+/* 본문 */
+.post-body {
+  max-width: 68ch;
+  padding: 24px 0;
   font-size: 16px;
   line-height: 1.8;
-  color: #333;
-  margin-bottom: 24px;
   white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--sf-text);
 }
 
-.content-text img {
+.post-body :deep(img) {
+  display: block;
   max-width: 100%;
   height: auto;
   margin: 16px 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  display: block;
-}
-
-.content-text p {
-  margin: 16px 0;
-}
-
-
-
-.comments-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.comments-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.comments-title-section {
-  display: flex;
-  align-items: center;
-}
-
-.comments-header h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-.comment-form-section {
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.comment-input-container {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.comment-input {
-  flex: 1;
-}
-
-.comment-submit-btn {
   border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  min-width: 120px;
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
-  transition: all 0.3s ease;
+  box-shadow: none !important;
 }
 
-.comment-submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
-}
-
-.comments-list {
-  padding: 20px 24px;
-}
-
-.loading-container {
+.post-foot {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: #888;
+  padding-top: 16px;
+  border-top: 1px solid var(--sf-line);
 }
 
-.loading-text {
-  margin-top: 16px;
-  font-size: 16px;
-  color: #666;
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--sf-line-strong);
+  border-radius: 999px;
+  background: var(--sf-surface);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.like-btn:hover {
+  border-color: var(--sf-text-faint);
+}
+
+.like-btn.is-liked {
+  border-color: #F3C2C4;
+  background: #FFF3F3;
+  color: var(--sf-expired);
+}
+
+/* 댓글 */
+.comments {
+  padding: 24px 32px;
+}
+
+.comments-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.comments-title span {
+  color: var(--sf-text-faint);
 }
 
 .comment-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comment {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.comment-item {
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
-  border-left: 4px solid #1976d2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.comment-item:hover {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateX(4px);
-}
-
-.comment-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.comment-author-section {
-  display: flex;
-  align-items: center;
   gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--sf-line);
 }
 
 .comment-avatar {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--sf-mint-soft);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sf-primary);
+}
+
+.comment-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
 }
 
 .comment-author {
-  font-weight: 600;
-  color: #333;
   font-size: 14px;
+  font-weight: 700;
+  color: var(--sf-text);
 }
 
 .comment-date {
-  font-size: 12px;
-  color: #999;
+  font-size: 13px;
+  color: var(--sf-text-faint);
 }
 
-.comment-content {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #333;
-}
-
-.comment-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.comment-buttons {
+.comment-tools {
   display: flex;
   gap: 8px;
+  margin-left: auto;
 }
 
-.action-btn {
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+.text-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--sf-text-sub);
+  cursor: pointer;
 }
 
-.action-btn:hover {
-  transform: translateY(-1px);
+.text-btn:hover {
+  color: var(--sf-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.comment-edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 16px;
-  background: rgba(25, 118, 210, 0.05);
-  border-radius: 8px;
-  border: 1px solid rgba(25, 118, 210, 0.1);
+.text-btn.is-danger:hover {
+  color: var(--sf-expired);
 }
 
-.comment-edit-input {
-  flex: 1;
+.comment-body {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--sf-text);
+}
+
+.comment-edit {
+  margin-top: 8px;
 }
 
 .comment-edit-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.comment-paging {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0 0;
+  font-size: 13px;
+  color: var(--sf-text-sub);
+}
+
+.empty-text {
+  margin: 8px 0 0;
+  padding: 16px 0;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.state-box {
+  display: grid;
+  place-items: center;
+  padding: 32px 0;
+}
+
+.composer {
+  display: flex;
+  align-items: flex-end;
   gap: 8px;
-}
-
-.save-btn, .cancel-btn {
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.save-btn:hover, .cancel-btn:hover {
-  transform: translateY(-1px);
-}
-
-.no-comments {
-  text-align: center;
-  padding: 60px 20px;
-  color: #888;
-}
-
-.no-comments-text {
-  font-size: 16px;
-  color: #666;
   margin-top: 16px;
 }
 
-.comment-pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  margin-top: 24px;
-  padding: 20px 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.pagination-btn {
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.pagination-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-}
-
-.page-info {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
+.composer .v-textarea {
+  flex: 1;
 }
 
 .loading-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  inset: 0;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  gap: 12px;
+  background: rgba(247, 248, 250, 0.8);
+  font-size: 14px;
+  color: var(--sf-text-sub);
 }
 
-@media (max-width: 960px) {
-  .post-detail-container {
-    padding: 24px;
-    margin-left: 8px;
-  }
-  
-  .page-header {
-    padding: 20px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  
-  .page-title {
-    font-size: 24px;
-  }
-  
-  .post-title {
-    font-size: 24px;
-  }
-  
-  .author-actions {
-    margin-right: 0;
-    margin-bottom: 12px;
-  }
+.loading-overlay p {
+  margin: 0;
 }
 
 @media (max-width: 600px) {
-  .post-detail-container {
-    padding: 16px;
-    margin-left: 4px;
+  .post-page {
+    padding: 12px 12px 32px;
   }
 
-  .page-header {
-    padding: 16px;
+  .post,
+  .comments {
+    padding: 20px 16px;
   }
 
-  .post-meta {
+  .post-title {
+    font-size: 22px;
+  }
+
+  .purchase {
     flex-direction: column;
-    gap: 8px;
-    align-items: flex-start;
+    align-items: stretch;
   }
 
-  .post-stats {
-    justify-content: center;
-    margin-top: 16px;
-  }
-
-  .comment-input-container {
+  .composer {
     flex-direction: column;
-    gap: 12px;
-  }
-
-  .comment-submit-btn {
-    align-self: flex-end;
-  }
-  
-  .comment-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  
-  .comment-actions {
-    align-self: flex-end;
-  }
-  
-  .author-actions {
-    flex-direction: column;
-    gap: 8px;
-    margin-right: 0;
-    margin-bottom: 12px;
-  }
-  
-  .edit-btn, .delete-btn {
-    width: 100%;
+    align-items: stretch;
   }
 }
 </style>
+

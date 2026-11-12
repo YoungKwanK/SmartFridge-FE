@@ -1,578 +1,427 @@
 <template>
-  <div class="main-dashboard">
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <v-container class="hero-container">
-        <div class="hero-content">
-          <div class="hero-text">
-            <h1 class="hero-title">
-              <span class="gradient-text">SmartFridge</span>
-              <br>스마트한 냉장고 관리의 시작
-            </h1>
-            <p class="hero-subtitle">
-               공용냉장고를 스마트하게 관리하여 음식 낭비를 줄이고, 함께 사용하는 공간을 효율적으로 운영해보세요
-             </p>
-            <div class="cta-content">
-              <h2 class="cta-title">지금 바로 시작해보세요</h2>
-              <p class="cta-subtitle">
-                SmartFridge와 함께 더 스마트한 냉장고 관리 경험을 만들어보세요
-              </p>
-              <v-btn
-                size="x-large"
-                color="primary"
-                class="cta-button-large"
-                :to="'/login'"
-                elevation="4"
-                rounded="xl"
-              >
-                <v-icon start icon="mdi-rocket-launch"></v-icon>
-                무료로 시작하기
-              </v-btn>
-            </div>
-          </div>
-          <div class="hero-image">
-            <div class="hero-img-container">
-              <img
-                :src="heroImageUrl"
-                alt="SmartFridge Hero"
-                class="hero-img"
-              />
-              <div class="hero-img-glow"></div>
-            </div>
-          </div>
+  <div class="landing">
+    <header class="top-bar">
+      <span class="brand">
+        <img :src="logoUrl" alt="" class="brand-logo" />
+        <span class="brand-name">SmartFridge</span>
+      </span>
+      <v-btn to="/login" variant="text">로그인</v-btn>
+    </header>
+
+    <!-- 첫 화면: 서비스가 실제로 보여주는 화면 -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-text">
+        <h1 id="hero-title" class="hero-title">
+          같이 쓰는 냉장고,<br>누구 건지 언제까지인지<br>한눈에 보여요
+        </h1>
+        <p class="hero-desc">
+          기숙사, 셰어하우스, 사무실처럼 여럿이 쓰는 냉장고를 위한 서비스예요.
+          넣을 때 이름과 유통기한을 남기면 곧 상하는 것부터 알려드려요.
+        </p>
+        <v-btn to="/login" color="primary" variant="flat" size="x-large" class="hero-cta">
+          시작하기
+        </v-btn>
+      </div>
+
+      <div class="hero-sample" aria-label="오늘 확인할 식품 예시">
+        <p class="sample-title">먼저 확인할 식품 <span class="sf-num">3</span></p>
+        <ul class="sample-list">
+          <FoodRow v-for="food in sampleFoods" :key="food.id" :food="food" show-shared />
+        </ul>
+      </div>
+    </section>
+
+    <!-- 사용 순서 (실제 순서라 번호를 붙인다) -->
+    <section class="steps" aria-labelledby="steps-title">
+      <h2 id="steps-title" class="section-title">이렇게 써요</h2>
+      <ol class="step-list">
+        <li v-for="(step, index) in steps" :key="step.title" class="step">
+          <span class="step-num sf-num" aria-hidden="true">{{ index + 1 }}</span>
+          <h3 class="step-title">{{ step.title }}</h3>
+          <p class="step-desc">{{ step.description }}</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 기능: 아이콘 대신 실제 화면 조각으로 -->
+    <section class="features" aria-labelledby="features-title">
+      <h2 id="features-title" class="section-title">냉장고 하나로 할 수 있는 일</h2>
+
+      <div class="feature">
+        <div class="feature-text">
+          <h3 class="feature-title">상하기 전에 알려줘요</h3>
+          <p class="feature-desc">
+            유통기한이 3일 안으로 남으면 노란색, 지나면 빨간색으로 표시하고 알림을 보내요.
+            신선한 식품은 조용히 둬서 확인할 것만 눈에 띄어요.
+          </p>
         </div>
-      </v-container>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features-section" ref="featuresSection">
-      <v-container>
-        <div class="section-header">
-          <h2 class="section-title">SmartFridge의 핵심 기능</h2>
-          <p class="section-subtitle">더 스마트하고 효율적인 냉장고 관리</p>
+        <div class="feature-demo badges-demo" aria-hidden="true">
+          <span class="demo-row"><span class="demo-name">요거트</span><DdayBadge :expiration-date-time="day(9)" /></span>
+          <span class="demo-row"><span class="demo-name">계란</span><DdayBadge :expiration-date-time="day(2)" /></span>
+          <span class="demo-row"><span class="demo-name">우유</span><DdayBadge :expiration-date-time="day(-1)" /></span>
         </div>
-        
-        <v-row class="features-grid">
-          <v-col cols="12" md="6" v-for="feature in features" :key="feature.title">
-            <v-card class="feature-card" elevation="2" rounded="xl">
-              <div class="feature-icon-wrapper">
-                <v-icon :icon="feature.icon" size="56" :color="feature.color"></v-icon>
-              </div>
-              <v-card-title class="feature-title">{{ feature.title }}</v-card-title>
-              <v-card-text class="feature-description">
-                {{ feature.description }}
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
-    </section>
+      </div>
 
-    <!-- Stats Section -->
-    <section class="stats-section">
-      <v-container>
-        <v-row class="stats-grid">
-          <v-col cols="12" sm="6" md="3" v-for="stat in stats" :key="stat.label">
-            <div class="stat-item">
-              <div class="stat-number">{{ stat.number }}</div>
-              <div class="stat-label">{{ stat.label }}</div>
-            </div>
-          </v-col>
-        </v-row>
-      </v-container>
-    </section>
-
-    <!-- How It Works Section -->
-    <section class="how-it-works-section">
-      <v-container>
-        <div class="section-header">
-          <h2 class="section-title">사용 방법</h2>
-          <p class="section-subtitle">간단한 3단계로 시작하세요</p>
+      <div class="feature">
+        <div class="feature-text">
+          <h3 class="feature-title">남는 건 나눠 먹어요</h3>
+          <p class="feature-desc">
+            식품을 공유식품으로 등록하면 멤버 누구나 가져갈 수 있어요.
+            다 먹었는지, 버렸는지도 기록이 남아요.
+          </p>
         </div>
-        
-        <v-row class="steps-grid">
-          <v-col cols="12" md="4" v-for="(step, index) in steps" :key="step.title">
-            <div class="step-item">
-              <div class="step-number">{{ index + 1 }}</div>
-              <div class="step-content">
-                <h3 class="step-title">{{ step.title }}</h3>
-                <p class="step-description">{{ step.description }}</p>
-              </div>
-            </div>
-          </v-col>
-        </v-row>
-      </v-container>
+        <div class="feature-demo" aria-hidden="true">
+          <ul class="sample-list">
+            <FoodRow :food="sharedSample" show-shared />
+          </ul>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-text">
+          <h3 class="feature-title">필요한 건 같이 사요</h3>
+          <p class="feature-desc">
+            공동구매 글을 올리면 참여자 채팅방이 함께 열려요.
+            대용량 식재료를 나눠 사고 냉장고에 함께 넣어요.
+          </p>
+        </div>
+        <div class="feature-demo groupbuy-demo" aria-hidden="true">
+          <span class="groupbuy-icon"><v-icon size="20">mdi-cart-outline</v-icon></span>
+          <span class="groupbuy-text">
+            <span class="groupbuy-title">코스트코 계란 30구 나눠 사실 분</span>
+            <span class="groupbuy-meta">307호 준호, 20분 전</span>
+          </span>
+          <span class="groupbuy-btn">참여하기</span>
+        </div>
+      </div>
     </section>
 
+    <section class="closing">
+      <h2 class="closing-title">우리 냉장고부터 정리해 볼까요?</h2>
+      <p class="closing-desc">냉장고를 만들고 초대 링크를 보내면 바로 함께 쓸 수 있어요.</p>
+      <v-btn to="/login" color="primary" variant="flat" size="x-large">시작하기</v-btn>
+    </section>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import FoodRow from '@/components/Food/FoodRow.vue';
+import DdayBadge from '@/components/Food/DdayBadge.vue';
 
-const featuresSection = ref(null);
+const logoUrl = new URL('../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
 
-// Hero 이미지 URL (로고 이미지 사용)
-const heroImageUrl = new URL('../assets/images/SFlogo/smartFridge_logo.png', import.meta.url).href;
+// 예시 날짜는 오늘 기준으로 만든다
+const day = (days, hour = 21) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  d.setHours(hour, 0, 0, 0);
+  return d.toISOString();
+};
 
-// 핵심 기능 데이터
-const features = ref([
-  {
-    title: '실시간 공유',
-    description: '기숙사, 회사 등 공용공간 사용자들과 냉장고 내용을 실시간으로 공유하고 협력하여 관리할 수 있습니다.',
-    icon: 'mdi-account-group',
-    color: 'green'
-  },
-  {
-    title: '스마트 알림',
-    description: '유통기한 임박, 재료 부족 등 중요한 정보를 적시에 알려주어 음식 낭비를 방지합니다.',
-    icon: 'mdi-bell-ring',
-    color: 'orange'
-  },
-  {
-    title: '커뮤니티',
-    description: '다른 사용자들과 요리 팁과 레시피를 공유하고 소통할 수 있습니다.',
-    icon: 'mdi-chat',
-    color: 'teal'
-  },
-  {
-    title: '데이터 분석',
-    description: '식품 소비 패턴을 분석하여 더 효율적인 장보기와 식단 계획을 도와드립니다.',
-    icon: 'mdi-chart-line',
-    color: 'indigo'
-  }
-]);
+const sampleFoods = [
+  { id: 1, name: '우유 1L', registeredName: '305호 민지', quantity: 1, category: '유제품', storageType: '냉장', shareable: false, expirationDateTime: day(-1) },
+  { id: 2, name: '두부', registeredName: '307호 준호', quantity: 2, category: '가공식품', storageType: '냉장', shareable: true, expirationDateTime: day(0, 23) },
+  { id: 3, name: '시금치 한 단', registeredName: '310호 서연', quantity: 1, category: '채소', storageType: '냉장', shareable: false, expirationDateTime: day(2) }
+];
 
-// 통계 데이터
-const stats = ref([
-  { number: '10,000+', label: '활성 사용자' },
-  { number: '50,000+', label: '관리된 식품' },
-  { number: '95%', label: '사용자 만족도' },
-  { number: '30%', label: '음식 낭비 감소' }
-]);
+const sharedSample = { id: 9, name: '제주 감귤', registeredName: '308호 하은', quantity: 12, category: '과일', storageType: '냉장', shareable: true, expirationDateTime: day(10) };
 
-// 사용 방법 단계
-const steps = ref([
-  {
-    title: '회원가입',
-    description: '간단한 회원가입으로 SmartFridge 계정을 만드세요.'
-  },
-     {
-     title: '냉장고 설정',
-     description: '공용공간 사용자들을 초대하고 냉장고를 설정하세요.'
-   },
-  {
-    title: '식품 관리',
-    description: '모든 음식의 유통기한을 등록하고 냉장고에서 유통기한 관리를 해보세요.'
-  }
-]);
-
-// 기능 섹션으로 스크롤
-
+const steps = [
+  { title: '냉장고를 만들어요', description: '냉장고 이름을 정하고 초대 링크를 함께 쓰는 사람들에게 보내요.' },
+  { title: '넣을 때 등록해요', description: '식품 이름, 수량, 유통기한을 적고 혼자 먹을지 나눠 먹을지 골라요.' },
+  { title: '알림을 받고 정리해요', description: '곧 상하는 식품을 알려드려요. 다 먹었거나 버린 식품은 목록에서 정리해요.' }
+];
 </script>
 
 <style scoped>
-.main-dashboard {
+.landing {
   min-height: 100vh;
+  background: var(--sf-bg);
+  padding: 20px clamp(16px, 4vw, 56px) 64px;
 }
 
-/* Hero Section */
-.hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  height: 100vh;
-  min-height: 100vh;
-  padding: 0;
-  position: relative;
-  overflow: hidden;
+.landing > * {
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.top-bar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
-.hero-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  opacity: 0.3;
-}
-
-.hero-container {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  height: 100%;
+.brand {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
-.hero-content {
-  display: flex;
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-primary);
+}
+
+/* 첫 화면 */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr);
+  gap: clamp(32px, 6vw, 80px);
   align-items: center;
-  gap: 60px;
-}
-
-.hero-text {
-  flex: 1;
+  padding: clamp(40px, 10vh, 112px) 0 clamp(48px, 10vh, 120px);
 }
 
 .hero-title {
-  font-size: 3.5rem;
+  margin: 0;
+  font-size: clamp(34px, 4.6vw, 54px);
   font-weight: 800;
-  line-height: 1.2;
-  margin-bottom: 24px;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
+  color: var(--sf-text);
 }
 
-.gradient-text {
-  background: linear-gradient(45deg, #ffd700, #ffed4e);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.hero-desc {
+  max-width: 32em;
+  margin: 20px 0 32px;
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--sf-text-sub);
 }
 
-.hero-subtitle {
-  font-size: 1.25rem;
-  line-height: 1.6;
-  margin-bottom: 40px;
-  opacity: 0.9;
+.hero-sample {
+  padding: 24px 24px 12px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  border-left: 4px solid var(--sf-soon);
+  box-shadow: var(--sf-shadow);
 }
 
-.hero-buttons {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.cta-button {
-  background: linear-gradient(45deg, #ffd700, #ffed4e) !important;
-  color: #333 !important;
+.sample-title {
+  margin: 0 0 4px;
+  font-size: 18px;
   font-weight: 700;
-  padding: 16px 32px;
-  text-transform: none;
-  font-size: 1.1rem;
+  color: var(--sf-text);
 }
 
-.learn-more-button {
-  border: 2px solid white;
-  padding: 16px 32px;
-  text-transform: none;
-  font-size: 1.1rem;
-}
-
-.hero-image {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.hero-img-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.hero-img {
-  max-width: 500px;
-  height: auto;
-  border-radius: 50%;
-  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
-  transition: all 0.3s ease;
-  animation: float 6s ease-in-out infinite;
-}
-
-.hero-img:hover {
-  transform: scale(1.05) rotate(5deg);
-  filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.5));
-}
-
-.hero-img-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 550px;
-  height: 550px;
-  background: radial-gradient(circle, rgba(255, 215, 0, 0.2) 0%, rgba(255, 215, 0, 0.1) 40%, transparent 70%);
-  border-radius: 50%;
-  animation: glow 4s ease-in-out infinite alternate;
-  z-index: -1;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-}
-
-@keyframes glow {
-  0% {
-    opacity: 0.3;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  100% {
-    opacity: 0.6;
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-}
-
-/* Features Section */
-.features-section {
-  padding: 100px 0;
-  background: #f8f9fa;
-}
-
-.section-header {
-  text-align: center;
-  margin-bottom: 60px;
+.sample-list {
+  margin: 0;
+  padding: 0;
 }
 
 .section-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 16px;
-}
-
-.section-subtitle {
-  font-size: 1.2rem;
-  color: #666;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.features-grid {
-  margin-top: 40px;
-}
-
-.feature-card {
-  height: 100%;
-  min-height: 280px;
-  padding: 50px 30px;
-  text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border: none;
-  background: white;
-}
-
-.feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
-}
-
-.feature-icon-wrapper {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 30px;
-}
-
-.feature-title {
-  font-size: 1.4rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-.feature-description {
-  color: #666;
-  line-height: 1.6;
-  font-size: 1.1rem;
-}
-
-/* Stats Section */
-.stats-section {
-  padding: 80px 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.stats-grid {
-  text-align: center;
-}
-
-.stat-item {
-  padding: 20px;
-}
-
-.stat-number {
-  font-size: 3rem;
+  margin: 0 0 28px;
+  font-size: clamp(24px, 2.6vw, 30px);
   font-weight: 800;
-  margin-bottom: 8px;
-  background: linear-gradient(45deg, #ffd700, #ffed4e);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  letter-spacing: -0.03em;
+  color: var(--sf-text);
 }
 
-.stat-label {
-  font-size: 1.1rem;
-  opacity: 0.9;
-  font-weight: 500;
+/* 사용 순서 */
+.steps {
+  padding: 56px 0;
+  border-top: 1px solid var(--sf-line-strong);
 }
 
-/* How It Works Section */
-.how-it-works-section {
-  padding: 100px 0;
-  background: white;
+.step-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.steps-grid {
-  margin-top: 60px;
-}
-
-.step-item {
-  text-align: center;
-  padding: 20px;
-}
-
-.step-number {
-  width: 60px;
-  height: 60px;
+.step-num {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
+  background: var(--sf-text);
+  font-size: 15px;
   font-weight: 700;
-  margin: 0 auto 24px;
+  color: #fff;
 }
 
 .step-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
-}
-
-.step-description {
-  color: #666;
-  line-height: 1.6;
-}
-
-/* CTA Content in Hero Section */
-.cta-content {
-  text-align: left;
-  margin-top: 40px;
-  width: 100%;
-  max-width: 600px;
-}
-
-.cta-title {
-  font-size: 2.5rem;
+  margin: 16px 0 8px;
+  font-size: 19px;
   font-weight: 700;
-  margin-bottom: 24px;
-  color: white;
+  color: var(--sf-text);
 }
 
-.cta-subtitle {
-  font-size: 1.2rem;
-  margin-bottom: 40px;
-  opacity: 0.9;
-  line-height: 1.6;
-  color: white;
+.step-desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--sf-text-sub);
 }
 
-.cta-button-large {
-  background: linear-gradient(45deg, #ffd700, #ffed4e) !important;
-  color: #333 !important;
+/* 기능 */
+.features {
+  padding: 56px 0;
+  border-top: 1px solid var(--sf-line-strong);
+}
+
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 440px);
+  gap: clamp(24px, 5vw, 72px);
+  align-items: center;
+  padding: 28px 0;
+}
+
+.feature + .feature {
+  border-top: 1px solid var(--sf-line);
+}
+
+.feature-title {
+  margin: 0 0 10px;
+  font-size: 21px;
   font-weight: 700;
-  padding: 16px 24px;
-  text-transform: none;
-  font-size: 1.1rem;
+  color: var(--sf-text);
+}
+
+.feature-desc {
+  max-width: 30em;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--sf-text-sub);
+}
+
+.feature-demo {
+  padding: 16px 20px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
+}
+
+.badges-demo {
+  display: flex;
+  flex-direction: column;
+}
+
+.demo-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  width: fit-content;
+  justify-content: space-between;
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sf-text);
 }
 
-/* Responsive Design */
-@media (max-width: 960px) {
-  .hero-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 40px;
+.demo-row + .demo-row {
+  border-top: 1px solid var(--sf-line);
+}
+
+.groupbuy-demo {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.groupbuy-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #FFF0E6;
+  color: #C2501A;
+}
+
+.groupbuy-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.groupbuy-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupbuy-meta {
+  font-size: 13px;
+  color: var(--sf-text-faint);
+}
+
+.groupbuy-btn {
+  padding: 8px 14px;
+  border-radius: var(--sf-radius-sm);
+  background: var(--sf-cta);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sf-cta-ink);
+}
+
+/* 마무리 */
+.closing {
+  padding: 64px 32px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
+  text-align: center;
+}
+
+.closing-title {
+  margin: 0;
+  font-size: clamp(24px, 2.8vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--sf-text);
+}
+
+.closing-desc {
+  margin: 12px 0 28px;
+  font-size: 16px;
+  color: var(--sf-text-sub);
+}
+
+@media (max-width: 900px) {
+  .hero,
+  .feature {
+    grid-template-columns: minmax(0, 1fr);
   }
-  
-  .hero-title {
-    font-size: 2.5rem;
-  }
-  
-  .hero-buttons {
-    justify-content: center;
-  }
-  
-  .section-title {
-    font-size: 2rem;
-  }
-  
-  .cta-title {
-    font-size: 2rem;
-  }
-  
-  .cta-content {
-    margin-top: 30px;
+
+  .step-list {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
   }
 }
 
 @media (max-width: 600px) {
-  .hero-section {
-    height: 100vh;
-    min-height: 100vh;
-    padding: 0;
+  .landing {
+    padding: 16px 16px 40px;
   }
-  
-  .hero-title {
-    font-size: 2rem;
+
+  .hero-desc {
+    font-size: 16px;
   }
-  
-  .hero-subtitle {
-    font-size: 1.1rem;
+
+  .hero-cta {
+    width: 100%;
   }
-  
-  .hero-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .features-section,
-  .how-it-works-section {
-    padding: 60px 0;
-  }
-  
-  .stats-section {
-    padding: 60px 0;
-  }
-  
-  .stat-number {
-    font-size: 2.5rem;
-  }
-  
-  .cta-title {
-    font-size: 1.8rem;
-  }
-  
-  .cta-subtitle {
-    font-size: 1rem;
-  }
-  
-  .cta-content {
-    margin-top: 20px;
-    padding: 0 20px;
+
+  .closing {
+    padding: 40px 20px;
   }
 }
 </style>

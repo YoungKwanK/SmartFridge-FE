@@ -1,65 +1,45 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600px" persistent>
-    <div class="modal-overlay">
-      <div class="modal-container">
-        <div class="modal-header">
-          <div class="header-icon">
-            <v-icon size="32" color="primary">mdi-fridge-outline</v-icon>
-          </div>
-          <h2 class="modal-title">
-            {{ isEditMode ? '냉장고 수정' : '새 냉장고 만들기' }}
-          </h2>
-          <p class="modal-subtitle">
-            {{ isEditMode ? '냉장고 정보를 수정해주세요' : '새로운 냉장고를 만들어보세요' }}
-          </p>
-        </div>
+  <v-dialog v-model="dialog" max-width="480px" persistent>
+    <v-card class="fridge-form">
+      <header class="form-head">
+        <h2 class="form-title">{{ isEditMode ? '냉장고 정보 수정' : '새 냉장고 만들기' }}</h2>
+        <p class="form-desc">
+          {{ isEditMode ? '이름과 설명은 멤버 모두에게 보여요.' : '만든 사람이 관리자가 돼요. 다 만들면 초대 링크로 멤버를 부를 수 있어요.' }}
+        </p>
+      </header>
 
-        <div class="modal-body">
-          <div class="form-section">
-            <label class="form-label">냉장고 이름 *</label>
-            <v-text-field
-              v-model="formData.fridgeName"
-              placeholder="냉장고 이름을 입력하세요"
-              variant="outlined"
-              density="comfortable"
-              class="form-input"
-              hide-details
-              required
-            ></v-text-field>
-          </div>
+      <div class="form-body">
+        <label class="field-label" for="fridge-name">냉장고 이름</label>
+        <v-text-field
+          id="fridge-name"
+          v-model="formData.fridgeName"
+          placeholder="예: 3층 공용 냉장고"
+          variant="outlined"
+          density="comfortable"
+          hide-details
+          autofocus
+        />
 
-          <div class="form-section">
-            <label class="form-label">설명</label>
-            <v-textarea
-              v-model="formData.description"
-              placeholder="냉장고에 대한 설명을 입력하세요"
-              rows="4"
-              variant="outlined"
-              density="comfortable"
-              class="form-input"
-              hide-details
-            ></v-textarea>
-          </div>
-        </div>
-
-        <div class="modal-actions">
-          <v-btn 
-            variant="outlined" 
-            class="cancel-btn"
-            @click="closeModal"
-          >
-            취소
-          </v-btn>
-          <v-btn 
-            color="primary" 
-            class="save-btn"
-            @click="saveFridge"
-          >
-            {{ isEditMode ? '수정하기' : '만들기' }}
-          </v-btn>
-        </div>
+        <label class="field-label" for="fridge-desc">설명 <span class="optional">선택</span></label>
+        <v-textarea
+          id="fridge-desc"
+          v-model="formData.description"
+          placeholder="예: 305호~310호가 함께 써요. 이름 꼭 적어 주세요."
+          rows="3"
+          auto-grow
+          variant="outlined"
+          density="comfortable"
+          hide-details
+        />
       </div>
-    </div>
+
+      <div class="form-actions">
+        <v-btn variant="text" @click="closeModal">취소</v-btn>
+        <v-btn color="primary" variant="flat" :disabled="!formData.fridgeName || !formData.fridgeName.trim()" @click="saveFridge">
+          {{ isEditMode ? '수정 내용 저장' : '냉장고 만들기' }}
+        </v-btn>
+      </div>
+    </v-card>
   </v-dialog>
 </template>
 
@@ -116,135 +96,50 @@ export default {
 </script>
 
 <style scoped>
-/* .modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
-} */
-
-
-
-.modal-container {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(20px);
-  border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  margin: 20px;
+.fridge-form {
+  padding: 24px;
 }
 
-.modal-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 32px 32px 24px 32px;
-  text-align: center;
-}
-
-.header-icon {
-  margin-bottom: 16px;
-}
-
-.modal-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-  color: white;
-}
-
-.modal-subtitle {
-  font-size: 16px;
+.form-title {
   margin: 0;
-  opacity: 0.9;
-  font-weight: 400;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--sf-text);
 }
 
-.modal-body {
-  padding: 32px;
+.form-desc {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--sf-text-sub);
 }
 
-.form-section {
-  margin-bottom: 24px;
+.form-body {
+  margin-top: 20px;
 }
 
-.form-label {
+.field-label {
   display: block;
+  margin: 16px 0 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
+  color: var(--sf-text);
 }
 
-.form-input {
-  width: 100%;
+.field-label:first-child {
+  margin-top: 0;
 }
 
-.form-input :deep(.v-field) {
-  border-radius: 12px;
-  background: rgba(248, 249, 250, 0.8);
+.optional {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--sf-text-faint);
 }
 
-.form-input :deep(.v-field__outline) {
-  border-color: rgba(102, 126, 234, 0.3);
-}
-
-.form-input :deep(.v-field--focused .v-field__outline) {
-  border-color: #667eea;
-}
-.modal-actions {
+.form-actions {
   display: flex;
-  gap: 16px;
   justify-content: flex-end;
-  padding: 0 32px 32px 32px;
-}
-
-.cancel-btn {
-  border-radius: 12px;
-  font-weight: 600;
-  text-transform: none;
-  padding: 12px 24px;
-  border: 2px solid #e0e0e0;
-  color: #666;
-  height: auto;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.save-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  font-weight: 600;
-  text-transform: none;
-  padding: 12px 24px;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-  height: auto;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 600px) {
-  .modal-container {
-    margin: 10px;
-  }
-  
-  .modal-header {
-    padding: 24px 24px 20px 24px;
-  }
-  
-  .modal-body {
-    padding: 24px;
-  }
-  
-  .modal-actions {
-    padding: 0 24px 24px 24px;
-    flex-direction: column;
-  }
-  
-  .cancel-btn, .save-btn {
-    width: 100%;
-  }
+  gap: 8px;
+  margin-top: 24px;
 }
 </style>
