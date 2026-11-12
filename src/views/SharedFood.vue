@@ -1,231 +1,167 @@
 <template>
-  <div class="shared-food-container">
-    <!-- 헤더 섹션 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h1 class="page-title">전체식품 목록</h1>
-        </div>
-        <div class="header-actions">
-          <!-- Shared/NonShared 토글 버튼 -->
-          <div class="toggle-button-container">
-            <v-btn
-              :color="isSharedView ? 'info' : 'grey'"
-              :variant="isSharedView ? 'elevated' : 'outlined'"
-              size="large"
-              class="toggle-button"
-              @click="onToggleChange"
-              :class="{ 'active': isSharedView }"
-            >
-              <v-icon 
-                :icon="isSharedView ? 'mdi-share-variant' : 'mdi-account'"
-                class="mr-2"
-              ></v-icon>
-              {{ isSharedView ? '공유식품' : '개인식품' }}
-            </v-btn>
-          </div>
-        </div>
+  <div class="food-page">
+    <header class="page-head">
+      <div>
+        <h1 class="page-title">식품 목록</h1>
+        <p class="page-desc">
+          {{ isSharedView ? '멤버 모두가 먹을 수 있는 식품이에요.' : '내가 등록한 개인식품이에요.' }}
+        </p>
       </div>
+      <v-btn color="primary" variant="flat" prepend-icon="mdi-plus" @click="openCreateModal">
+        식품 등록
+      </v-btn>
+    </header>
+
+    <!-- 공유 / 개인 전환 -->
+    <div class="segmented" role="tablist" aria-label="식품 종류">
+      <button
+        v-for="option in viewOptions"
+        :key="option.value"
+        type="button"
+        role="tab"
+        class="segment"
+        :class="{ 'is-on': isSharedView === option.value }"
+        :aria-selected="isSharedView === option.value"
+        @click="isSharedView !== option.value && onToggleChange()"
+      >
+        {{ option.label }}
+      </button>
     </div>
 
-    <!-- 메인 콘텐츠 -->
-    <v-card class="main-content-card">
-      <!-- 필터 탭 -->
-      <v-card-title class="filter-header">
-        <div class="filter-tab-container">
-          <v-tabs v-model="activeTab" class="filter-tabs" color="primary" density="compact" @change="onTabChange">
-            <v-tab value="ALL" class="filter-tab">
-              전체보기
-            </v-tab>
-            <v-tab value="EXPIRES_IN_THREE_DAYS" class="filter-tab">
-              3일전
-            </v-tab>
-            <v-tab value="EXPIRES_TODAY" class="filter-tab">
-              당일
-            </v-tab>
-            <v-tab value="EXPIRED" class="filter-tab">
-              지남
-            </v-tab>
-            <v-tab v-if="isManager" value="MY_FOODS" class="filter-tab">
-              내 식품목록
-            </v-tab>
-          </v-tabs>
-          
-          <!-- 식품 등록 버튼 -->
-          <div class="add-food-container">
-            <v-btn 
-              @click="openCreateModal" 
-              color="success" 
-              prepend-icon="mdi-plus"
-              size="large"
-              class="add-food-btn"
-            >
-              식품 등록
-            </v-btn>
-          </div>
-        </div>
-      </v-card-title>
-
-      <!-- 카테고리 및 검색 필터 -->
-      <v-card-text class="filter-section">
-        <div class="filter-row">
-          <div class="filter-item">
-            <label class="filter-label">카테고리별 보기</label>
-            <v-select
-              v-model="selectedCategory"
-              :items="categoryOptions"
-              item-title="title"
-              item-value="value"
-              placeholder="선택하세요"
-              variant="outlined"
-              density="compact"
-              class="category-select"
-              @update:model-value="onCategoryChange"
-            ></v-select>
-          </div>
-          <div class="filter-item">
-            <label class="filter-label">식품검색</label>
-            <v-text-field
-              v-model="searchQuery"
-              placeholder="식품명으로 검색"
-              variant="outlined"
-              density="compact"
-              class="search-field"
-              prepend-inner-icon="mdi-magnify"
-              @input="onSearchInput"
-            ></v-text-field>
-          </div>
-        </div>
-      </v-card-text>
-      
-      <v-card-text>
-        <!-- 로딩 상태 표시 -->
-        <div v-if="isLoading" class="loading-container">
-          <v-progress-circular
-            indeterminate
-            color="primary"
-            size="64"
-          ></v-progress-circular>
-          <p class="loading-text">데이터를 불러오는 중...</p>
-        </div>
-
-        <!-- 데이터 테이블 -->
-        <v-table v-else class="food-table">
-          <thead>
-            <tr>
-              <th class="text-left">식품명</th>
-              <th class="text-center">수량</th>
-              <th class="text-left">등록자</th>
-              <th class="text-left">등록일</th>
-              <th class="text-left">유통기한</th>
-              <th class="text-center">카테고리</th>
-              <th class="text-center">위치</th>
-              <th class="text-center">관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="food in foodList" :key="food.id" class="food-row" @click="openDetailModal(food)">
-              <td class="food-name text-left">{{ food.name || '이름 없음' }}</td>
-              <td class="quantity-cell text-center">{{ food.quantity || 0 }}</td>
-              <td class="member-cell text-left">{{ food.registeredName || '알 수 없음' }}</td>
-              <td class="date-cell text-left">{{ food.storageStartDate }}</td>
-              <td class="expiration-cell text-left" :class="getExpirationClass(food.expirationDateTime)">
-                {{ formatDate(food.expirationDateTime) }}
-              </td>
-              <td class="category-cell text-center">
-                <v-chip 
-                  :color="getCategoryColor(food.category)" 
-                  size="small"
-                  variant="outlined"
-                >
-                  {{ food.category || '미설정' }}
-                </v-chip>
-              </td>
-              <td class="storage-cell text-center">
-                <v-chip 
-                  :color="getStorageColor(food.storageType)" 
-                  size="small"
-                  variant="outlined"
-                >
-                  {{ food.storageType || '미설정' }}
-                </v-chip>
-              </td>
-              <td class="actions-cell text-center" @click.stop>
-                <v-btn
-                  color="primary"
-                  size="small"
-                  variant="text"
-                  @click="openEditModal(food)"
-                  class="edit-btn"
-                >
-                  수정
-                </v-btn>
-                <v-btn
-                  color="error"
-                  size="small"
-                  variant="text"
-                  @click="deleteFood(food)"
-                  class="delete-btn"
-                >
-                  처리
-                </v-btn>
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-
-        <!-- 데이터가 없을 때 표시 -->
-        <div v-if="!isLoading && (!foodList || foodList.length === 0)" class="no-data-container">
-          <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-food-off</v-icon>
-          <h3 class="no-data-title">등록된 {{ isSharedView ? '공유' : '개인' }} 식품이 없습니다</h3>
-          <p class="no-data-subtitle">새로운 식품을 등록하여 {{ isSharedView ? '멤버들과 공유' : '개인적으로 관리' }}해보세요</p>
-          <v-btn 
-            color="success" 
-            @click="openCreateModal"
-            prepend-icon="mdi-plus"
-            class="mt-4"
+    <section class="list-panel" aria-label="식품 목록">
+      <!-- 유통기한 필터 -->
+      <div class="filter-bar">
+        <div class="status-filters" role="radiogroup" aria-label="유통기한으로 거르기">
+          <button
+            v-for="filter in statusFilters"
+            :key="filter.value"
+            type="button"
+            role="radio"
+            class="status-chip"
+            :class="[`tone-${filter.tone}`, { 'is-on': activeTab === filter.value }]"
+            :aria-checked="activeTab === filter.value"
+            @click="activeTab = filter.value"
           >
-            첫 식품 등록하기
-          </v-btn>
+            <span v-if="filter.tone !== 'plain'" class="chip-dot" aria-hidden="true" />
+            {{ filter.label }}
+          </button>
         </div>
 
-        <!-- 페이징 컴포넌트 -->
-        <div v-if="!isLoading && foodList && foodList.length > 0" class="pagination-container">
+        <div class="search-row">
+          <v-select
+            v-model="selectedCategory"
+            :items="categoryOptions"
+            item-title="title"
+            item-value="value"
+            aria-label="카테고리"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="category-select"
+            @update:model-value="onCategoryChange"
+          />
+          <v-text-field
+            v-model="searchQuery"
+            placeholder="식품 이름으로 찾기"
+            aria-label="식품 이름으로 찾기"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="search-field"
+            prepend-inner-icon="mdi-magnify"
+            @input="onSearchInput"
+          />
+        </div>
+      </div>
+
+      <div v-if="isLoading" class="state-box">
+        <v-progress-circular indeterminate color="primary" size="36" />
+        <p>식품을 불러오는 중이에요</p>
+      </div>
+
+      <template v-else-if="foodList && foodList.length">
+        <div class="list-head" aria-hidden="true">
+          <span>식품</span>
+          <span class="col-qty">수량</span>
+          <span>유통기한</span>
+          <span>보관</span>
+          <span />
+        </div>
+        <ul class="food-list">
+          <li
+            v-for="food in foodList"
+            :key="food.id"
+            class="food-item"
+            :class="`is-${statusOf(food)}`"
+          >
+            <button type="button" class="item-main" @click="openDetailModal(food)">
+              <span class="item-emoji" aria-hidden="true">{{ emojiOf(food) }}</span>
+              <span class="item-text">
+                <span class="item-name">{{ food.name || '이름 없음' }}</span>
+                <span class="item-meta">{{ food.registeredName || '알 수 없음' }}<template v-if="food.storageStartDate">, {{ formatDay(food.storageStartDate) }} 등록</template></span>
+              </span>
+            </button>
+            <span class="col-qty sf-num">{{ food.quantity || 0 }}개</span>
+            <span class="col-exp">
+              <DdayBadge :expiration-date-time="food.expirationDateTime" />
+              <span class="exp-date sf-num">{{ formatDay(food.expirationDateTime) }}</span>
+            </span>
+            <span class="col-storage">
+              <v-icon size="16" aria-hidden="true">{{ food.storageType === '냉동' ? 'mdi-snowflake' : 'mdi-fridge-outline' }}</v-icon>
+              {{ food.storageType || '미정' }}
+            </span>
+            <span class="col-actions">
+              <v-btn size="small" variant="text" @click="openEditModal(food)">수정</v-btn>
+              <v-btn size="small" variant="tonal" color="primary" @click="deleteFood(food)">정리</v-btn>
+            </span>
+          </li>
+        </ul>
+
+        <footer class="list-foot">
+          <span class="page-text sf-num">
+            총 {{ totalElements }}개 중 {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, totalElements) }}
+          </span>
           <v-pagination
             v-model="currentPage"
             :length="totalPages"
-            :total-visible="7"
+            :total-visible="5"
+            density="comfortable"
+            rounded="lg"
+            active-color="primary"
             @update:model-value="onPageChange"
-            color="primary"
-            class="pagination-controls"
-          ></v-pagination>
-          
-          <!-- 페이지 정보 표시 -->
-          <div class="page-info">
-            <span class="page-text">
-              {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalElements) }} / 총 {{ totalElements }}개
-            </span>
-            
-            <!-- 페이지 크기 선택 -->
-            <div class="page-size-selector">
-              <v-select
-                v-model="pageSize"
-                :items="pageSizeOptions"
-                variant="outlined"
-                density="compact"
-                class="page-size-select"
-                @update:model-value="onPageSizeChange"
-                hide-details
-              ></v-select>
-            </div>
-          </div>
-        </div>
-      </v-card-text>
-    </v-card>
+          />
+          <v-select
+            v-model="pageSize"
+            :items="pageSizeOptions"
+            aria-label="한 번에 볼 개수"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="page-size-select"
+            @update:model-value="onPageSizeChange"
+          />
+        </footer>
+      </template>
+
+      <div v-else class="state-box">
+        <p class="empty-title">{{ emptyTitle }}</p>
+        <p>{{ emptyHint }}</p>
+        <v-btn
+          v-if="activeTab === 'ALL' && !searchQuery && selectedCategory === 'ALL'"
+          color="primary"
+          variant="flat"
+          prepend-icon="mdi-plus"
+          class="mt-2"
+          @click="openCreateModal"
+        >
+          식품 등록
+        </v-btn>
+      </div>
+    </section>
 
     <!-- 식품 등록/수정 모달 -->
-    <FoodFormModal 
-      v-model="isModalOpen" 
+    <FoodFormModal
+      v-model="isModalOpen"
       :editing-food="selectedFood"
       :read-only="isReadOnly"
       @save="handleSave"
@@ -240,7 +176,6 @@
       @cancel="deleteDialog = false"
     />
 
-    <!-- CommonSnackbar 컴포넌트 추가 -->
     <CommonSnackbar ref="snackbar" />
   </div>
 </template>
@@ -251,6 +186,8 @@ import FoodFormModal from '../components/Food/FoodFormModal.vue';
 import CommonSnackbar from '../components/common/CommonSnackbar.vue';
 import FoodFinishDialog from '../components/Food/FoodFinishDialog.vue';
 import { getFridgeId } from '@/utils/commonDataHandler';
+import DdayBadge from '@/components/Food/DdayBadge.vue';
+import { categoryEmoji, freshnessStatus } from '@/utils/foodFreshness';
 
 // 처리 선택지별 완료 메시지와 스낵바 색
 const FINISH_MESSAGES = {
@@ -263,7 +200,8 @@ export default {
   components: {
     FoodFormModal,
     CommonSnackbar,
-    FoodFinishDialog
+    FoodFinishDialog,
+    DdayBadge
   },
   data() {
     return {
@@ -307,6 +245,38 @@ export default {
   computed: {
     isManager() {
       return this.fridgeInfo.type === 'MANAGER';
+    },
+    viewOptions() {
+      return [
+        { label: '공유식품', value: true },
+        { label: '개인식품', value: false }
+      ];
+    },
+    // 백엔드 filterType 값에 맞춘 유통기한 필터
+    statusFilters() {
+      const filters = [
+        { label: '전체', value: 'ALL', tone: 'plain' },
+        { label: '3일 이내', value: 'EXPIRES_IN_THREE_DAYS', tone: 'soon' },
+        { label: '오늘까지', value: 'EXPIRES_TODAY', tone: 'soon' },
+        { label: '만료', value: 'EXPIRED', tone: 'expired' }
+      ];
+      if (this.isManager) {
+        filters.push({ label: '내가 등록한 식품', value: 'MY_FOODS', tone: 'plain' });
+      }
+      return filters;
+    },
+    emptyTitle() {
+      if (this.searchQuery) return `'${this.searchQuery}'에 맞는 식품이 없어요`;
+      if (this.activeTab === 'EXPIRED') return '만료된 식품이 없어요';
+      if (this.activeTab === 'EXPIRES_TODAY' || this.activeTab === 'EXPIRES_IN_THREE_DAYS') return '곧 상하는 식품이 없어요';
+      return this.isSharedView ? '공유식품이 아직 없어요' : '개인식품이 아직 없어요';
+    },
+    emptyHint() {
+      if (this.searchQuery || this.selectedCategory !== 'ALL') return '검색어나 카테고리를 바꿔 보세요.';
+      if (this.activeTab !== 'ALL') return '다른 필터를 골라 전체 식품을 볼 수 있어요.';
+      return this.isSharedView
+        ? '함께 먹을 식품을 등록하면 멤버 모두에게 보여요.'
+        : '식품을 등록하면 유통기한을 대신 챙겨드려요.';
     }
   },
   watch: {
@@ -324,7 +294,7 @@ export default {
         
         // 백엔드에서 가져온 카테고리에 '전체' 옵션 추가
         this.categoryOptions = [
-          { title: 'ALL', value: 'ALL' },
+          { title: '모든 카테고리', value: 'ALL' },
           ...response.data.categories
         ];
       } catch (error) {
@@ -475,33 +445,16 @@ export default {
       
       return `${year}-${month}-${day} ${hours}:${minutes}`;
     },
-    getExpirationClass(dateString) {
+    formatDay(dateString) {
       if (!dateString) return '';
-      const expirationDate = new Date(dateString);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (expirationDate < today) {
-        return 'expired';
-      } else if (expirationDate.getTime() - today.getTime() < 3 * 24 * 60 * 60 * 1000) {
-        return 'expiring-soon';
-      } else {
-        return '';
-      }
+      const date = new Date(dateString);
+      return `${date.getMonth() + 1}월 ${date.getDate()}일`;
     },
-    getStorageColor(storageType) {
-      if (storageType === '냉장') return 'info';
-      if (storageType === '냉동') return 'error';
-      return 'grey';
+    statusOf(food) {
+      return freshnessStatus(food.expirationDateTime);
     },
-    getCategoryColor(category) {
-      if (category === '과일') return 'primary';
-      if (category === '채소') return 'success';
-      if (category === '고기') return 'error';
-      if (category === '가공식품') return 'warning';
-      if (category === '유제품') return 'purple';
-      if (category === '음료') return 'blue';
-      return 'grey';
+    emojiOf(food) {
+      return categoryEmoji(food.category);
     },
     onCategoryChange() {
       this.resetPagination();
@@ -571,428 +524,362 @@ export default {
 </script>
 
 <style scoped>
-.shared-food-container {
-  padding: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  position: relative;
+.food-page {
+  max-width: 1280px;
+  min-height: 100%;
+  padding: 32px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
 }
 
-.page-header {
-  background: white;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.header-info {
-  flex: 1;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
   margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--sf-text);
 }
 
-.header-actions {
+.page-desc {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--sf-text-sub);
+}
+
+/* 공유 / 개인 전환 */
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  margin-bottom: 16px;
+  border-radius: var(--sf-radius-md);
+  background: #ECEEF2;
+}
+
+.segment {
+  min-width: 96px;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--sf-radius-sm);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.segment.is-on {
+  background: var(--sf-surface);
+  color: var(--sf-text);
+  box-shadow: 0 1px 3px rgba(34, 34, 34, 0.08);
+}
+
+/* 목록 패널 */
+.list-panel {
+  background: var(--sf-surface);
+  border-radius: var(--sf-radius-lg);
+  box-shadow: var(--sf-shadow);
+  overflow: hidden;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sf-line);
+}
+
+.status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--sf-line-strong);
+  border-radius: 999px;
+  background: var(--sf-surface);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.status-chip:hover {
+  border-color: var(--sf-text-faint);
+}
+
+.status-chip.is-on {
+  border-color: var(--sf-text);
+  background: var(--sf-text);
+  color: #fff;
+  font-weight: 600;
+}
+
+.chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tone-soon .chip-dot { background: var(--sf-soon); }
+.tone-expired .chip-dot { background: var(--sf-expired); }
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 360px;
+  max-width: 460px;
+}
+
+.category-select {
+  flex: 0 0 172px;
+}
+
+.search-field {
+  flex: 1;
+}
+
+/* 목록: 데스크톱은 열 정렬, 모바일은 두 줄 */
+.list-head,
+.food-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px 180px 80px 128px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+}
+
+.list-head {
+  height: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sf-text-faint);
+  border-bottom: 1px solid var(--sf-line);
+}
+
+.food-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.food-item {
+  min-height: 68px;
+  border-bottom: 1px solid var(--sf-line);
+}
+
+.food-item:hover {
+  background: #FAFBFC;
+}
+
+.item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.item-emoji {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--sf-bg);
+  font-size: 22px;
+}
+
+.item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-main:hover .item-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.is-expired .item-name {
+  color: var(--sf-expired-ink);
+}
+
+.item-meta {
+  font-size: 13px;
+  color: var(--sf-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-qty {
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.col-exp {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.toggle-button-container {
-  display: flex;
-  align-items: center;
-}
-
-.toggle-button {
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  font-size: 14px;
-  padding: 12px 20px;
-  min-width: 140px;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.toggle-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.toggle-button.active {
-  background: linear-gradient(135deg, #64b5f6 0%, #90caf9 100%);
-  color: white;
-  box-shadow: 0 4px 15px rgba(100, 181, 246, 0.4);
-}
-
-.toggle-button:not(.active) {
-  background: linear-gradient(135deg, #f5f1e8 0%, #e6d7c3 100%);
-  color: #8b7355;
-  border: 2px solid #d4c4a8;
-  box-shadow: 0 2px 8px rgba(139, 115, 85, 0.15);
-}
-
-.toggle-button:not(.active):hover {
-  background: linear-gradient(135deg, #f8f4ec 0%, #e8d9c6 100%);
-  border-color: #c4b498;
-  box-shadow: 0 4px 12px rgba(139, 115, 85, 0.25);
-  transform: translateY(-1px);
-}
-
-.toggle-button .v-icon {
-  transition: all 0.3s ease;
-}
-
-.toggle-button.active .v-icon {
-  color: white;
-  transform: scale(1.1);
-}
-
-.toggle-button:not(.active) .v-icon {
-  color: #666;
-}
-
-.add-food-container {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-}
-
-.add-food-btn {
-  border-radius: 8px;
-  text-transform: none;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.main-content-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.filter-header {
-  padding: 20px 24px 0;
-  background: white;
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.filter-tab-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.filter-tabs {
-  background: transparent;
-  border-radius: 0;
-  overflow: visible;
-  box-shadow: none;
-  flex: 1;
-}
-
-.filter-tab {
-  font-weight: 500;
-  color: #666;
-  text-transform: none;
-  font-size: 14px;
-  padding: 12px 16px;
-  border-radius: 0;
-  margin: 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.filter-tab:hover {
-  background-color: transparent;
-  color: #333;
-}
-
-.filter-tab.v-tab--active {
-  background-color: transparent;
-  color: #1976d2;
-  font-weight: 600;
-  border-bottom: 2px solid #1976d2;
-}
-
-.filter-tab.v-tab--active .v-icon {
-  color: #1976d2;
-}
-
-.page-size-selector {
-  display: flex;
-  align-items: center;
-  margin-left: auto;
-}
-
-.page-size-select {
-  min-width: 100px;
-  max-width: 120px;
-}
-
-.page-size-select .v-field {
-  font-size: 14px;
-  padding: 8px 12px;
-}
-
-.filter-section {
-  padding: 20px 24px 0;
-}
-
-.filter-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.filter-item {
-  flex: 1;
-}
-
-.filter-label {
-  display: block;
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.category-select, .search-field, .page-size-select {
-  width: 100%;
-}
-
-.food-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.food-table th {
-  background-color: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-  padding: 16px 12px;
-  text-align: left;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.food-table td {
-  padding: 16px 12px;
-  border-bottom: 1px solid #f0f0f0;
-  vertical-align: middle;
-}
-
-.food-row {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.food-row:hover {
-  background-color: #f0f8ff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.food-name {
-  font-weight: 500;
-  color: #333;
-}
-
-.quantity-cell {
-  font-weight: 500;
-  color: #333;
-  text-align: center;
-}
-
-.member-cell, .date-cell, .expiration-cell {
-  color: #666;
-}
-
-.expiration-cell.expired {
-  color: #f44336;
-  font-weight: 500;
-}
-
-.expiration-cell.expiring-soon {
-  color: #ff9800;
-  font-weight: 500;
-}
-
-.storage-cell, .category-cell {
-  text-align: center;
-}
-
-.actions-cell {
-  text-align: center;
-}
-
-.edit-btn {
-  border-radius: 6px;
-  font-weight: 500;
-  margin-right: 8px; /* Add some space between edit and delete buttons */
-}
-
-.delete-btn {
-  border-radius: 6px;
-  font-weight: 500;
-}
-
-.no-data-container {
-  text-align: center;
-  padding: 60px 20px;
-  color: #888;
-}
-
-.no-data-title {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.no-data-subtitle {
-  margin-bottom: 24px;
-  font-size: 16px;
-  color: #666;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 20px;
-  padding: 16px 24px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  position: relative;
-}
-
-.pagination-controls {
-  margin: 0;
-}
-
-.page-info {
-  position: absolute;
-  right: 24px;
-  font-size: 14px;
-  color: #666;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.page-text {
+.exp-date {
+  font-size: 13px;
+  color: var(--sf-text-sub);
   white-space: nowrap;
 }
 
-.page-size-selector {
+.col-storage {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.col-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.list-foot {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+}
+
+.page-text {
+  font-size: 13px;
+  color: var(--sf-text-faint);
+  white-space: nowrap;
 }
 
 .page-size-select {
-  min-width: 100px;
-  max-width: 120px;
+  flex: 0 0 104px;
 }
 
-.loading-container {
+.state-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #888;
+  gap: 8px;
+  padding: 64px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--sf-text-sub);
 }
 
-.loading-text {
-  margin-top: 16px;
-  font-size: 18px;
-  font-weight: 500;
+.state-box p {
+  margin: 0;
+}
+
+.empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+@media (max-width: 960px) {
+  .list-head {
+    display: none;
+  }
+
+  /* 이름 줄 아래에 수량·유통기한·보관·버튼을 한 줄로 */
+  .food-item {
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-areas:
+      'main main main main'
+      'exp qty storage actions';
+    gap: 4px 12px;
+    padding: 4px 16px 12px;
+  }
+
+  .item-main { grid-area: main; padding-bottom: 4px; }
+  .col-exp { grid-area: exp; }
+  .col-qty { grid-area: qty; }
+  .col-storage { grid-area: storage; }
+  .col-actions { grid-area: actions; }
+
+  .col-exp .exp-date {
+    display: none;
+  }
+
+  .search-row {
+    max-width: none;
+  }
 }
 
 @media (max-width: 600px) {
-  .shared-food-container {
-    padding: 16px;
+  .food-page {
+    padding: 16px 12px 32px;
   }
-  
-  .header-content {
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .filter-bar {
+    padding: 12px 16px;
+  }
+
+  .status-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px 2px;
+    scrollbar-width: none;
+  }
+
+  .status-chip {
+    flex-shrink: 0;
+  }
+
+  .category-select {
+    flex-basis: 148px;
+  }
+
+  .list-foot {
     flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: center;
-    margin-top: 16px;
-  }
-
-  .toggle-button-container {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .toggle-button {
-    width: 100%;
-    max-width: 200px;
-    font-size: 13px;
-    padding: 10px 16px;
-    min-width: auto;
-  }
-
-  .filter-tab-container {
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-  }
-
-  .page-size-selector {
-    margin-left: 0;
-    justify-content: center;
-  }
-
-  .filter-row {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .pagination-container {
-    flex-direction: column;
-    gap: 16px;
-    align-items: center;
-    text-align: center;
-    padding: 20px 16px;
-  }
-
-  .page-info {
-    position: static;
-    right: auto;
-    margin-top: 8px;
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .page-size-selector {
-    margin-top: 8px;
   }
 }
 </style>
