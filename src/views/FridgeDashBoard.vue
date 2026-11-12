@@ -42,34 +42,33 @@ const recentShared = ref([])
 const expiringFoods = ref([])
 
 const RECENT_SIZE = 5
-const EXPIRING_SCAN_SIZE = 30
 
-const fetchFoodPage = async (isShared, params) => {
+// 식품 목록 API는 페이징 없이 전부(유통기한이 가까운 순) 돌려준다
+const fetchFoodList = async (isShared) => {
   const response = await axios.get(
     `${import.meta.env.VITE_API_BASE_URL}/fridge/${currentFridgeId.value}/food/list`,
-    { params: { isShared, ...params } }
+    { params: { isShared } }
   )
-  return response.data?.result?.content || []
+  return response.data?.result || []
 }
+
+// 최근 등록한 순서 (id가 클수록 나중에 등록)
+const latestFirst = (foods) => [...foods].sort((a, b) => b.id - a.id).slice(0, RECENT_SIZE)
 
 // 최근 등록 목록과 '먼저 확인할 식품' 목록을 함께 불러온다
 const fetchFoods = async () => {
   if (!currentFridgeId.value) return
   loading.value = true
   try {
-    const recent = { sort: 'id,desc', size: RECENT_SIZE }
-    const bySoonest = { sort: 'expirationDateTime,asc', size: EXPIRING_SCAN_SIZE }
-    const [personal, shared, personalSoon, sharedSoon] = await Promise.all([
-      fetchFoodPage(false, recent),
-      fetchFoodPage(true, recent),
-      fetchFoodPage(false, bySoonest),
-      fetchFoodPage(true, bySoonest)
+    const [personal, shared] = await Promise.all([
+      fetchFoodList(false),
+      fetchFoodList(true)
     ])
-    recentPersonal.value = personal
-    recentShared.value = shared
+    recentPersonal.value = latestFirst(personal)
+    recentShared.value = latestFirst(shared)
 
     const now = new Date()
-    expiringFoods.value = [...personalSoon, ...sharedSoon]
+    expiringFoods.value = [...personal, ...shared]
       .filter(food => ['expired', 'soon'].includes(freshnessStatus(food.expirationDateTime, now)))
       .sort((a, b) => new Date(a.expirationDateTime) - new Date(b.expirationDateTime))
   } catch (error) {
