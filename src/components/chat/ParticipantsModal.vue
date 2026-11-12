@@ -4,160 +4,67 @@
     :close-on-content-click="false"
     location="bottom end"
     offset="8"
-    width="420px"
+    width="360px"
     eager
   >
-    <template v-slot:activator="{ props: activatorProps }">
-      <slot name="activator" :props="activatorProps"></slot>
+    <template #activator="{ props: activatorProps }">
+      <slot name="activator" :props="activatorProps" />
     </template>
-    
-    <v-card class="participants-dropdown" rounded="xl" elevation="5">
-      <!-- 헤더 섹션 -->
-      <div class="modal-header">
-        <div class="header-gradient"></div>
-        <div class="header-content">
-          <div class="d-flex align-center">
-            <div class="header-icon">
-              <v-icon icon="mdi-account-group" size="24" color="white"></v-icon>
-            </div>
-            <div class="ml-4">
-              <h2 class="modal-title">{{ roomName || '채팅방' }}</h2>
-              <p class="modal-subtitle">참여자 목록</p>
-            </div>
-          </div>
-          <v-btn 
-            icon="mdi-close" 
-            variant="text" 
-            class="close-btn"
-            @click="closeModal"
-          >
-            <v-icon color="white" size="20"></v-icon>
-          </v-btn>
+
+    <v-card class="people-card">
+      <header class="people-head">
+        <div class="people-head-text">
+          <h2 class="people-title">
+            참여자 <span class="sf-num">{{ participants.length }}</span>
+          </h2>
+          <p class="people-room">{{ roomName || '채팅방' }}</p>
         </div>
-      </div>
-      
-      <!-- 컨텐츠 섹션 -->
-      <div class="dropdown-content" style="height: 320px; overflow-y: auto;">
-        <!-- 로딩 상태 -->
-        <div v-if="isLoading" class="loading-container">
-          <div class="loading-animation">
-            <v-progress-circular 
-              indeterminate 
-              color="primary" 
-              size="48"
-              width="4"
-            ></v-progress-circular>
-            <p class="loading-text">참여자 정보를 불러오는 중...</p>
-          </div>
-        </div>
-        
-        <!-- 에러 상태 -->
-        <div v-else-if="error" class="error-container">
-          <div class="error-animation">
-            <v-icon icon="mdi-alert-circle" size="48" color="error"></v-icon>
-            <p class="error-text">{{ error }}</p>
-            <v-btn variant="outlined" color="error" @click="fetchParticipants">
-              다시 시도
-            </v-btn>
-          </div>
+        <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeModal" />
+      </header>
+
+      <div class="people-body">
+        <div v-if="isLoading" class="people-state">
+          <v-progress-circular indeterminate color="primary" size="28" />
+          <p>참여자를 불러오는 중이에요</p>
         </div>
 
-        <!-- 빈 상태 -->
-        <div v-else-if="participants.length === 0" class="empty-container">
-          <div class="empty-animation">
-            <v-icon icon="mdi-account-off" size="48" color="grey"></v-icon>
-            <p class="empty-text">참여자가 없습니다</p>
-          </div>
+        <div v-else-if="error" class="people-state">
+          <p>{{ error }}</p>
+          <v-btn variant="text" color="primary" @click="fetchParticipants">다시 불러오기</v-btn>
         </div>
 
-        <!-- 참여자 목록 -->
-        <div v-else class="participants-container">
-          <div
+        <p v-else-if="participants.length === 0" class="people-state">아직 참여자가 없어요</p>
+
+        <ul v-else class="people-list">
+          <li
             v-for="(participant, index) in participants"
             :key="participant.email || index"
-            class="participant-card"
-            :class="{ 'is-online': participant.isOnline }"
+            class="person"
           >
-            <!-- 아바타 영역 -->
-            <div class="avatar-container">
-              <div class="avatar-wrapper">
-                <v-avatar 
-                  :color="participant.profileImage ? undefined : getAvatarColor(index)" 
-                  size="48"
-                  class="participant-avatar"
-                >
-                  <v-img
-                    v-if="participant.profileImage && participant.profileImage.startsWith('http')"
-                    :src="participant.profileImage"
-                    :alt="participant.name || participant.userName"
-                    cover
-                    class="profile-image"
-                    @error="handleImageError(participant)"
-                  />
-                  <img
-                    v-else-if="participant.profileImage && participant.profileImage.startsWith('data:')"
-                    :src="participant.profileImage"
-                    :alt="participant.name || participant.userName"
-                    class="profile-image"
-                  />
-                  <span v-else class="avatar-text">
-                    {{ getInitial(participant.name || participant.userName) }}
-                  </span>
-                </v-avatar>
-                <!-- 온라인 상태 표시 -->
-                <div 
-                  v-if="participant.isOnline" 
-                  class="online-indicator"
-                ></div>
-              </div>
-            </div>
-
-            <!-- 정보 영역 -->
-            <div class="participant-info">
-              <div class="participant-header">
-                <h3 class="participant-name">
-                  {{ participant.name || participant.userName }}
-                </h3>
-                <!-- 역할 배지 -->
-                <div v-if="participant.isCreator || participant.isManager" class="role-badge">
-                  <v-icon size="14" class="mr-1">mdi-crown</v-icon>
-                  <span>{{ participant.isCreator ? '방장' : '관리자' }}</span>
-                </div>
-              </div>
-              <p class="participant-email">{{ participant.email }}</p>
-            </div>
-
-            <!-- 상태 영역 -->
-            <div class="participant-status">
-              <div class="status-badge" :class="{ active: participant.isOnline }">
-                <div class="status-dot"></div>
-                <span class="status-text">
-                  {{ participant.isOnline ? '온라인' : '오프라인' }}
+            <span class="person-avatar" aria-hidden="true">
+              <img
+                v-if="participant.profileImage && (participant.profileImage.startsWith('http') || participant.profileImage.startsWith('data:'))"
+                :src="participant.profileImage"
+                alt=""
+                @error="handleImageError(participant)"
+              />
+              <span v-else>{{ getInitial(participant.name || participant.userName) }}</span>
+              <span v-if="participant.isOnline" class="online-dot" />
+            </span>
+            <span class="person-text">
+              <span class="person-name">
+                {{ participant.name || participant.userName }}
+                <span v-if="participant.isCreator || participant.isManager" class="role-tag">
+                  {{ participant.isCreator ? '방장' : '관리자' }}
                 </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 푸터 섹션 -->
-      <div class="dropdown-footer">
-        <div class="participants-summary">
-          <div class="summary-icon">
-            <v-icon icon="mdi-account-multiple" size="20" color="primary"></v-icon>
-          </div>
-          <span class="summary-text">총 {{ participants.length }}명 참여 중</span>
-        </div>
-        <v-btn 
-          color="primary" 
-          variant="elevated" 
-          rounded="lg"
-          class="close-button"
-          @click="closeModal"
-        >
-          <v-icon left>mdi-check</v-icon>
-          확인
-        </v-btn>
+              </span>
+              <span class="person-email">{{ participant.email }}</span>
+            </span>
+            <span class="person-status" :class="{ 'is-online': participant.isOnline }">
+              {{ participant.isOnline ? '접속 중' : '' }}
+            </span>
+          </li>
+        </ul>
       </div>
     </v-card>
   </v-menu>
@@ -191,15 +98,6 @@ const isOpen = computed({
 const getInitial = (name) => {
   if (!name) return '?';
   return name.charAt(0).toUpperCase();
-};
-
-// 아바타 색상을 인덱스에 따라 반환하는 함수
-const getAvatarColor = (index) => {
-  const colors = [
-    'primary', 'secondary', 'success', 'info', 'warning', 
-    'error', 'purple', 'indigo', 'pink', 'teal'
-  ];
-  return colors[index % colors.length];
 };
 
 // 이미지 로딩 오류 처리
@@ -273,365 +171,151 @@ const closeModal = () => {
 </script>
 
 <style scoped>
-/* 드롭다운 전체 스타일 */
-.participants-dropdown {
-  background: white;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+.people-card {
+  border-radius: var(--sf-radius-lg) !important;
+  box-shadow: 0 8px 28px rgba(34, 34, 34, 0.14) !important;
 }
 
-/* 헤더 스타일 */
-.modal-header {
-  position: relative;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  overflow: hidden;
-}
-
-.header-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
-  backdrop-filter: blur(10px);
-}
-
-.header-content {
-  position: relative;
+.people-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  z-index: 1;
+  gap: 8px;
+  padding: 16px 8px 12px 18px;
+  border-bottom: 1px solid var(--sf-line);
 }
 
-.header-icon {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.modal-title {
-  color: white;
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.modal-subtitle {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.875rem;
-  margin: 2px 0 0 0;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.close-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.05);
-}
-
-/* 컨텐츠 영역 스타일 */
-.dropdown-content {
-  padding: 16px;
-  background: #fafafa;
-}
-
-/* 로딩/에러/빈 상태 공통 스타일 */
-.loading-container,
-.error-container,
-.empty-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-.loading-animation,
-.error-animation,
-.empty-animation {
-  text-align: center;
-}
-
-.loading-text,
-.error-text,
-.empty-text {
-  margin: 16px 0 0 0;
-  color: #666;
-  font-size: 0.95rem;
-}
-
-/* 참여자 목록 스타일 */
-.participants-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.participant-card {
-  background: white;
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.participant-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 3px;
-  height: 100%;
-  background: linear-gradient(to bottom, #667eea, #764ba2);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.participant-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-  transform: translateY(-2px);
-  border-color: #e0e0e0;
-}
-
-.participant-card:hover::before {
-  opacity: 1;
-}
-
-.participant-card.is-online {
-  border-color: #e8f5e8;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fff8 100%);
-}
-
-/* 아바타 스타일 */
-.avatar-container {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.avatar-wrapper {
-  position: relative;
-}
-
-.participant-avatar {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 3px solid white;
-  transition: transform 0.3s ease;
-}
-
-.participant-card:hover .participant-avatar {
-  transform: scale(1.05);
-}
-
-.avatar-text {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: white;
-}
-
-.profile-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-.online-indicator {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
-  background: #4caf50;
-  border: 2px solid white;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
-  animation: pulse-online 2s infinite;
-}
-
-@keyframes pulse-online {
-  0% { box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3); }
-  50% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0.1); }
-  100% { box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3); }
-}
-
-/* 참여자 정보 스타일 */
-.participant-info {
-  flex: 1;
+.people-head-text {
   min-width: 0;
 }
 
-.participant-header {
+.people-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.people-title span {
+  color: var(--sf-text-faint);
+}
+
+.people-room {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--sf-text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.people-body {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.people-state {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
-}
-
-.participant-name {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #333;
   margin: 0;
-  line-height: 1.3;
+  padding: 32px 16px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--sf-text-sub);
 }
 
-.role-badge {
+.people-state p {
+  margin: 0;
+}
+
+.people-list {
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+}
+
+.person {
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg, #ffd700, #ffb347);
-  color: #8b4513;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+  gap: 12px;
+  padding: 8px 18px;
 }
 
-.participant-email {
-  color: #666;
-  font-size: 0.875rem;
-  margin: 0;
-  word-break: break-word;
-}
-
-/* 상태 영역 스타일 */
-.participant-status {
+.person-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--sf-mint-soft);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sf-primary);
 }
 
-.status-badge {
+.person-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.online-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--sf-surface);
+  border-radius: 50%;
+  background: var(--sf-mint);
+}
+
+.person-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.person-name {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: #f5f5f5;
-  transition: all 0.3s ease;
-}
-
-.status-badge.active {
-  background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
-  color: #2e7d32;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #999;
-  transition: background 0.3s ease;
-}
-
-.status-badge.active .status-dot {
-  background: #4caf50;
-}
-
-.status-text {
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-/* 푸터 스타일 */
-.dropdown-footer {
-  padding: 12px 20px;
-  background: white;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.participants-summary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.summary-icon {
-  background: #f3f4f6;
-  border-radius: 8px;
-  padding: 6px;
-}
-
-.summary-text {
-  color: #666;
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.close-button {
-  padding: 8px 24px;
+  font-size: 14px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  transition: all 0.3s ease;
+  color: var(--sf-text);
 }
 
-.close-button:hover {
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-  transform: translateY(-1px);
+.role-tag {
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--sf-bg);
+  font-size: 12px;
+  color: var(--sf-text-sub);
 }
 
-/* 스크롤바 스타일 */
-.dropdown-content::-webkit-scrollbar {
-  width: 4px;
+.person-email {
+  font-size: 12px;
+  color: var(--sf-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.dropdown-content::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 2px;
+.person-status {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--sf-text-faint);
 }
 
-.dropdown-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #667eea, #764ba2);
-  border-radius: 2px;
-}
-
-.dropdown-content::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #5a6fd8, #6a4190);
-}
-
-/* 반응형 디자인 */
-@media (max-width: 600px) {
-  .modal-header {
-    padding: 14px 16px;
-  }
-  
-  .dropdown-content {
-    padding: 12px;
-  }
-  
-  .participant-card {
-    padding: 10px;
-    gap: 10px;
-  }
-  
-  .participant-avatar {
-    width: 40px !important;
-    height: 40px !important;
-  }
-  
-  .dropdown-footer {
-    padding: 10px 16px;
-    flex-direction: column;
-    gap: 8px;
-  }
+.person-status.is-online {
+  font-weight: 600;
+  color: var(--sf-primary);
 }
 </style>
+

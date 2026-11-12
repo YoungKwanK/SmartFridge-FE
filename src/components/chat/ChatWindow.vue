@@ -1,22 +1,21 @@
 <template>
-  <v-card class="d-flex flex-column chat-window-full" rounded="xl">
-    <div v-if="!selectedRoom" class="d-flex justify-center align-center flex-grow-1 text-center text-grey">
-      <div>
-        <p class="text-title-large">채팅을 선택해주세요.</p>
-        <p>왼쪽 목록에서 채팅방을 선택하면 대화를 시작할 수 있습니다.</p>
-      </div>
+  <v-card class="d-flex flex-column chat-window-full" rounded="0" flat>
+    <div v-if="!selectedRoom" class="no-room">
+      <v-icon size="40" aria-hidden="true">mdi-chat-outline</v-icon>
+      <p class="no-room-title">대화할 채팅방을 고르세요</p>
+      <p class="no-room-desc">왼쪽 목록에서 방을 누르면 대화가 열려요.</p>
     </div>
 
     <template v-else>
-      <v-toolbar density="compact">
+      <v-toolbar density="comfortable" color="surface" class="room-toolbar">
         <v-btn v-if="showBack" icon="mdi-arrow-left" variant="text" title="채팅 목록" @click="emit('back')" />
         <v-toolbar-title class="font-weight-bold">{{ selectedRoom.roomName }}</v-toolbar-title>
         <v-spacer></v-spacer>
         
         <v-btn
           v-if="selectedRoomType === 'purchase' && isRoomCreator && isRoomOpen"
-          color="success"
-          variant="elevated"
+          color="primary"
+          variant="flat"
           class="order-complete-btn mr-2"
           @click="completeOrder"
           :loading="isCompletingOrder"
@@ -57,7 +56,7 @@
                 width="4"
                 class="loading-spinner"
               ></v-progress-circular>
-              <p class="loading-text">채팅 내역을 불러오는 중...</p>
+              <p class="loading-text">대화를 불러오는 중이에요</p>
             </div>
           </div>
           
@@ -70,7 +69,7 @@
                 width="3"
                 class="load-more-spinner"
               ></v-progress-circular>
-              <p class="load-more-text">과거 메시지를 불러오는 중...</p>
+              <p class="load-more-text">이전 메시지를 불러오는 중이에요</p>
             </div>
           </div>
           
@@ -79,9 +78,9 @@
               <v-icon size="64" color="grey-lighten-1" class="empty-chat-icon">
                 mdi-chat-outline
               </v-icon>
-              <h3 class="empty-chat-title">채팅을 시작해보세요!</h3>
+              <h3 class="empty-chat-title">아직 대화가 없어요</h3>
               <p class="empty-chat-description">
-                첫 번째 메시지를 작성하여 대화를 시작할 수 있습니다.
+                첫 메시지를 보내 대화를 시작하세요.
               </p>
             </div>
           </div>
@@ -89,7 +88,7 @@
           <div v-if="!hasMoreMessages && hasLoadedOlder && groupedMessages.length > 0" class="no-more-messages">
             <div class="no-more-content">
               <v-icon size="24" color="grey-lighten-1">mdi-check-circle-outline</v-icon>
-              <span class="no-more-text">모든 메시지를 불러왔습니다</span>
+              <span class="no-more-text">대화의 처음이에요</span>
             </div>
           </div>
           
@@ -856,12 +855,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: #64748b;
+  color: var(--sf-text-sub);
   padding: 0 8px 8px;
 }
-.chat-window-full { 
-  height: calc(100vh - var(--v-layout-top, 0px) - 32px);
-  min-height: calc(100vh - var(--v-layout-top, 0px) - 32px);
+.chat-window-full {
+  height: 100%;
+  min-height: 0;
+  background: var(--sf-bg) !important;
 }
 .chat-container {
   position: relative;
@@ -872,18 +872,8 @@ onUnmounted(() => {
   height: 100%;
   overflow-y: auto; 
   padding: 24px; 
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: var(--sf-bg);
   position: relative;
-}
-.chat-box::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(148, 163, 184, 0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23dots)"/></svg>');
-  z-index: 0;
 }
 .message-wrapper { 
   margin: 8px 16px; 
@@ -956,7 +946,6 @@ onUnmounted(() => {
   padding: 12px 16px;
   border-radius: 18px;
   word-break: break-word;
-  backdrop-filter: blur(10px);
   position: relative;
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
@@ -965,7 +954,6 @@ onUnmounted(() => {
 }
 
 .message-bubble:hover {
-  transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
@@ -977,7 +965,6 @@ onUnmounted(() => {
   letter-spacing: 0.025em;
   color: rgba(26, 115, 232, 0.8);
   background: rgba(26, 115, 232, 0.1);
-  backdrop-filter: blur(5px);
   padding: 1px 6px;
   border-radius: 8px;
   display: inline-block;
@@ -1006,7 +993,6 @@ onUnmounted(() => {
   letter-spacing: 0.025em;
   color: #5f6368;
   background: rgba(95, 99, 104, 0.1);
-  backdrop-filter: blur(5px);
   padding: 1px 6px;
   border-radius: 8px;
   display: inline-block;
@@ -1016,7 +1002,7 @@ onUnmounted(() => {
 }
 /* 보낸 메시지 버블 스타일 */
 .sent-message-layout .message-bubble { 
-  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+  background: var(--sf-primary);
   color: #ffffff;
   border-bottom-right-radius: 6px;
   box-shadow: 0 4px 16px rgba(26, 115, 232, 0.25);
@@ -1024,14 +1010,13 @@ onUnmounted(() => {
 }
 
 .sent-message-layout .message-bubble:hover {
-  background: linear-gradient(135deg, #1557b0 0%, #1248a0 100%);
+  background: var(--sf-primary);
   box-shadow: 0 6px 20px rgba(26, 115, 232, 0.35);
-  transform: translateY(-1px);
 }
 
 /* 받은 메시지 버블 스타일 */
 .received-message-layout .message-bubble { 
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--sf-surface);
   color: #2c2c2c;
   border-bottom-left-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -1041,7 +1026,6 @@ onUnmounted(() => {
 .received-message-layout .message-bubble:hover {
   background: rgba(248, 249, 250, 0.95);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
 }
 
 /* 메시지 텍스트 스타일 */
@@ -1072,7 +1056,6 @@ onUnmounted(() => {
   font-weight: 500;
   letter-spacing: 0.025em;
   background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(5px);
   padding: 1px 6px;
   border-radius: 8px;
   display: inline-block;
@@ -1156,8 +1139,7 @@ onUnmounted(() => {
 }
 .input-area { 
   padding: 16px; 
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+  background: var(--sf-surface);
   border-top: 1px solid rgba(226, 232, 240, 0.5);
   border-radius: 0 0 24px 24px;
 }
@@ -1200,11 +1182,10 @@ onUnmounted(() => {
   }
 }
 .new-message-indicator .v-btn {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3) !important;
-  border: 1px solid rgba(102, 126, 234, 0.2);
-  color: #667eea !important;
+  background: var(--sf-surface) !important;
+  box-shadow: var(--sf-shadow) !important;
+  border: 1px solid rgba(19, 134, 95, 0.2);
+  color: var(--sf-primary) !important;
   font-weight: 600;
 }
 
@@ -1225,15 +1206,14 @@ onUnmounted(() => {
 .date-line {
   flex: 1;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.4), transparent);
+  background: none;
 }
 
 .date-text {
   padding: 0 16px;
   font-size: 0.75rem;
-  color: #64748b;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
+  color: var(--sf-text-sub);
+  background: var(--sf-surface);
   border-radius: 16px;
   padding: 8px 16px;
   font-weight: 600;
@@ -1252,66 +1232,6 @@ onUnmounted(() => {
   transform: scale(1.05) translateY(-2px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
   border-color: rgba(255, 255, 255, 0.5);
-}
-
-/* 주문 완료 버튼 스타일 */
-.order-complete-btn {
-  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%) !important;
-  color: white !important;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.order-complete-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.order-complete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4) !important;
-  background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%) !important;
-}
-
-.order-complete-btn:hover::before {
-  left: 100%;
-}
-
-.order-complete-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
-}
-
-.order-complete-btn .v-icon {
-  animation: pulse-icon 2s infinite;
-}
-
-@keyframes pulse-icon {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-/* 로딩 상태 스타일 */
-.order-complete-btn.v-btn--loading {
-  background: linear-gradient(135deg, #81c784 0%, #66bb6a 100%) !important;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2) !important;
-}
-
-.order-complete-btn.v-btn--loading .v-icon {
-  animation: none;
 }
 
 /* 로딩 화면 스타일 */
@@ -1335,7 +1255,7 @@ onUnmounted(() => {
 
 .loading-text {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--sf-text-sub);
   margin: 0;
   font-weight: 500;
 }
@@ -1347,7 +1267,6 @@ onUnmounted(() => {
   justify-content: center;
   padding: 20px;
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
   border-radius: 16px;
   margin: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -1366,7 +1285,7 @@ onUnmounted(() => {
 
 .load-more-text {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: var(--sf-text-sub);
   margin: 0;
   font-weight: 500;
 }
@@ -1386,15 +1305,14 @@ onUnmounted(() => {
   gap: 8px;
   padding: 12px 20px;
   background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
+  border-radius: var(--sf-radius-lg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .no-more-text {
   font-size: 0.85rem;
-  color: #9ca3af;
+  color: var(--sf-text-faint);
   font-weight: 500;
   letter-spacing: 0.025em;
 }
@@ -1435,7 +1353,7 @@ onUnmounted(() => {
 
 .empty-chat-description {
   font-size: 1rem;
-  color: #6b7280;
+  color: var(--sf-text-sub);
   line-height: 1.5;
   margin: 0;
 }
@@ -1443,7 +1361,7 @@ onUnmounted(() => {
 /* 다크모드에서 로딩 화면 */
 @media (prefers-color-scheme: dark) {
   .loading-text {
-    color: #9ca3af;
+    color: var(--sf-text-faint);
   }
   
   .load-more-container {
@@ -1452,7 +1370,7 @@ onUnmounted(() => {
   }
   
   .load-more-text {
-    color: #9ca3af;
+    color: var(--sf-text-faint);
   }
   
   .no-more-content {
@@ -1461,18 +1379,51 @@ onUnmounted(() => {
   }
   
   .no-more-text {
-    color: #6b7280;
+    color: var(--sf-text-sub);
   }
 }
 
 /* 다크모드에서 빈 채팅방 안내 UI */
 @media (prefers-color-scheme: dark) {
   .empty-chat-title {
-    color: #f3f4f6;
+    color: var(--sf-bg);
   }
   
   .empty-chat-description {
-    color: #9ca3af;
+    color: var(--sf-text-faint);
   }
+}
+
+/* 방을 고르기 전 */
+.no-room {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--sf-text-faint);
+  text-align: center;
+}
+
+.no-room-title {
+  margin: 8px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.no-room-desc {
+  margin: 0;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.room-toolbar {
+  border-bottom: 1px solid var(--sf-line);
+}
+
+.order-complete-btn {
+  font-weight: 700;
 }
 </style>

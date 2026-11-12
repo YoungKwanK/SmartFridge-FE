@@ -105,7 +105,7 @@ const nextImage = () => {
 <style scoped>
 /* 이미지 모달 스타일 */
 .image-modal-card {
-  background: #000;
+  background: var(--sf-text);
   color: white;
 }
 
