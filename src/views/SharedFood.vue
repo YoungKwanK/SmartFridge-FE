@@ -354,7 +354,7 @@ export default {
     openCreateModal() {
       this.selectedFood = {
         name: '',
-        quantity: 0,
+        quantity: 1,
         storageStartDate: '',
         expirationDateTime: '',
         storageType: '',
