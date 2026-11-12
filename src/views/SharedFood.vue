@@ -58,7 +58,17 @@
             density="compact"
             hide-details
             class="category-select"
-            @update:model-value="onCategoryChange"
+          />
+          <v-select
+            v-model="selectedStorage"
+            :items="storageOptions"
+            item-title="title"
+            item-value="value"
+            aria-label="보관 위치"
+            variant="outlined"
+            density="compact"
+            hide-details
+            class="storage-select"
           />
           <v-text-field
             v-model="searchQuery"
@@ -69,7 +79,6 @@
             hide-details
             class="search-field"
             prepend-inner-icon="mdi-magnify"
-            @input="onSearchInput"
           />
         </div>
       </div>
@@ -79,7 +88,7 @@
         <p>식품을 불러오는 중이에요</p>
       </div>
 
-      <template v-else-if="foodList && foodList.length">
+      <template v-else-if="filteredFoods.length">
         <div class="list-head" aria-hidden="true">
           <span>식품</span>
           <span class="col-qty">수량</span>
@@ -89,7 +98,7 @@
         </div>
         <ul class="food-list">
           <li
-            v-for="food in foodList"
+            v-for="food in filteredFoods"
             :key="food.id"
             class="food-item"
             :class="`is-${statusOf(food)}`"
@@ -107,7 +116,7 @@
               <span class="exp-date sf-num">{{ formatDay(food.expirationDateTime) }}</span>
             </span>
             <span class="col-storage">
-              <v-icon size="16" aria-hidden="true">{{ food.storageType === '냉동' ? 'mdi-snowflake' : 'mdi-fridge-outline' }}</v-icon>
+              <v-icon size="16" aria-hidden="true">{{ storageIconOf(food.storageType) }}</v-icon>
               {{ food.storageType || '미정' }}
             </span>
             <span class="col-actions">
@@ -119,27 +128,9 @@
 
         <footer class="list-foot">
           <span class="page-text sf-num">
-            총 {{ totalElements }}개 중 {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, totalElements) }}
+            <template v-if="isFiltered">전체 {{ foodList.length }}개 중 {{ filteredFoods.length }}개</template>
+            <template v-else>총 {{ foodList.length }}개</template>
           </span>
-          <v-pagination
-            v-model="currentPage"
-            :length="totalPages"
-            :total-visible="5"
-            density="comfortable"
-            rounded="lg"
-            active-color="primary"
-            @update:model-value="onPageChange"
-          />
-          <v-select
-            v-model="pageSize"
-            :items="pageSizeOptions"
-            aria-label="한 번에 볼 개수"
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="page-size-select"
-            @update:model-value="onPageSizeChange"
-          />
         </footer>
       </template>
 
@@ -147,7 +138,7 @@
         <p class="empty-title">{{ emptyTitle }}</p>
         <p>{{ emptyHint }}</p>
         <v-btn
-          v-if="activeTab === 'ALL' && !searchQuery && selectedCategory === 'ALL'"
+          v-if="!isFiltered"
           color="primary"
           variant="flat"
           prepend-icon="mdi-plus"
@@ -214,18 +205,10 @@ export default {
       isLoading: false,
       activeTab: 'ALL', // 필터 탭 상태
       selectedCategory: 'ALL', // 카테고리 필터 상태
+      selectedStorage: 'ALL', // 보관 위치 필터 상태
       searchQuery: '', // 검색어 상태
-      categoryOptions: [],
-      currentPage: 1, // 현재 페이지
-      pageSize: 10, // 페이지당 항목 수
-      totalPages: 0, // 전체 페이지 수
-      totalElements: 0, // 전체 데이터 수
-      pageSizeOptions: [
-        { title: '10개', value: 10 },
-        { title: '20개', value: 20 },
-        { title: '50개', value: 50 },
-        { title: '100개', value: 100 },
-      ],
+      categoryOptions: [{ title: '모든 카테고리', value: 'ALL' }],
+      storageOptions: [{ title: '모든 보관 위치', value: 'ALL' }],
       isSharedView: true, // 공유/개인 토글 상태
       fridgeInfo: {}, // 냉장고 정보
     }
@@ -265,14 +248,34 @@ export default {
       }
       return filters;
     },
+    // 화면에서 거르는 조건이 하나라도 걸려 있는지 ('내가 등록한 식품'은 서버에서 거름)
+    isFiltered() {
+      return (this.activeTab !== 'ALL' && this.activeTab !== 'MY_FOODS')
+        || this.selectedCategory !== 'ALL'
+        || this.selectedStorage !== 'ALL'
+        || this.searchQuery.trim() !== '';
+    },
+    // 받아 온 식품 전체에서 유통기한, 카테고리, 보관 위치, 이름으로 거른다 (서버 순서: 유통기한이 가까운 순)
+    filteredFoods() {
+      const keyword = this.searchQuery.trim().toLowerCase();
+      return this.foodList.filter(food =>
+        this.matchesStatus(food)
+        && (this.selectedCategory === 'ALL' || food.category === this.selectedCategory)
+        && (this.selectedStorage === 'ALL' || food.storageType === this.selectedStorage)
+        && (!keyword || (food.name || '').toLowerCase().includes(keyword))
+      );
+    },
     emptyTitle() {
-      if (this.searchQuery) return `'${this.searchQuery}'에 맞는 식품이 없어요`;
+      if (this.searchQuery.trim()) return `'${this.searchQuery.trim()}'에 맞는 식품이 없어요`;
       if (this.activeTab === 'EXPIRED') return '만료된 식품이 없어요';
       if (this.activeTab === 'EXPIRES_TODAY' || this.activeTab === 'EXPIRES_IN_THREE_DAYS') return '곧 상하는 식품이 없어요';
+      if (this.isFiltered) return '조건에 맞는 식품이 없어요';
       return this.isSharedView ? '공유식품이 아직 없어요' : '개인식품이 아직 없어요';
     },
     emptyHint() {
-      if (this.searchQuery || this.selectedCategory !== 'ALL') return '검색어나 카테고리를 바꿔 보세요.';
+      if (this.searchQuery.trim() || this.selectedCategory !== 'ALL' || this.selectedStorage !== 'ALL') {
+        return '검색어, 카테고리, 보관 위치를 바꿔 보세요.';
+      }
       if (this.activeTab !== 'ALL') return '다른 필터를 골라 전체 식품을 볼 수 있어요.';
       return this.isSharedView
         ? '함께 먹을 식품을 등록하면 멤버 모두에게 보여요.'
@@ -280,8 +283,11 @@ export default {
     }
   },
   watch: {
-    activeTab() {
-      this.fetchFoodList();
+    // '내가 등록한 식품'은 서버가 범위를 정하므로 그 탭을 켜고 끌 때만 다시 불러온다
+    activeTab(next, prev) {
+      if (next === 'MY_FOODS' || prev === 'MY_FOODS') {
+        this.fetchFoodList();
+      }
     }
   },
   methods: {
@@ -292,13 +298,17 @@ export default {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        // 백엔드에서 가져온 카테고리에 '전체' 옵션 추가
+        // 백엔드에서 가져온 카테고리, 보관 위치에 '전체' 옵션 추가
         this.categoryOptions = [
           { title: '모든 카테고리', value: 'ALL' },
           ...response.data.categories
         ];
+        this.storageOptions = [
+          { title: '모든 보관 위치', value: 'ALL' },
+          ...response.data.storageTypes
+        ];
       } catch (error) {
-        console.error("카테고리 목록을 불러오는 데 실패했습니다.", error);
+        console.error("카테고리·보관 위치 목록을 불러오는 데 실패했습니다.", error);
       }
     },
     async fetchFoodList() {
@@ -311,39 +321,15 @@ export default {
           return;
         }
 
-        let url = `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/list?isShared=${this.isSharedView}&page=${this.currentPage - 1}&size=${this.pageSize}`;
-        
-        // viewAll 파라미터 추가 (전체식품: true, 내 식품목록: false)
-        const viewAll = this.activeTab === 'MY_FOODS' ? false : true;
-        url += `&viewAll=${viewAll}`;
-
-        // 필터 탭 파라미터 추가 (백엔드에서 filterType 파라미터 사용)
-        if (this.activeTab !== 'ALL' && this.activeTab !== 'MY_FOODS') {
-          url += `&filterType=${this.activeTab}`;
-        }
-
-        // 카테고리 필터 추가
-        if (this.selectedCategory !== 'ALL') {
-          url += `&category=${this.selectedCategory}`;
-        }
-
-        // 검색 필터 추가
-        if (this.searchQuery) {
-          url += `&foodName=${this.searchQuery}`;
-        }
-
-        console.log('식품 목록 조회 요청:', {
-          activeTab: this.activeTab,
-          selectedCategory: this.selectedCategory,
-          searchQuery: this.searchQuery,
-          isSharedView: this.isSharedView,
-          url: url
+        // 공유/개인 식품을 한 번에 전부 받아 오고, 나머지 필터는 화면에서 거른다
+        // viewAll: 관리자가 '내가 등록한 식품'을 고르면 false (다른 멤버 식품 제외)
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/list`, {
+          params: {
+            isShared: this.isSharedView,
+            viewAll: this.activeTab !== 'MY_FOODS'
+          }
         });
-
-        const response = await axios.get(url);
-        this.foodList = response.data.result.content || [];
-        this.totalPages = response.data.result.totalPages;
-        this.totalElements = response.data.result.totalElements;
+        this.foodList = response.data.result || [];
       } catch (error) {
         console.error('식품 목록 조회 실패:', error);
         this.foodList = [];
@@ -456,24 +442,22 @@ export default {
     emojiOf(food) {
       return categoryEmoji(food.category);
     },
-    onCategoryChange() {
-      this.resetPagination();
-      this.fetchFoodList();
+    storageIconOf(storageType) {
+      if (storageType === '냉동') return 'mdi-snowflake';
+      if (storageType === '실온') return 'mdi-thermometer';
+      return 'mdi-fridge-outline';
     },
-    onSearchInput() {
-      this.resetPagination();
-      this.fetchFoodList();
-    },
-    onTabChange() {
-      this.resetPagination();
-      this.fetchFoodList();
-    },
-    onPageChange() {
-      this.fetchFoodList();
-    },
-    onPageSizeChange() {
-      this.resetPagination();
-      this.fetchFoodList();
+    // 유통기한 탭 조건 (백엔드 FoodFilterType과 같은 기준)
+    matchesStatus(food) {
+      if (this.activeTab === 'ALL' || this.activeTab === 'MY_FOODS') return true;
+      if (!food.expirationDateTime) return false;
+      const exp = new Date(food.expirationDateTime);
+      const now = new Date();
+      const startOfDay = offset => new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+      if (this.activeTab === 'EXPIRED') return exp < now;
+      if (this.activeTab === 'EXPIRES_TODAY') return exp >= startOfDay(0) && exp <= startOfDay(1);
+      if (this.activeTab === 'EXPIRES_IN_THREE_DAYS') return exp >= now && exp <= startOfDay(3);
+      return true;
     },
     onToggleChange() {
       this.isSharedView = !this.isSharedView;
@@ -488,13 +472,8 @@ export default {
       
       // URL 업데이트 (브라우저 히스토리에 추가하지 않음)
       this.$router.replace({ query });
-      
-      this.resetPagination();
+
       this.fetchFoodList();
-    },
-    // 페이징 초기화
-    resetPagination() {
-      this.currentPage = 1;
     },
     // 냉장고 정보 가져오기
     async fetchFridgeInfo() {
@@ -645,17 +624,22 @@ export default {
 
 .search-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  flex: 1 1 360px;
-  max-width: 460px;
+  flex: 1 1 480px;
+  max-width: 640px;
 }
 
 .category-select {
   flex: 0 0 172px;
 }
 
+.storage-select {
+  flex: 0 0 156px;
+}
+
 .search-field {
-  flex: 1;
+  flex: 1 1 180px;
 }
 
 /* 목록: 데스크톱은 열 정렬, 모바일은 두 줄 */
@@ -794,10 +778,6 @@ export default {
   white-space: nowrap;
 }
 
-.page-size-select {
-  flex: 0 0 104px;
-}
-
 .state-box {
   display: flex;
   flex-direction: column;
@@ -874,8 +854,9 @@ export default {
     flex-shrink: 0;
   }
 
-  .category-select {
-    flex-basis: 148px;
+  .category-select,
+  .storage-select {
+    flex: 1 1 140px;
   }
 
   .list-foot {
