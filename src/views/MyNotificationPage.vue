@@ -1,195 +1,91 @@
 <template>
   <div class="notification-page">
-    <!-- 헤더 영역 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h1 class="page-title">알림</h1>
-          <p class="page-subtitle">새로운 소식과 중요한 알림을 확인하세요</p>
-        </div>
-        <div class="header-actions">
-          <v-btn 
-            @click="readAll()" 
-            class="read-all-btn"
-            color="primary"
-            variant="elevated"
-            prepend-icon="mdi-check-all"
-            size="large"
-          >
-            모두 읽음
-          </v-btn>
-        </div>
-      </div>
+    <header class="page-head">
+      <h1 class="page-title">알림</h1>
+      <v-btn variant="text" color="primary" prepend-icon="mdi-check-all" @click="readAll()">모두 읽음으로 표시</v-btn>
+    </header>
+
+    <div class="type-filters" role="tablist" aria-label="알림 종류">
+      <button
+        v-for="tab in tabs"
+        :key="tab.value"
+        type="button"
+        role="tab"
+        class="type-chip"
+        :class="{ 'is-on': selectedTab === tab.value }"
+        :aria-selected="selectedTab === tab.value"
+        @click="filterByTab(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
     </div>
 
-    <!-- 메인 콘텐츠 -->
-    <v-card class="main-content-card">
-      <!-- 탭 네비게이션 -->
-      <v-card-title class="notification-tabs-header">
-        <v-tabs
-          v-model="selectedTab"
-          @update:model-value="filterByTab"
-          class="notification-tabs"
-          color="primary"
-          density="compact"
+    <section class="list-panel" aria-label="알림 목록">
+      <ul v-if="sortedNotifications.length" class="noti-list">
+        <li
+          v-for="notification in sortedNotifications"
+          :key="notification.id"
+          class="noti-item"
+          :class="{ 'is-read': notification.read }"
         >
-          <v-tab value="all" class="notification-tab">전체</v-tab>
-          <v-tab value="expiration" class="notification-tab">유통기한</v-tab>
-          <v-tab value="post" class="notification-tab">게시글</v-tab>
-          <v-tab value="comment" class="notification-tab">댓글</v-tab>
-          <v-tab value="inquiry-reply" class="notification-tab">문의답변</v-tab>
-          <v-tab value="group-chat" class="notification-tab">공동 구매 채팅</v-tab>
-          <v-tab 
-            v-if="userType === 'MANAGER'" 
-            value="member"
-            class="notification-tab"
-          >
-            멤버참여
-          </v-tab>
-        </v-tabs>
-      </v-card-title>
+          <button type="button" class="noti-main" @click="goToDetail(notification)">
+            <span class="noti-icon" :class="`type-${getNotificationType(notification)}`" aria-hidden="true">
+              <v-icon size="20">{{ iconOf(notification) }}</v-icon>
+            </span>
+            <span class="noti-text">
+              <span class="noti-head">
+                <span class="noti-type">{{ labelOf(notification) }}</span>
+                <span
+                  v-if="getNotificationType(notification) === 'expiration'"
+                  class="noti-dday sf-num"
+                  :class="isUrgentExpiration(notification) ? 'is-soon' : ''"
+                >
+                  {{ getExpirationDays(notification) <= 0 ? '오늘까지' : `${getExpirationDays(notification)}일 남음` }}
+                </span>
+              </span>
+              <span class="noti-message">{{ getNotificationText(notification) }}</span>
+              <span class="noti-time">{{ formatTimeAgo(notification.createdAt) }}</span>
+            </span>
+            <span v-if="!notification.read" class="unread-dot" aria-label="읽지 않음" />
+          </button>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            size="small"
+            class="noti-delete"
+            aria-label="알림 삭제"
+            @click.stop="confirmDelete(notification)"
+          />
+        </li>
+      </ul>
 
-      <!-- 알림 리스트 -->
-      <v-card-text class="notification-list">
-      <div
-        v-for="notification in sortedNotifications"
-        :key="notification.id"
-        class="notification-item"
-        :class="{ 
-          'read': notification.read,
-          'expiration-border': getNotificationType(notification) === 'expiration',
-          'post-border': getNotificationType(notification) === 'post',
-          'comment-border': getNotificationType(notification) === 'comment',
-          'inquiry-reply-border': getNotificationType(notification) === 'inquiry-reply',
-          'group-chat-border': getNotificationType(notification) === 'group-chat',
-          'member-border': getNotificationType(notification) === 'member',
-          'other-border': getNotificationType(notification) === 'other'
-        }"
-        @click="goToDetail(notification)"
-        @mouseenter="handleMouseEnter(notification.id)"
-        @mouseleave="handleMouseLeave()"
-      >
-        <!-- 좌측: 알림 내용 -->
-        <div class="notification-content">
-          <div class="notification-tags">
-            <div v-if="getNotificationType(notification) === 'expiration'" class="expiration-info">
-              <v-chip 
-                :color="isUrgentExpiration(notification) ? 'red' : 'orange'"
-                size="small"
-                variant="outlined"
-                class="expiration-chip"
-              >
-                <v-icon size="16" class="mr-1">
-                  {{ isUrgentExpiration(notification) ? 'mdi-alert' : 'mdi-clock-outline' }}
-                </v-icon>
-                {{ getExpirationDays(notification) }}일 남음
-              </v-chip>
-            </div>
-            
-            <div v-if="getNotificationType(notification) === 'comment'" class="comment-info">
-              <v-chip color="blue" size="small" variant="outlined" class="comment-chip">
-                <v-icon size="16" class="mr-1">mdi-comment</v-icon>
-                새로운 댓글
-              </v-chip>
-            </div>
-
-            <div v-if="getNotificationType(notification) === 'inquiry-reply'" class="inquiry-reply-info">
-              <v-chip color="blue" size="small" variant="outlined" class="inquiry-reply-chip">
-                <v-icon size="16" class="mr-1">mdi-reply</v-icon>
-                문의 답변
-              </v-chip>
-            </div>
-
-            <div v-if="getNotificationType(notification) === 'post'" class="post-info">
-              <v-chip color="purple" size="small" variant="outlined" class="post-chip">
-                <v-icon size="16" class="mr-1">mdi-bullhorn</v-icon>
-                새로운 공지
-              </v-chip>
-            </div>
-
-            <div v-if="getNotificationType(notification) === 'group-chat'" class="group-chat-info">
-              <v-chip color="teal" size="small" variant="outlined" class="group-chat-chip">
-                <v-icon size="16" class="mr-1">mdi-chat</v-icon>
-                공동 구매 채팅
-              </v-chip>
-            </div>
-
-            <div v-if="getNotificationType(notification) === 'member'" class="member-info">
-              <v-chip color="teal" size="small" variant="outlined" class="member-chip">
-                <v-icon size="16" class="mr-1">mdi-account-plus</v-icon>
-                새로운 멤버
-              </v-chip>
-            </div>
-          </div>
-          
-          <div class="notification-body">
-            <div class="notification-message">
-              {{ getNotificationText(notification) }}
-            </div>
-          </div>
-        </div>
-
-        <!-- 우측: 삭제 버튼과 시간 -->
-        <div class="notification-right">
-          <div class="delete-btn" @click.stop="confirmDelete(notification)">
-            <v-icon size="small" color="grey" v-show="hoveredId === notification.id">
-              mdi-close
-            </v-icon>
-          </div>
-          <div class="notification-time">
-            {{ formatTimeAgo(notification.createdAt) }}
-          </div>
-        </div>
+      <div v-if="isLoading" class="state-box">
+        <v-progress-circular indeterminate color="primary" size="32" />
+        <p>알림을 불러오는 중이에요</p>
       </div>
 
-        <div v-if="isLoading" class="loading-indicator">
-          <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
-          <p class="loading-text">알림을 불러오는 중...</p>
-        </div>
-        
-        <!-- 스크롤 페이징 로딩 인디케이터 -->
-        <div v-if="isLoadingMore" class="load-more-indicator">
-          <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
-          <p class="loading-more-text">더 많은 알림을 불러오는 중...</p>
-        </div>
-        
-        <!-- 더 이상 로드할 데이터가 없을 때 - 알림 목록 맨 마지막에 표시 -->
-        <div v-if="!hasMoreData && !isLoadingMore" class="no-more-data">
-          <v-icon size="32" color="grey-lighten-1" class="mb-2">mdi-check-circle</v-icon>
-          <p class="no-more-text">모든 알림을 불러왔습니다</p>
-        </div>
-      </v-card-text>
-    </v-card>
+      <div v-else-if="!sortedNotifications.length" class="state-box">
+        <p class="empty-title">새 알림이 없어요</p>
+        <p>유통기한이 다가오거나 댓글이 달리면 여기에 알려드려요.</p>
+      </div>
 
-    <!-- 삭제 확인 모달 -->
-    <v-dialog v-model="deleteDialog" max-width="500px">
-      <v-card class="delete-dialog-card">
-        <v-card-title class="delete-dialog-header">
-          <v-icon left color="error" size="24">mdi-alert-circle</v-icon>
-          알림 삭제 확인
-        </v-card-title>
-        <v-card-text class="delete-dialog-content">
-          <p class="delete-warning-text">선택한 알림을 정말 삭제하시겠습니까?</p>
-          <p class="delete-info-text">삭제된 알림은 복구할 수 없습니다.</p>
-        </v-card-text>
-        <v-card-actions class="delete-dialog-actions">
-          <v-spacer></v-spacer>
-          <v-btn 
-            @click="deleteDialog = false" 
-            variant="outlined" 
-            color="grey"
-            class="mr-3"
-          >
-            취소
-          </v-btn>
-          <v-btn 
-            @click="deleteNotification" 
-            color="error" 
-            variant="elevated"
-          >
-            <v-icon left>mdi-delete</v-icon>
-            삭제
-          </v-btn>
+      <div v-if="isLoadingMore" class="state-box is-small">
+        <v-progress-circular indeterminate color="primary" size="24" />
+      </div>
+      <p v-if="!hasMoreData && !isLoadingMore && sortedNotifications.length" class="list-end">
+        알림을 모두 확인했어요
+      </p>
+    </section>
+
+    <!-- 삭제 확인 -->
+    <v-dialog v-model="deleteDialog" max-width="400">
+      <v-card class="pa-2">
+        <v-card-title class="dialog-title">알림을 삭제할까요?</v-card-title>
+        <v-card-text class="dialog-body">삭제한 알림은 다시 볼 수 없어요.</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="deleteDialog = false">취소</v-btn>
+          <v-btn color="error" variant="flat" @click="deleteNotification">삭제</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -212,7 +108,7 @@ const notificationList = ref([]);
 const selectedTab = ref("all");
 const selectedCategory = ref("ALL");
 const fridgeId = ref(getFridgeId(store));
-const hoveredId = ref(null);
+
 const deleteDialog = ref(false);
 const deleteTarget = ref(null);
 const userType = ref('COMMON');
@@ -439,8 +335,30 @@ const deleteNotification = async () => {
   }
 };
 
-const handleMouseEnter = (notificationId) => { hoveredId.value = notificationId; };
-const handleMouseLeave = () => { hoveredId.value = null; };
+const TYPE_META = {
+  expiration: { label: '유통기한', icon: 'mdi-clock-alert-outline' },
+  post: { label: '공지', icon: 'mdi-bullhorn-outline' },
+  comment: { label: '댓글', icon: 'mdi-comment-outline' },
+  'inquiry-reply': { label: '문의 답변', icon: 'mdi-message-reply-text-outline' },
+  'group-chat': { label: '공동구매', icon: 'mdi-cart-outline' },
+  member: { label: '새 멤버', icon: 'mdi-account-plus-outline' },
+  other: { label: '알림', icon: 'mdi-bell-outline' }
+};
+const iconOf = (notification) => TYPE_META[getNotificationType(notification)].icon;
+const labelOf = (notification) => TYPE_META[getNotificationType(notification)].label;
+
+const tabs = computed(() => {
+  const list = [
+    { value: 'all', label: '전체' },
+    { value: 'expiration', label: '유통기한' },
+    { value: 'post', label: '공지' },
+    { value: 'comment', label: '댓글' },
+    { value: 'inquiry-reply', label: '문의 답변' },
+    { value: 'group-chat', label: '공동구매' }
+  ];
+  if (userType.value === 'MANAGER') list.push({ value: 'member', label: '새 멤버' });
+  return list;
+});
 
 const resetPagination = () => { 
   currentPage.value = 0;
@@ -497,605 +415,242 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .notification-page {
-  padding: 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  position: relative;
+  max-width: 880px;
+  min-height: 100%;
+  padding: 32px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
 }
 
-.notification-page::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.1;
-  z-index: -1;
-}
-
-.page-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin-bottom: 24px;
-}
-
-.header-content {
+.page-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-
-.header-info {
-  flex: 1;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .page-title {
+  margin: 0;
   font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 8px 0;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
 }
 
-.page-subtitle {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
-}
-
-.header-actions {
+.type-filters {
   display: flex;
-  align-items: center;
-}
-
-.read-all-btn {
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
-  transition: all 0.3s ease;
-}
-
-.read-all-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
-}
-
-.main-content-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-}
-
-.notification-tabs-header {
-  padding: 20px 24px 0;
-  background: transparent;
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.notification-tabs {
-  background: transparent;
-  border-radius: 0;
-  overflow: visible;
-  box-shadow: none;
-}
-
-.notification-tab {
-  font-weight: 500;
-  color: #666;
-  text-transform: none;
-  font-size: 14px;
-  padding: 12px 16px;
-  border-radius: 0;
-  margin: 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.notification-tab:hover {
-  background-color: transparent;
-  color: #333;
-}
-
-.notification-tab.v-tab--active {
-  background-color: transparent;
-  color: #1976d2;
-  font-weight: 600;
-  border-bottom: 2px solid #1976d2;
-}
-
-.notification-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px 24px;
-}
-
-.notification-item {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  border-left: 4px solid transparent;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-/* 알림 타입별 왼쪽 테두리 색상 */
-.notification-item.expiration-border {
-  border-left-color: #eb3c4e;
-}
-
-.notification-item.post-border {
-  border-left-color: #28a745;
-}
-
-.notification-item.comment-border {
-  border-left-color: #17a2b8;
-}
-
-.notification-item.inquiry-reply-border {
-  border-left-color: #4285f4;
-}
-
-.notification-item.group-chat-border {
-  border-left-color: #009688;
-}
-
-.notification-item.qa-border {
-  border-left-color: #6f42c1;
-}
-
-.notification-item.member-border {
-  border-left-color: #fd7e14;
-}
-
-.notification-item.admin-reply-border {
-  border-left-color: #007bff;
-}
-
-.notification-item.other-border {
-  border-left-color: #6c757d;
-}
-
-.notification-item:nth-child(even) {
-  background: #fff;
-}
-
-.notification-item:hover {
-  border-color: rgba(25, 118, 210, 0.3);
-  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.15);
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.notification-item.read {
-  background: rgba(248, 249, 250, 0.8);
-  opacity: 0.8;
-}
-
-.notification-item.read .notification-title {
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.notification-item.read .notification-message {
-  color: #6c757d;
-  font-weight: 400;
-}
-
-.notification-item.read .notification-time {
-  background-color: #e9ecef;
-  color: #6c757d;
-}
-
-.delete-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(5px);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.delete-btn:hover {
-  background-color: rgba(255, 235, 238, 0.9);
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(211, 47, 47, 0.2);
-}
-
-.delete-btn .v-icon {
-  transition: color 0.3s ease;
-}
-
-.delete-btn:hover .v-icon {
-  color: #d32f2f !important;
-}
-
-.notification-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-right: 16px;
-  margin-left: 16px;
-}
-
-.notification-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 32px;
-  flex-shrink: 0;
-}
-
-.notification-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #2c3e50;
-  line-height: 1.4;
-  flex: 1;
-}
-
-.notification-time {
-  font-size: 0.75rem;
-  color: #6c757d;
-  white-space: nowrap;
-  padding: 4px 12px;
-  background-color: rgba(248, 249, 250, 0.9);
-  backdrop-filter: blur(5px);
-  border-radius: 16px;
-  font-weight: 500;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.notification-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin: 2px 0;
-}
-
-.notification-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.notification-message {
-  font-size: 0.875rem;
-  color: #495057;
-  line-height: 1.5;
-  font-weight: 400;
-}
-
-.expiration-info,
-.food-info,
-.comment-info,
-.inquiry-reply-info {
-  display: flex;
-  align-items: center;
-}
-
-.expiration-chip,
-.food-chip,
-.comment-chip,
-.inquiry-reply-chip,
-.post-chip,
-.group-chat-chip,
-.member-chip {
-  font-size: 0.75rem;
-  font-weight: 500;
-  border-radius: 16px;
-  height: 28px;
-  backdrop-filter: blur(5px);
-  transition: all 0.2s ease;
-}
-
-.expiration-chip {
-  border-color: #ff9800;
-  color: #e65100;
-  background: rgba(255, 152, 0, 0.1);
-}
-
-.food-chip {
-  border-color: #4caf50;
-  color: #2e7d32;
-  background: rgba(76, 175, 80, 0.1);
-}
-
-.comment-chip {
-  border-color: #2196f3;
-  color: #1565c0;
-  background: rgba(33, 150, 243, 0.1);
-}
-
-.inquiry-reply-chip {
-  border-color: #4285f4;
-  color: #1a73e8;
-  background: rgba(66, 133, 244, 0.1);
-}
-
-.post-chip {
-  border-color: #9c27b0;
-  color: #6a1b9a;
-  background: rgba(156, 39, 176, 0.1);
-}
-
-.group-chat-chip {
-  border-color: #009688;
-  color: #00695c;
-  background: rgba(0, 150, 136, 0.1);
-}
-
-.member-chip {
-  border-color: #009688;
-  color: #00695c;
-  background: rgba(0, 150, 136, 0.1);
-}
-
-/* Vuetify 탭 스타일 오버라이드 */
-:deep(.v-tab) {
-  text-transform: none;
-  font-weight: 500;
-  color: #6c757d;
-  flex: 1;
-  min-width: 0;
-  transition: all 0.2s ease;
-}
-
-:deep(.v-tab--selected) {
-  color: #1976d2;
-  font-weight: 600;
-  background-color: transparent;
-}
-
-:deep(.v-tab__slider) {
-  background: #1976d2;
-}
-
-:deep(.v-tabs__wrapper) {
-  width: 100%;
-}
-
-:deep(.v-tabs__bar) {
-  width: 100%;
-}
-
-/* 로딩 및 더 보기 관련 스타일 */
-.loading-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #888;
-}
-
-.loading-text {
-  margin-top: 16px;
-  font-size: 18px;
-  font-weight: 500;
-  color: #666;
-}
-
-.load-more-section {
-  display: flex;
-  justify-content: center;
-  padding: 40px 20px;
-}
-
-.load-more-btn {
-  min-width: 140px;
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.2);
-  transition: all 0.3s ease;
-}
-
-.load-more-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.3);
-}
-
-.no-more-data {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  color: #888;
-  text-align: center;
-}
-
-.no-more-text {
-  margin-top: 16px;
-  font-size: 16px;
-  font-weight: 500;
-  color: #666;
-}
-
-/* 삭제 확인 모달 스타일 */
-.delete-dialog-card {
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-
-.delete-dialog-header {
-  background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
-  color: #d32f2f;
-  font-size: 18px;
-  font-weight: 600;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid rgba(211, 47, 47, 0.1);
-}
-
-.delete-dialog-content {
-  padding: 24px;
-}
-
-.delete-warning-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 12px 0;
-}
-
-.delete-info-text {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-  line-height: 1.5;
-}
-
-.delete-dialog-actions {
-  padding: 16px 24px 24px;
-  background: #f8f9fa;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-  .notification-page {
-    padding: 24px;
-  }
-  
-  .page-header {
-    padding: 20px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  
-  .page-title {
-    font-size: 24px;
-  }
-  
-  .notification-list {
-    padding: 16px 20px;
-  }
-  
-  .notification-item {
-    padding: 16px;
-  }
-  
-  .notification-content {
-    margin-right: 12px;
-    margin-left: 12px;
-  }
-  
-  .notification-right {
-    gap: 24px;
-  }
-}
-
-@media (max-width: 480px) {
-  .notification-page {
-    padding: 16px;
-  }
-  
-  .page-header {
-    padding: 16px;
-  }
-  
-  .page-title {
-    font-size: 20px;
-  }
-  
-  .page-subtitle {
-    font-size: 14px;
-  }
-  
-  .notification-list {
-    padding: 12px 16px;
-  }
-  
-  .notification-item {
-    padding: 12px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  
-  .notification-content {
-    margin: 0;
-    width: 100%;
-  }
-  
-  .notification-right {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-  }
-}
-
-/* 스크롤 페이징 로딩 인디케이터 스타일 */
-.load-more-indicator {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  margin: 16px 0;
-}
-
-.loading-more-text {
-  margin-top: 12px;
-  color: #666;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.no-more-data {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  margin: 16px 0;
-}
-
-.no-more-text {
-  color: #999;
-  font-size: 14px;
-  font-weight: 500;
-  margin: 0;
-}
-
-.notification-tabs {
+  gap: 8px;
+  margin-bottom: 16px;
   overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.notification-tab {
-  min-width: 80px;
+.type-chip {
   flex-shrink: 0;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--sf-line-strong);
+  border-radius: 999px;
+  background: var(--sf-surface);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.type-chip.is-on {
+  border-color: var(--sf-text);
+  background: var(--sf-text);
+  font-weight: 600;
+  color: #fff;
+}
+
+.list-panel {
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
+  overflow: hidden;
+}
+
+.noti-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.noti-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--sf-line);
+}
+
+.noti-main {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 12px;
+  align-items: start;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 52px 16px 20px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.noti-main:hover {
+  background: #FAFBFC;
+}
+
+.noti-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--sf-bg);
+  color: var(--sf-text-sub);
+}
+
+.noti-icon.type-expiration {
+  background: var(--sf-soon-bg);
+  color: var(--sf-soon-ink);
+}
+
+.noti-icon.type-group-chat {
+  background: #FFF0E6;
+  color: #C2501A;
+}
+
+.noti-icon.type-post,
+.noti-icon.type-member {
+  background: var(--sf-mint-soft);
+  color: var(--sf-primary);
+}
+
+.noti-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.noti-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.noti-type {
+  font-weight: 600;
+  color: var(--sf-text-sub);
+}
+
+.noti-dday {
+  color: var(--sf-text-faint);
+}
+
+.noti-dday.is-soon {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--sf-soon);
+  font-weight: 700;
+  color: #3D2D00;
+}
+
+.noti-message {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--sf-text);
+}
+
+.noti-time {
+  font-size: 13px;
+  color: var(--sf-text-faint);
+}
+
+.is-read .noti-message {
+  color: var(--sf-text-sub);
+}
+
+.is-read .noti-icon {
+  opacity: 0.6;
+}
+
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--sf-expired);
+}
+
+.noti-delete {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  color: var(--sf-text-faint);
+}
+
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 56px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.state-box.is-small {
+  padding: 16px;
+}
+
+.state-box p {
+  margin: 0;
+}
+
+.empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.list-end {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--sf-text-faint);
+}
+
+.dialog-title {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.dialog-body {
+  font-size: 15px;
+  color: var(--sf-text-sub);
+}
+
+@media (max-width: 600px) {
+  .notification-page {
+    padding: 16px 12px 32px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .noti-main {
+    padding: 14px 44px 14px 16px;
+    gap: 12px;
+  }
 }
 </style>

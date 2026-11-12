@@ -1,359 +1,146 @@
 <template>
-  <div class="mypage-container">
-    <!-- 헤더 섹션 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h1 class="page-title">마이페이지</h1>
-          <p class="page-subtitle">내 정보를 관리하고 활동 내역을 확인하세요</p>
+  <div class="mypage">
+    <header class="page-head">
+      <h1 class="page-title">내 정보</h1>
+    </header>
+
+    <div class="mypage-grid">
+      <!-- 프로필 -->
+      <section class="panel profile" aria-label="프로필">
+        <div class="avatar-wrap">
+          <div v-if="!userInfo.profileImage" class="avatar avatar-initial" aria-hidden="true">{{ userInitial }}</div>
+          <v-img v-else :src="userInfo.profileImage" alt="프로필 사진" class="avatar" width="88" height="88" cover />
+          <button type="button" class="avatar-edit" aria-label="프로필 사진 바꾸기" @click="openImageUpload">
+            <v-icon size="16">mdi-camera-outline</v-icon>
+          </button>
+          <input ref="imageInput" type="file" accept="image/*" class="d-none" @change="handleImageUpload" />
         </div>
-      </div>
-    </div>
 
-    <div class="mypage-content">
-      <!-- 첫 번째 행: 프로필과 활동 통계 -->
-      <div class="profile-stats-row">
-        <!-- 프로필 섹션 -->
-        <v-card class="profile-card">
-          <v-card-title class="profile-header">
-            <v-icon class="mr-2">mdi-account-circle</v-icon>
-            프로필 정보
-          </v-card-title>
-                    <v-card-text>
-            <div class="profile-section">
-              <!-- 프로필 이미지 -->
-               <br>
-              <div class="profile-image-section">
-                <div class="profile-image-container">
-                  <div v-if="!userInfo.profileImage" class="profile-avatar-bg">
-                    <span class="profile-avatar-initial">{{ userInitial }}</span>
-                  </div>
-                  <v-img
-                    v-else
-                    :src="userInfo.profileImage"
-                    alt="Profile Image"
-                    class="profile-avatar-image"
-                    width="120"
-                    height="120"
-                  />
-                  <v-btn
-                    @click="openImageUpload"
-                    class="edit-image-btn"
-                    icon
-                    size="small"
-                    color="primary"
-                  >
-                    <v-icon>mdi-camera</v-icon>
-                  </v-btn>
-                </div>
-                <input
-                  ref="imageInput"
-                  type="file"
-                  accept="image/*"
-                  style="display: none"
-                  @change="handleImageUpload"
-                />
-              </div>
-              
-              <!-- 프로필 정보 -->
-              <div class="profile-info-section">
-                <div class="info-row">
-                  <label class="info-label">이름</label>
-                  <div class="info-value-container">
-                    <div v-if="!isEditingName" class="name-display-section">
-                      <span class="info-value">{{ userInfo.name || '이름 없음' }}</span>
-                      <v-btn
-                        @click="toggleEditName"
-                        icon="mdi-pencil"
-                        size="small"
-                        variant="text"
-                        color="primary"
-                        class="edit-btn"
-                      />
-                    </div>
-                    <div v-else class="name-edit-section">
-                      <div class="edit-input-container">
-                        <input
-                          v-model="editedName"
-                          type="text"
-                          class="modern-input"
-                          placeholder="이름을 입력하세요"
-                          @keyup.enter="saveName"
-                          @keyup.esc="cancelEditName"
-                          ref="nameInput"
-                        />
-                        <div class="edit-actions">
-                          <v-btn
-                            @click="saveName"
-                            icon="mdi-check"
-                            size="small"
-                            variant="text"
-                            color="success"
-                            class="save-btn"
-                          />
-                          <v-btn
-                            @click="cancelEditName"
-                            icon="mdi-close"
-                            size="small"
-                            variant="text"
-                            color="error"
-                            class="cancel-btn"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="info-row">
-                  <label class="info-label">이메일</label>
-                  <span class="info-value">{{ userInfo.email || '이메일 없음' }}</span>
-                </div>
-                
-                <div class="info-row">
-                  <label class="info-label">가입일</label>
-                  <span class="info-value">{{ formatDate(userInfo.createdTime) }}</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 회원 탈퇴 버튼 -->
-            <div class="profile-danger-zone">
-              <v-divider class="mb-3"></v-divider>
-              <div class="danger-zone-in-profile">
-                <div class="danger-info">
-                  <h4>회원 탈퇴</h4>
-                  <p>계정을 영구적으로 삭제합니다. 이 작업은 되돌릴 수 없습니다.</p>
-                </div>
-                <v-btn
-                  @click="showDeleteAccountDialog = true"
-                  color="error"
-                  variant="elevated"
-                  size="small"
-                  class="delete-account-btn-inline"
-                >
-                  <v-icon left size="16">mdi-account-remove</v-icon>
-                  탈퇴하기
-                </v-btn>
-              </div>
-            </div>
-          </v-card-text>
-      </v-card>
-
-        <!-- 활동 통계 섹션 -->
-        <v-card class="stats-card">
-          <v-card-title class="stats-header">
-            <v-icon class="mr-2" color="primary">mdi-chart-line</v-icon>
-            활동 통계
-          </v-card-title>
-          <v-card-text class="stats-content">
-            <div class="stats-grid">
-                              <div class="stat-item stat-posts">
-                  <div class="stat-icon-wrapper">
-                    <v-icon class="stat-icon" color="black">mdi-post-outline</v-icon>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-number">{{ myStats.postCount }}</div>
-                    <div class="stat-label">작성한 글</div>
-                  </div>
-                </div>
-                <div class="stat-item stat-comments">
-                  <div class="stat-icon-wrapper">
-                    <v-icon class="stat-icon" color="black">mdi-comment-outline</v-icon>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-number">{{ myStats.commentCount }}</div>
-                    <div class="stat-label">작성한 댓글</div>
-                  </div>
-                </div>
-                <div class="stat-item stat-likes">
-                  <div class="stat-icon-wrapper">
-                    <v-icon class="stat-icon" color="black">mdi-heart-outline</v-icon>
-                  </div>
-                  <div class="stat-info">
-                    <div class="stat-number">{{ myStats.likeCount }}</div>
-                    <div class="stat-label">받은 좋아요</div>
-                  </div>
-                </div>
-              </div>
-          </v-card-text>
-        </v-card>
-      </div>
-
-      <!-- 두 번째 행: 내가 작성한 글과 알림 설정 -->
-      <div class="posts-settings-row">
-        <!-- 내가 작성한 글 섹션 -->
-        <v-card class="posts-card">
-          <v-card-title class="posts-header">
-            <v-icon class="mr-2">mdi-post-outline</v-icon>
-            내가 작성한 글
-            <v-spacer></v-spacer>
-            <v-btn
-              @click="fetchMyPosts"
-              icon="mdi-refresh"
-              size="small"
-              variant="text"
-              color="primary"
+        <div class="profile-body">
+          <div v-if="!isEditingName" class="name-row">
+            <h2 class="profile-name">{{ userInfo.name || '이름 없음' }}</h2>
+            <v-btn icon="mdi-pencil-outline" size="small" variant="text" aria-label="이름 바꾸기" @click="toggleEditName" />
+          </div>
+          <div v-else class="name-edit">
+            <v-text-field
+              ref="nameInput"
+              v-model="editedName"
+              label="이름"
+              variant="outlined"
+              density="compact"
+              hide-details
+              autofocus
+              @keyup.enter="saveName"
+              @keyup.esc="cancelEditName"
             />
-          </v-card-title>
-          <v-card-text>
-            <div v-if="isLoadingPosts" class="loading-container">
-              <v-progress-circular indeterminate color="primary" size="32" />
-              <span class="loading-text">게시글을 불러오는 중...</span>
-            </div>
-            
-            <div v-else-if="myPosts.length > 0" class="posts-list">
-              <div
-                v-for="post in myPosts"
-                :key="post.id"
-                class="post-item"
-                @click="viewPost(post)"
-              >
-                <div class="post-content">
-                  <div class="post-header">
-                    <div class="post-left">
-                      <div class="post-title">{{ post.title }}</div>
-                      <span class="post-date">{{ post.timeAgo }}</span>
-                    </div>
-                    <div class="post-right">
-                      <span class="post-category">{{ post.categoryName }}</span>
-                      <span class="post-fridge" v-if="post.fridgeName">
-                        <v-icon size="14">mdi-fridge</v-icon>
-                        {{ post.fridgeName }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="post-stats">
-                    <span class="stat">
-                      <v-icon size="16">mdi-eye</v-icon>
-                      {{ post.viewCount || 0 }}
-                    </span>
-                    <span class="stat">
-                      <v-icon size="16">mdi-heart</v-icon>
-                      {{ post.likeCount || 0 }}
-                    </span>
-                    <span class="stat">
-                      <v-icon size="16">mdi-comment</v-icon>
-                      {{ post.commentCount || 0 }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div v-else class="no-posts">
-              <v-icon size="48" color="grey-lighten-1">mdi-post-outline</v-icon>
-              <p class="no-posts-text">작성한 게시글이 없습니다</p>
-            </div>
-          </v-card-text>
-        </v-card>
+            <v-btn color="primary" variant="flat" size="small" @click="saveName">저장</v-btn>
+            <v-btn variant="text" size="small" @click="cancelEditName">취소</v-btn>
+          </div>
 
-        <!-- 알림 설정 섹션 -->
-        <v-card class="notification-settings-card">
-          <v-card-title class="notification-header">
-            <v-icon class="mr-2">mdi-bell-outline</v-icon>
-            알림 설정
-          </v-card-title>
-          <v-card-text>
-            <div class="notification-settings">
-              <div class="setting-description">
-                <p class="setting-desc-text">원하는 알림을 선택하여 설정하세요</p>
-              </div>
-              <div class="settings-list">
-                <div 
-                  v-for="setting in notificationSettings" 
-                  :key="setting.type" 
-                  class="setting-item"
-                >
-                  <div class="setting-info">
-                    <div class="setting-title">{{ setting.title }}</div>
-                    <div class="setting-description">{{ setting.description }}</div>
-                  </div>
-                  <v-switch
-                    v-model="setting.isActive"
-                    @change="onNotificationSettingChange"
-                    color="primary"
-                    hide-details
-                    class="setting-switch"
-                  />
-                </div>
-              </div>
-              
-              <!-- 변경사항이 있을 때 저장/취소 버튼 표시 -->
-              <div v-if="hasNotificationChanges" class="notification-actions">
-                <v-divider class="mb-4"></v-divider>
-                <div class="action-buttons">
-                  <v-btn
-                    @click="cancelNotificationChanges"
-                    variant="outlined"
-                    color="grey"
-                    :disabled="isSavingNotifications"
-                    class="mr-3"
-                  >
-                    <v-icon left>mdi-close</v-icon>
-                    취소
-                  </v-btn>
-                  <v-btn
-                    @click="saveNotificationSettings"
-                    color="primary"
-                    :loading="isSavingNotifications"
-                    :disabled="isSavingNotifications"
-                  >
-                    <v-icon left>mdi-content-save</v-icon>
-                    설정 저장
-                  </v-btn>
-                </div>
-                <div class="changes-info">
-                  <v-icon size="16" color="orange">mdi-information</v-icon>
-                  <span class="changes-text">변경사항이 있습니다. 저장 버튼을 클릭하여 적용하세요.</span>
-                </div>
-              </div>
-            </div>
-          </v-card-text>
-        </v-card>
-      </div>
+          <dl class="profile-facts">
+            <div><dt>이메일</dt><dd>{{ userInfo.email || '없음' }}</dd></div>
+            <div><dt>가입일</dt><dd>{{ formatDate(userInfo.createdTime) || '알 수 없음' }}</dd></div>
+          </dl>
 
-      <!-- 회원 탈퇴 확인 다이얼로그 -->
-      <v-dialog v-model="showDeleteAccountDialog" max-width="500px">
-        <v-card>
-          <v-card-title class="text-headline-small error--text">
-            <v-icon left color="error">mdi-alert-circle</v-icon>
-            회원 탈퇴 확인
-          </v-card-title>
-          <v-card-text>
-            <div class="delete-account-warning">
-              <p><strong>정말로 회원 탈퇴를 진행하시겠습니까?</strong></p>
-              <p class="warning-text">탈퇴 시 다음과 같은 데이터가 삭제됩니다:</p>
-              <ul class="warning-list">
-                <li>프로필 정보 및 계정 데이터</li>
-                <li>작성한 모든 게시글과 댓글</li>
-                <li>참여 중인 냉장고 정보</li>
-                <li>알림 설정 및 활동 내역</li>
-              </ul>
-              <p class="final-warning">이 작업은 되돌릴 수 없습니다.</p>
-            </div>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              @click="showDeleteAccountDialog = false"
-              color="grey"
-              variant="text"
-            >
-              취소
-            </v-btn>
-            <v-btn
-              @click="deleteAccount"
-              color="error"
-              :loading="isDeletingAccount"
-              :disabled="isDeletingAccount"
-            >
-              탈퇴하기
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+          <dl class="activity">
+            <div><dt>작성한 글</dt><dd class="sf-num">{{ myStats.postCount || 0 }}</dd></div>
+            <div><dt>작성한 댓글</dt><dd class="sf-num">{{ myStats.commentCount || 0 }}</dd></div>
+            <div><dt>받은 좋아요</dt><dd class="sf-num">{{ myStats.likeCount || 0 }}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- 내가 쓴 글 -->
+      <section class="panel posts" aria-labelledby="my-posts-title">
+        <header class="panel-head">
+          <h2 id="my-posts-title" class="panel-title">내가 쓴 글</h2>
+          <v-btn icon="mdi-refresh" size="small" variant="text" aria-label="새로 고침" @click="fetchMyPosts" />
+        </header>
+
+        <div v-if="isLoadingPosts" class="state-box">
+          <v-progress-circular indeterminate color="primary" size="28" />
+        </div>
+        <ul v-else-if="myPosts.length > 0" class="post-list">
+          <li v-for="post in myPosts" :key="post.id">
+            <button type="button" class="post-row" @click="viewPost(post)">
+              <span class="post-main">
+                <span class="post-title">{{ post.title }}</span>
+                <span class="post-meta">
+                  <span>{{ post.categoryName }}</span>
+                  <span v-if="post.fridgeName">{{ post.fridgeName }}</span>
+                  <span>{{ post.timeAgo }}</span>
+                </span>
+              </span>
+              <span class="post-counts sf-num">
+                <span :aria-label="`조회 ${post.viewCount || 0}`"><v-icon size="15" aria-hidden="true">mdi-eye-outline</v-icon>{{ post.viewCount || 0 }}</span>
+                <span :aria-label="`좋아요 ${post.likeCount || 0}`"><v-icon size="15" aria-hidden="true">mdi-heart-outline</v-icon>{{ post.likeCount || 0 }}</span>
+                <span :aria-label="`댓글 ${post.commentCount || 0}`"><v-icon size="15" aria-hidden="true">mdi-comment-outline</v-icon>{{ post.commentCount || 0 }}</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+        <p v-else class="empty-text">아직 쓴 글이 없어요. 커뮤니티에서 첫 글을 남겨 보세요.</p>
+      </section>
+
+      <!-- 알림 설정 -->
+      <section class="panel settings" aria-labelledby="settings-title">
+        <header class="panel-head">
+          <h2 id="settings-title" class="panel-title">받을 알림</h2>
+        </header>
+        <ul class="setting-list">
+          <li v-for="setting in notificationSettings" :key="setting.type" class="setting-row">
+            <span class="setting-text">
+              <span class="setting-title">{{ setting.title }}</span>
+              <span class="setting-desc">{{ setting.description }}</span>
+            </span>
+            <v-switch
+              v-model="setting.isActive"
+              color="primary"
+              hide-details
+              inset
+              density="compact"
+              :aria-label="setting.title"
+              @change="onNotificationSettingChange"
+            />
+          </li>
+        </ul>
+        <div v-if="hasNotificationChanges" class="settings-actions">
+          <span class="changes-text">바꾼 설정은 저장해야 적용돼요.</span>
+          <v-btn variant="text" :disabled="isSavingNotifications" @click="cancelNotificationChanges">되돌리기</v-btn>
+          <v-btn color="primary" variant="flat" :loading="isSavingNotifications" @click="saveNotificationSettings">알림 설정 저장</v-btn>
+        </div>
+      </section>
+
+      <!-- 계정 삭제는 맨 아래, 눈에 덜 띄게 -->
+      <section class="danger" aria-labelledby="danger-title">
+        <div>
+          <h2 id="danger-title" class="danger-title">회원 탈퇴</h2>
+          <p class="danger-desc">계정과 내가 쓴 글, 댓글, 냉장고 참여 정보가 모두 지워지고 되돌릴 수 없어요.</p>
+        </div>
+        <v-btn variant="outlined" color="error" @click="showDeleteAccountDialog = true">탈퇴하기</v-btn>
+      </section>
     </div>
+
+    <!-- 회원 탈퇴 확인 다이얼로그 -->
+    <v-dialog v-model="showDeleteAccountDialog" max-width="440">
+      <v-card class="pa-2">
+        <v-card-title class="dialog-title">정말 탈퇴할까요?</v-card-title>
+        <v-card-text class="dialog-body">
+          <p>탈퇴하면 아래 정보가 모두 지워지고 되돌릴 수 없어요.</p>
+          <ul>
+            <li>프로필과 계정 정보</li>
+            <li>내가 쓴 글과 댓글</li>
+            <li>참여 중인 냉장고 정보</li>
+            <li>알림 설정과 활동 기록</li>
+          </ul>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="showDeleteAccountDialog = false">취소</v-btn>
+          <v-btn color="error" variant="flat" :loading="isDeletingAccount" @click="deleteAccount">탈퇴하기</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -504,7 +291,7 @@ export default {
         this.$nextTick(() => {
           if (this.$refs.nameInput) {
             this.$refs.nameInput.focus()
-            this.$refs.nameInput.select()
+            this.$refs.nameInput.select?.()
           }
         })
       }
@@ -856,734 +643,382 @@ export default {
 </script>
 
 <style scoped>
-.mypage-container {
-  padding: 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  position: relative;
+.mypage {
+  max-width: 1080px;
+  min-height: 100%;
+  padding: 32px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
 }
 
-.mypage-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.1;
-  z-index: -1;
-}
-
-.page-header {
-  background: white;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.page-head {
   margin-bottom: 20px;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-info {
-  flex: 1;
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 8px 0;
-}
-
-.page-subtitle {
-  font-size: 16px;
-  color: #666;
   margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
 }
 
-.mypage-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* 첫 번째 행: 프로필과 활동 통계 */
-.profile-stats-row {
+.mypage-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-areas:
+    'profile settings'
+    'posts settings'
+    'danger danger';
   gap: 20px;
+  align-items: start;
 }
 
-/* 두 번째 행: 내가 작성한 글과 알림 설정 */
-.posts-settings-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
+.panel {
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
+  padding: 24px;
 }
 
+.profile { grid-area: profile; display: flex; gap: 24px; }
+.posts { grid-area: posts; padding-bottom: 8px; }
+.settings { grid-area: settings; }
+.danger { grid-area: danger; }
 
-
-.profile-card,
-.notification-settings-card,
-.posts-card,
-.stats-card,
-.account-actions-card {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.profile-header,
-.stats-header,
-.posts-header,
-.notification-header {
-  background: #f8f9fa;
-  font-weight: 600;
-  color: #333;
-  padding: 16px 20px;
-  min-height: 64px;
-  display: flex;
-  align-items: center;
-}
-
-.profile-section {
-  display: flex;
-  gap: 32px;
-  align-items: flex-start;
-}
-
-.profile-image-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 35px;
-}
-
-.profile-image-container {
+/* 프로필 */
+.avatar-wrap {
   position: relative;
-  margin-bottom: 16px;
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
 }
 
-.profile-avatar-bg {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 120px;
-  height: 120px;
-  background: linear-gradient(180deg, #0468FF 0%, #789DFB 100%);
-  border-radius: 60px;
+.avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
 }
 
-.profile-avatar-initial {
-  font-weight: 700;
-  font-size: 48px;
-  color: #FFF;
+.avatar-initial {
+  display: grid;
+  place-items: center;
+  background: var(--sf-mint-soft);
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--sf-primary);
 }
 
-.profile-avatar-image {
-  border-radius: 60px;
-  object-fit: cover;
-}
-
-.edit-image-btn {
+.avatar-edit {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--sf-surface);
+  border-radius: 50%;
+  background: var(--sf-text);
+  color: #fff;
+  cursor: pointer;
 }
 
-.profile-info-section {
+.profile-body {
   flex: 1;
-  margin-top: 20px;
-}
-
-.info-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-  min-height: 40px;
-}
-
-.info-label {
-  font-weight: 600;
-  color: #333;
-  min-width: 80px;
-  margin-right: 20px;
-}
-
-.info-value-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.info-value {
-  font-size: 16px;
-  color: #666;
-}
-
-/* 현대적인 이름 편집 디자인 */
-.name-display-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-}
-
-.name-edit-section {
-  flex: 1;
-}
-
-.edit-input-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
-}
-
-.modern-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  color: #333;
-  background: white;
-  transition: all 0.3s ease;
-  outline: none;
   min-width: 0;
 }
 
-.modern-input:focus {
-  border-color: #1976d2;
-  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
-  transform: translateY(-1px);
-}
-
-.modern-input::placeholder {
-  color: #999;
-  font-weight: 400;
-}
-
-.edit-actions {
+.name-row {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 0;
 }
 
-.save-btn {
-  background: rgba(76, 175, 80, 0.1) !important;
-  border-radius: 6px !important;
+.profile-name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
 }
 
-.save-btn:hover {
-  background: rgba(76, 175, 80, 0.2) !important;
-  transform: scale(1.05);
-}
-
-.cancel-btn {
-  background: rgba(244, 67, 54, 0.1) !important;
-  border-radius: 6px !important;
-}
-
-.cancel-btn:hover {
-  background: rgba(244, 67, 54, 0.2) !important;
-  transform: scale(1.05);
-}
-
-.edit-btn {
-  min-width: auto !important;
-  opacity: 0.7;
-  transition: all 0.2s ease;
-}
-
-.edit-btn:hover {
-  opacity: 1;
-  transform: scale(1.1);
-}
-
-.stats-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.stats-content {
-  flex: 1;
-  padding: 16px 20px !important;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.stats-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-  justify-content: center;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  border-left: 4px solid transparent;
-  flex: 1;
-}
-
-.stat-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.stat-posts {
-  border-left-color: #2196F3;
-}
-
-.stat-posts .stat-icon-wrapper {
-  background: linear-gradient(135deg, #2196F3, #1976D2);
-}
-
-.stat-comments {
-  border-left-color: #4CAF50;
-}
-
-.stat-comments .stat-icon-wrapper {
-  background: linear-gradient(135deg, #4CAF50, #388E3C);
-}
-
-.stat-likes {
-  border-left-color: #F44336;
-}
-
-.stat-likes .stat-icon-wrapper {
-  background: linear-gradient(135deg, #F44336, #D32F2F);
-}
-
-.stat-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 20px;
-  flex-shrink: 0;
-  background: linear-gradient(135deg, #f0f0f0 0%, #e0e0e0 100%) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-  font-size: 24px;
-}
-
-.stat-info {
-  flex: 1;
-  text-align: left;
-}
-
-.stat-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 15px;
-  color: #666;
-  font-weight: 500;
-  line-height: 1;
-}
-
-
-
-
-
-.loading-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 40px;
-}
-
-.loading-text {
-  color: #666;
-}
-
-.posts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.post-item {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.post-item:hover {
-  background: #e9ecef;
-  transform: translateY(-2px);
-}
-
-.post-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.post-left {
+.name-edit {
   display: flex;
   align-items: center;
   gap: 8px;
+  max-width: 360px;
+}
+
+.profile-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.profile-facts div {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-facts dt {
+  color: var(--sf-text-faint);
+}
+
+.profile-facts dd {
+  margin: 0;
+  color: var(--sf-text-sub);
+}
+
+.activity {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--sf-line);
+}
+
+.activity div + div {
+  padding-left: 16px;
+  border-left: 1px solid var(--sf-line);
+}
+
+.activity dt {
+  font-size: 13px;
+  color: var(--sf-text-sub);
+}
+
+.activity dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+/* 패널 공통 */
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+/* 내가 쓴 글 */
+.post-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-list li + li {
+  border-top: 1px solid var(--sf-line);
+}
+
+.post-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.post-row:hover .post-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.post-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .post-title {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--sf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.post-right {
+.post-meta {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--sf-text-faint);
 }
 
-.post-category {
-  background: #1976d2;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-.post-fridge {
-  background: #4caf50;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+.post-counts {
   display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.post-date {
-  font-size: 12px;
-  color: #666;
-}
-
-.post-stats {
-  display: flex;
-  gap: 16px;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  color: #666;
-}
-
-.no-posts,
-.no-activity {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-}
-
-.no-posts-text,
-.no-activity-text {
-  margin: 16px 0;
-  font-size: 16px;
-}
-
-/* 프로필 내 회원 탈퇴 스타일 */
-.profile-danger-zone {
-  margin-top: 16px;
-}
-
-.danger-zone-in-profile {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #ffebee;
-  border-radius: 8px;
-  border: 1px solid #ffcdd2;
-}
-
-.danger-info {
-  flex: 1;
-}
-
-.danger-info h4 {
-  color: #d32f2f;
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
-}
-
-.danger-info p {
-  color: #666;
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.delete-account-btn-inline {
-  margin-left: 16px;
+  gap: 12px;
   flex-shrink: 0;
+  font-size: 13px;
+  color: var(--sf-text-faint);
 }
 
-/* 회원 탈퇴 다이얼로그 스타일 */
-.delete-account-warning {
-  padding: 8px 0;
+.post-counts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.warning-text {
-  color: #666;
-  margin: 16px 0 8px 0;
-}
-
-.warning-list {
-  margin: 8px 0 16px 20px;
-  padding: 0;
-}
-
-.warning-list li {
-  color: #666;
-  margin-bottom: 4px;
-}
-
-.final-warning {
-  color: #d32f2f;
-  font-weight: 600;
-  margin: 16px 0 0 0;
-}
-
-/* 알림 설정 스타일 */
-.notification-settings {
-  padding: 8px 0;
-}
-
-.setting-description {
-  margin-bottom: 20px;
-}
-
-.setting-desc-text {
+.empty-text {
+  margin: 8px 0 16px;
   font-size: 14px;
-  color: #666;
-  margin: 0;
+  color: var(--sf-text-sub);
 }
 
-.settings-list {
+.state-box {
+  display: grid;
+  place-items: center;
+  padding: 32px 0;
+}
+
+/* 알림 설정 */
+.setting-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.setting-row + .setting-row {
+  border-top: 1px solid var(--sf-line);
+}
+
+.setting-text {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.setting-item:hover {
-  background: #e9ecef;
-}
-
-.setting-info {
-  flex: 1;
-  margin-right: 16px;
+  gap: 2px;
+  min-width: 0;
 }
 
 .setting-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
+  color: var(--sf-text);
 }
 
-.setting-description {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.4;
+.setting-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sf-text-faint);
 }
 
-.setting-switch {
-  flex-shrink: 0;
-}
-
-/* 알림 설정 액션 버튼 스타일 */
-.notification-actions {
-  margin-top: 20px;
-}
-
-.action-buttons {
+.settings-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.changes-info {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  justify-content: center;
-  padding: 8px 16px;
-  background: #fff3e0;
-  border-radius: 6px;
-  border-left: 4px solid #ff9800;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sf-line);
 }
 
 .changes-text {
-  font-size: 14px;
-  color: #f57c00;
-  font-weight: 500;
+  flex: 1 1 100%;
+  font-size: 13px;
+  color: var(--sf-soon-ink);
+}
+
+/* 탈퇴 */
+.danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border: 1px solid var(--sf-line-strong);
+  border-radius: var(--sf-radius-lg);
+}
+
+.danger-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.danger-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--sf-text-sub);
+}
+
+.dialog-title {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.dialog-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--sf-text-sub);
+}
+
+.dialog-body ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+@media (max-width: 960px) {
+  .mypage-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'profile' 'posts' 'settings' 'danger';
+  }
 }
 
 @media (max-width: 600px) {
-  .mypage-container {
-    padding: 16px;
-    margin-left: 8px;
+  .mypage {
+    padding: 16px 12px 32px;
   }
-}
 
-@media (max-width: 768px) {
-  .profile-stats-row,
-  .posts-settings-row {
-    grid-template-columns: 1fr;
+  .page-title {
+    font-size: 22px;
   }
-  
-  .profile-section {
+
+  .panel {
+    padding: 20px 16px;
+  }
+
+  .profile {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  
-  .profile-info-section {
-    width: 100%;
-  }
-  
-  .stats-grid {
-    gap: 12px;
-  }
-  
-  .stat-item {
-    padding: 12px 16px;
-  }
-  
-  .stat-icon-wrapper {
-    width: 40px;
-    height: 40px;
-    margin-right: 16px;
-  }
-  
-  .stat-icon {
-    font-size: 20px;
-  }
-  
-  .stat-number {
-    font-size: 24px;
-  }
-  
-  .stat-label {
-    font-size: 13px;
-  }
-  
-  .info-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  
-  .info-value-container {
-    width: 100%;
-  }
-  
-  .setting-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .setting-info {
-    margin-right: 0;
-    width: 100%;
-  }
-  
-  .setting-switch {
-    align-self: flex-end;
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .action-buttons .v-btn {
-    width: 100%;
-    margin: 0 !important;
-  }
-  
-  .changes-info {
-    text-align: center;
-  }
-  
-  .danger-zone-in-profile {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  
-  .delete-account-btn-inline {
-    margin-left: 0;
-    width: 100%;
-  }
-  
-  /* 이름 편집 모바일 스타일 */
-  .modern-input {
-    font-size: 16px;
-    padding: 10px 12px;
-  }
-  
-  .edit-input-container {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
-  
-  .edit-actions {
-    justify-content: center;
     gap: 16px;
+  }
+
+  .danger {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .post-counts {
+    display: none;
   }
 }
 </style>
+

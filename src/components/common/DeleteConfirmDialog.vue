@@ -1,28 +1,12 @@
 <template>
   <v-dialog v-model="show" max-width="400" persistent>
-    <v-card>
-      <v-card-title class="text-title-large font-weight-bold">
-        {{ title }}
-      </v-card-title>
-      <v-card-text class="text-body-large">
-        {{ message }}
-      </v-card-text>
-      <v-card-actions class="d-flex justify-center">
-        <v-btn 
-          variant="outlined" 
-          @click="$emit('cancel')"
-          class="mr-4"
-        >
-          취소
-        </v-btn>
-        <v-btn 
-          color="error" 
-          @click="$emit('confirm')"
-          variant="elevated"
-        >
-          삭제
-        </v-btn>
-      </v-card-actions>
+    <v-card class="confirm-card">
+      <h2 class="confirm-title">{{ title }}</h2>
+      <p class="confirm-message">{{ message }}</p>
+      <div class="confirm-actions">
+        <v-btn variant="text" @click="$emit('cancel')">취소</v-btn>
+        <v-btn color="error" variant="flat" @click="$emit('confirm')">삭제</v-btn>
+      </div>
     </v-card>
   </v-dialog>
 </template>
@@ -59,19 +43,30 @@ export default {
 </script>
 
 <style scoped>
-.v-card-title {
-  color: #d32f2f;
-  border-bottom: 1px solid #ffebee;
-  padding-bottom: 16px;
+.confirm-card {
+  padding: 24px 24px 16px;
 }
 
-.v-card-text {
-  padding: 20px 0;
-  color: #424242;
+.confirm-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--sf-text);
+}
+
+.confirm-message {
+  margin: 8px 0 0;
+  font-size: 15px;
   line-height: 1.6;
+  white-space: pre-line;
+  color: var(--sf-text-sub);
 }
 
-.v-card-actions {
-  padding: 16px 0;
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
 }
 </style>
+

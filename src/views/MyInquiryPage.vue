@@ -1,642 +1,338 @@
 <template>
   <div class="inquiry-page">
-    <!-- 배경 그라데이션 -->
-    <div class="background-gradient"></div>
-    
-    <div class="content-container">
-      <!-- 헤더 섹션 -->
-      <div class="header-section">
-        <div class="header-content">
-          <div class="header-text">
-            <h1 class="page-title">{{ role === 'ADMIN' ? '문의 관리' : '문의하기' }}</h1>
-            <p class="page-subtitle">{{ role === 'ADMIN' ? '모든 사용자의 문의사항을 관리하고 답변하세요' : '등록한 문의사항과 답변을 확인하세요' }}</p>
-            <div class="status-summary">
-              <div class="status-item">
-                <div class="status-indicator pending"></div>
-                <span class="status-label">대기중</span>
-                <span class="status-count">{{ statusCounts.PENDING }}</span>
-              </div>
-              <div class="status-item">
-                <div class="status-indicator progress"></div>
-                <span class="status-label">처리중</span>
-                <span class="status-count">{{ statusCounts.IN_PROGRESS }}</span>
-              </div>
-              <div class="status-item">
-                <div class="status-indicator completed"></div>
-                <span class="status-label">완료</span>
-                <span class="status-count">{{ statusCounts.COMPLETED }}</span>
-              </div>
-              <div class="status-item">
-                <div class="status-indicator cancelled"></div>
-                <span class="status-label">취소됨</span>
-                <span class="status-count">{{ statusCounts.CANCELLED }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="header-actions">
-            <v-btn
-              v-if="role !== 'ADMIN'"
-              @click="showCreateModal = true"
-              color="primary"
-              variant="elevated"
-              size="large"
-              prepend-icon="mdi-plus"
-              class="create-btn"
-              elevation="0"
-            >
-              문의 등록
-            </v-btn>
-            <v-btn
-              @click="refreshInquiries"
-              color="surface"
-              variant="outlined"
-              size="large"
-              prepend-icon="mdi-refresh"
-              class="refresh-btn"
-              :loading="isLoading"
-            >
-              새로고침
-            </v-btn>
-          </div>
-        </div>
+    <header class="page-head">
+      <div>
+        <h1 class="page-title">{{ role === 'ADMIN' ? '문의 관리' : '문의하기' }}</h1>
+        <p class="page-desc">
+          {{ role === 'ADMIN' ? '사용자 문의를 확인하고 답변을 남겨 주세요.' : '불편한 점이나 바라는 기능을 알려 주세요. 답변이 달리면 알림으로 알려드려요.' }}
+        </p>
+      </div>
+      <div class="head-actions">
+        <v-btn
+          icon="mdi-refresh"
+          variant="text"
+          aria-label="새로 고침"
+          :loading="isLoading"
+          @click="refreshInquiries"
+        />
+        <v-btn v-if="role !== 'ADMIN'" color="primary" variant="flat" prepend-icon="mdi-plus" @click="showCreateModal = true">
+          문의 남기기
+        </v-btn>
+      </div>
+    </header>
+
+    <dl v-if="allInquiries.length > 0" class="status-summary">
+      <div><dt>답변 대기</dt><dd class="sf-num">{{ statusCounts.PENDING }}</dd></div>
+      <div><dt>확인 중</dt><dd class="sf-num">{{ statusCounts.IN_PROGRESS }}</dd></div>
+      <div><dt>답변 완료</dt><dd class="sf-num">{{ statusCounts.COMPLETED }}</dd></div>
+      <div v-if="statusCounts.CANCELLED"><dt>취소</dt><dd class="sf-num">{{ statusCounts.CANCELLED }}</dd></div>
+    </dl>
+
+    <section v-if="allInquiries.length > 0" class="list-panel" aria-label="문의 목록">
+      <div v-if="isLoading" class="state-box">
+        <v-progress-circular indeterminate color="primary" size="32" />
+        <p>문의를 불러오는 중이에요</p>
       </div>
 
-      <!-- 문의 목록 -->
-      <div v-if="allInquiries.length > 0" class="inquiry-list">
-        <!-- 로딩 상태 -->
-        <div v-if="isLoading" class="loading-container">
-          <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
-          <p class="loading-text">문의 목록을 불러오는 중...</p>
-        </div>
-        
-        <!-- 문의 카드들 -->
-        <div v-else class="inquiry-list-container">
-          <v-card
-            v-for="inquiry in paginatedInquiries"
-            :key="inquiry.id"
-            class="inquiry-item"
-            elevation="0"
-            variant="outlined"
+      <ul v-else class="inquiry-list">
+        <li
+          v-for="inquiry in paginatedInquiries"
+          :key="inquiry.id"
+          class="inquiry-item"
+          :class="{ 'is-open': inquiry.isExpanded }"
+        >
+          <button
+            type="button"
+            class="inquiry-summary"
+            :aria-expanded="!!inquiry.isExpanded"
+            @click="toggleInquiryDetail(inquiry.id)"
           >
-            <v-card-text class="inquiry-content">
-              <!-- 문의 헤더 -->
-              <div class="inquiry-header">
-                <div class="inquiry-title-wrapper">
-                  <h3 class="inquiry-title">
-                    {{ inquiry.title }}
-                  </h3>
-                  <div class="inquiry-meta">
-                    <div class="type-badge" :class="getTypeClass(inquiry.inquiryType)">
-                      {{ getTypeLabel(inquiry.inquiryType) || '알 수 없음' }}
-                    </div>
-                    <div class="status-badge" :class="getStatusClass(inquiry.status)">
-                      {{ getStatusLabel(inquiry.status) }}
-                    </div>
-                  </div>
+            <span class="inquiry-main">
+              <span class="inquiry-tags">
+                <span class="status-tag" :class="getStatusClass(inquiry.status)">{{ getStatusLabel(inquiry.status) }}</span>
+                <span class="type-tag">{{ getTypeLabel(inquiry.inquiryType) || '알 수 없음' }}</span>
+              </span>
+              <span class="inquiry-title">{{ inquiry.title }}</span>
+              <span class="inquiry-preview">{{ inquiry.contents }}</span>
+            </span>
+            <span class="inquiry-side">
+              <span class="inquiry-date sf-num">{{ formatDate(inquiry.createdAt) }}</span>
+              <v-icon size="20" class="chevron" aria-hidden="true">mdi-chevron-down</v-icon>
+            </span>
+          </button>
+
+          <v-expand-transition>
+            <div v-show="inquiry.isExpanded" class="inquiry-detail">
+              <p class="detail-body">{{ inquiry.contents }}</p>
+
+              <div v-if="inquiry.imageUrls && inquiry.imageUrls.length > 0" class="image-grid">
+                <button
+                  v-for="(imageUrl, index) in inquiry.imageUrls"
+                  :key="index"
+                  type="button"
+                  class="image-item"
+                  :aria-label="`첨부 사진 ${index + 1} 크게 보기`"
+                  @click="openImageModal(inquiry.imageUrls, index)"
+                >
+                  <img :src="imageUrl" alt="" />
+                </button>
+              </div>
+
+              <div v-if="inquiry.status === 'COMPLETED'" class="answer-block">
+                <div class="answer-head">
+                  <span class="answer-label">관리자 답변</span>
+                  <span class="answer-date sf-num">{{ getReplyDate(inquiry) }}</span>
                 </div>
-                <div class="inquiry-actions">
-                  <div class="inquiry-date">
-                    {{ formatDate(inquiry.createdAt) }}
-                  </div>
+                <p class="answer-body">{{ getAnswerContent(inquiry) }}</p>
+              </div>
+              <p v-else-if="role !== 'ADMIN'" class="waiting-note">
+                아직 답변 전이에요. 답변이 달리면 알림으로 알려드릴게요.
+              </p>
+
+              <div class="detail-actions">
+                <template v-if="role !== 'ADMIN'">
                   <v-btn
-                    @click="toggleInquiryDetail(inquiry.id)"
+                    v-if="inquiry.status !== 'COMPLETED'"
                     variant="text"
                     size="small"
-                    :icon="inquiry.isExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-                    class="expand-btn"
+                    prepend-icon="mdi-pencil-outline"
+                    @click="openEditModal(inquiry)"
                   >
+                    수정
                   </v-btn>
-                </div>
-              </div>
-
-              <!-- 문의 내용 미리보기 -->
-              <div class="inquiry-preview">
-                <p class="inquiry-text">
-                  {{ inquiry.contents }}
-                </p>
-              </div>
-
-              <!-- 답변 상태 표시 -->
-              <div v-if="inquiry.status === 'COMPLETED'" class="answer-status">
-                <div class="answer-icon">
-                  <v-icon icon="mdi-check-circle" color="success" size="20"></v-icon>
-                </div>
-                <span class="answer-text">답변 완료</span>
-                <span class="answer-date">{{ formatDate(inquiry.updatedAt) }}</span>
-              </div>
-
-              <!-- 답변 대기 중인 경우 ADMIN용 답변 버튼 -->
-              <div v-else-if="role === 'ADMIN'" class="answer-status pending">
-                <div class="answer-icon">
-                  <v-icon 
-                    icon="mdi-alert-circle" 
-                    color="error" 
-                    size="24"
-                    class="pending-icon"
-                  ></v-icon>
-                  <span class="icon-fallback">⚠</span>
-                </div>
-                <span class="answer-text">답변 대기중</span>
-                <v-btn
-                  @click="openAnswerModal(inquiry)"
-                  color="success"
-                  variant="elevated"
-                  size="small"
-                  prepend-icon="mdi-reply"
-                  class="answer-btn-small"
-                  elevation="0"
-                >
-                  답변 등록하기
-                </v-btn>
-              </div>
-
-              <!-- USER용 수정/삭제 버튼 (우측 하단) -->
-              <div v-if="role !== 'ADMIN'" class="user-actions-bottom">
-                <v-btn
-                  v-if="inquiry.status !== 'COMPLETED'"
-                  @click="openEditModal(inquiry)"
-                  variant="outlined"
-                  size="small"
-                  prepend-icon="mdi-pencil"
-                  class="edit-btn-bottom"
-                >
-                  수정하기
-                </v-btn>
-                <v-btn
-                  @click="openDeleteConfirmModal(inquiry)"
-                  variant="outlined"
-                  size="small"
-                  prepend-icon="mdi-delete"
-                  class="delete-btn-bottom"
-                >
-                  삭제하기
-                </v-btn>
-              </div>
-
-              <!-- 아코디언 상세 내용 -->
-              <v-expand-transition>
-                <div v-show="inquiry.isExpanded" class="inquiry-detail-accordion">
-                  <v-divider class="my-4"></v-divider>
-                  
-                  <!-- 답변 정보 -->
-                  <div v-if="inquiry.status === 'COMPLETED'" class="detail-section">
-                    <h4 class="detail-section-title">답변</h4>
-                    <div class="detail-content">
-                      <div class="detail-row">
-                        <span class="detail-label">답변일:</span>
-                        <span class="detail-value">{{ getReplyDate(inquiry) }}</span>
-                      </div>
-                      <div class="detail-row">
-                        <span class="detail-label">답변 내용:</span>
-                        <div class="detail-content-text answer-text">
-                          {{ getAnswerContent(inquiry) }}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- 답변 대기 중인 경우 USER용 메시지 -->
-                  <div v-else-if="role !== 'ADMIN'" class="detail-section">
-                    <h4 class="detail-section-title">답변 상태</h4>
-                    <div class="waiting-answer-content">
-                      <div class="waiting-icon">
-                        <v-icon icon="mdi-clock-outline" size="40" color="warning"></v-icon>
-                      </div>
-                      <h5 class="waiting-title">답변 대기 중</h5>
-                      <p class="waiting-description">
-                        문의하신 내용에 대해 빠른 시일 내에 답변드리겠습니다.
-                      </p>
-                    </div>
-                  </div>
-
-                  <!-- 이미지 첨부 (있는 경우) -->
-                  <div v-if="inquiry.imageUrls && inquiry.imageUrls.length > 0" class="detail-section">
-                    <h4 class="detail-section-title">첨부 이미지</h4>
-                    <div class="image-grid">
-                      <div 
-                        v-for="(imageUrl, index) in inquiry.imageUrls" 
-                        :key="index"
-                        class="image-item"
-                        @click="openImageModal(inquiry.imageUrls, index)"
-                      >
-                        <img :src="imageUrl" :alt="`첨부 이미지 ${index + 1}`" class="attached-image" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </v-expand-transition>
-            </v-card-text>
-          </v-card>
-        </div>
-
-        <!-- 페이지네이션 -->
-        <div class="pagination-section">
-          <v-pagination
-            v-model="currentPage"
-            :length="totalPages"
-            :total-visible="7"
-            @update:model-value="changePage"
-            color="primary"
-            rounded="circle"
-            class="pagination"
-          ></v-pagination>
-          
-        </div>
-      </div>
-
-      <!-- 문의가 없는 경우 -->
-      <div v-else-if="allInquiries.length === 0 && !isLoading" class="empty-state">
-        <div class="empty-content">
-          <div class="empty-icon">
-            <v-icon icon="mdi-help-circle-outline" size="80" color="grey-lighten-2"></v-icon>
-          </div>
-          <h3 class="empty-title">등록된 문의가 없습니다</h3>
-          <p class="empty-description">새로운 문의사항이 있으시면 문의 등록 버튼을 눌러주세요.</p>
-          <v-btn
-            @click="showCreateModal = true"
-            color="primary"
-            variant="elevated"
-            size="large"
-            prepend-icon="mdi-plus"
-            class="empty-create-btn"
-            elevation="0"
-          >
-            첫 문의 등록하기
-          </v-btn>
-        </div>
-      </div>
-    </div>
-
-    <!-- 문의 등록 모달 -->
-    <v-dialog v-model="showCreateModal" max-width="600" persistent>
-      <v-card class="create-modal" elevation="0" variant="outlined">
-        <v-card-title class="modal-header">
-          <div class="modal-title">
-            <v-icon color="primary" size="24" class="mr-3">mdi-help-circle</v-icon>
-            <span>문의 등록</span>
-          </div>
-          <v-btn 
-            icon 
-            variant="text" 
-            size="small"
-            @click="closeCreateModal"
-            class="close-btn"
-          >
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
-        
-        <v-divider></v-divider>
-
-        <v-card-text class="modal-content">
-          <v-form @submit.prevent="submitInquiry" ref="form">
-            <v-select
-              v-model="inquiryData.inquiryType"
-              :items="inquiryTypes"
-              label="문의 종류"
-              placeholder="문의 종류를 선택해주세요"
-              :rules="[rules.required]"
-              variant="outlined"
-              class="form-field"
-              required
-            ></v-select>
-
-            <v-text-field
-              v-model="inquiryData.title"
-              label="제목"
-              placeholder="문의 제목을 입력해주세요"
-              :rules="[rules.required]"
-              variant="outlined"
-              class="form-field"
-              required
-            ></v-text-field>
-
-            <v-textarea
-              v-model="inquiryData.contents"
-              label="문의 내용"
-              placeholder="문의 내용을 자세히 작성해주세요"
-              :rules="[rules.required, rules.minLength]"
-              variant="outlined"
-              rows="6"
-              class="form-field"
-              required
-            ></v-textarea>
-
-            <!-- 이미지 파일 업로드 -->
-            <div class="image-upload-section">
-              <label class="image-upload-label">이미지 첨부 (선택사항)</label>
-              <v-file-input
-                v-model="inquiryData.imageFiles"
-                multiple
-                accept="image/*"
-                label="이미지 파일을 선택하세요"
-                variant="outlined"
-                prepend-icon="mdi-camera"
-                class="form-field"
-                show-size
-                counter
-                :rules="[rules.imageFiles]"
-              ></v-file-input>
-            </div>
-          </v-form>
-        </v-card-text>
-
-        <v-divider></v-divider>
-
-        <v-card-actions class="modal-actions">
-          <v-spacer></v-spacer>
-          <v-btn
-            @click="closeCreateModal"
-            variant="outlined"
-            color="grey-darken-1"
-            size="large"
-            class="cancel-btn"
-          >
-            취소
-          </v-btn>
-          <v-btn
-            @click="submitInquiry"
-            color="primary"
-            variant="elevated"
-            size="large"
-            :loading="isSubmitting"
-            :disabled="!isFormValid"
-            class="submit-btn"
-            elevation="0"
-          >
-            문의 등록
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- 문의 수정 모달 -->
-    <v-dialog v-model="showEditModal" max-width="600" persistent>
-      <v-card class="edit-modal" elevation="0" variant="outlined">
-        <v-card-title class="modal-header">
-          <div class="modal-title">
-            <span>문의 수정</span>
-          </div>
-          <v-btn 
-            icon 
-            variant="text" 
-            size="small"
-            @click="closeEditModal"
-            class="close-btn"
-          >
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
-        
-        <v-divider></v-divider>
-
-        <v-card-text class="modal-content">
-          <v-form @submit.prevent="submitEditInquiry" ref="editForm">
-            <v-select
-              v-model="editData.inquiryType"
-              :items="inquiryTypes"
-              label="문의 종류"
-              placeholder="문의 종류를 선택해주세요"
-              :rules="[rules.required]"
-              variant="outlined"
-              class="form-field"
-              required
-            ></v-select>
-
-            <v-text-field
-              v-model="editData.title"
-              label="제목"
-              placeholder="문의 제목을 입력해주세요"
-              :rules="[rules.required]"
-              variant="outlined"
-              class="form-field"
-              required
-            ></v-text-field>
-
-            <v-textarea
-              v-model="editData.contents"
-              label="문의 내용"
-              placeholder="문의 내용을 자세히 작성해주세요"
-              :rules="[rules.required, rules.minLength]"
-              variant="outlined"
-              rows="6"
-              class="form-field"
-              required
-            ></v-textarea>
-
-            <!-- 기존 이미지 표시 -->
-            <div v-if="editData.existingImages && editData.existingImages.length > 0" class="existing-images-section">
-              <label class="existing-images-label">기존 첨부 이미지</label>
-              <div class="existing-images-grid">
-                <div 
-                  v-for="(imageUrl, index) in editData.existingImages" 
-                  :key="index"
-                  class="existing-image-item"
-                >
-                  <img 
-                    :src="imageUrl" 
-                    :alt="`기존 이미지 ${index + 1}`" 
-                    class="existing-image"
-                    @click="openImageModal(editData.existingImages, index)"
-                  />
                   <v-btn
-                    @click.stop="removeExistingImage(index)"
-                    icon
                     variant="text"
                     size="small"
                     color="error"
-                    class="remove-image-btn"
+                    prepend-icon="mdi-trash-can-outline"
+                    @click="openDeleteConfirmModal(inquiry)"
                   >
-                    <v-icon size="16">mdi-close</v-icon>
+                    삭제
                   </v-btn>
-                </div>
+                </template>
+                <v-btn
+                  v-else-if="inquiry.status !== 'COMPLETED'"
+                  color="primary"
+                  variant="flat"
+                  size="small"
+                  prepend-icon="mdi-reply-outline"
+                  @click="openAnswerModal(inquiry)"
+                >
+                  답변 남기기
+                </v-btn>
               </div>
             </div>
+          </v-expand-transition>
+        </li>
+      </ul>
 
-            <!-- 이미지 파일 업로드 -->
-            <div class="image-upload-section">
-              <label class="image-upload-label">새 이미지 첨부 (선택사항)</label>
-              <v-file-input
-                v-model="editData.newImageFiles"
-                multiple
-                accept="image/*"
-                label="새 이미지 파일을 선택하세요"
-                variant="outlined"
-                prepend-icon="mdi-camera"
-                class="form-field"
-                show-size
-                counter
-                :rules="[rules.imageFiles]"
-              ></v-file-input>
-            </div>
-          </v-form>
-        </v-card-text>
+      <footer v-if="totalPages > 1" class="list-foot">
+        <v-pagination
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="7"
+          density="comfortable"
+          color="primary"
+          @update:model-value="changePage"
+        />
+      </footer>
+    </section>
 
-        <v-divider></v-divider>
+    <section v-else-if="!isLoading" class="list-panel empty-state">
+      <p class="empty-title">{{ role === 'ADMIN' ? '들어온 문의가 없어요' : '남긴 문의가 없어요' }}</p>
+      <p class="empty-desc">
+        {{ role === 'ADMIN' ? '새 문의가 들어오면 여기에 보여요.' : '쓰다가 막히거나 고쳤으면 하는 점이 있으면 알려 주세요.' }}
+      </p>
+      <v-btn v-if="role !== 'ADMIN'" color="primary" variant="flat" prepend-icon="mdi-plus" @click="showCreateModal = true">
+        문의 남기기
+      </v-btn>
+    </section>
 
-        <v-card-actions class="modal-actions">
-          <v-spacer></v-spacer>
-          <v-btn
-            @click="closeEditModal"
-            variant="outlined"
-            color="grey-darken-1"
-            size="large"
-            class="cancel-btn"
-          >
-            취소
-          </v-btn>
-          <v-btn
-            @click="submitEditInquiry"
-            color="warning"
-            variant="elevated"
-            size="large"
-            :loading="isSubmittingEdit"
-            :disabled="!isEditFormValid"
-            class="submit-edit-btn"
-            elevation="0"
-          >
-            수정하기
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <section v-else class="list-panel state-box">
+      <v-progress-circular indeterminate color="primary" size="32" />
+      <p>문의를 불러오는 중이에요</p>
+    </section>
 
-    <!-- 삭제 확인 모달 -->
-    <v-dialog v-model="showDeleteConfirmModal" max-width="400" persistent>
-      <v-card class="delete-confirm-modal" elevation="0" variant="outlined">
-        <v-card-title class="modal-header">
-          <div class="modal-title">
-            <v-icon color="error" size="24" class="mr-3">mdi-alert-circle</v-icon>
-            <span>문의 삭제 확인</span>
-          </div>
-        </v-card-title>
-        
-        <v-divider></v-divider>
-
-        <v-card-text class="modal-content">
-          <div class="delete-confirm-content">
-            <p class="delete-confirm-text">
-              정말로 이 문의를 삭제하시겠습니까?
-            </p>
-            <p class="delete-confirm-subtext">
-              삭제된 문의는 복구할 수 없습니다.
-            </p>
-          </div>
-        </v-card-text>
-
-        <v-divider></v-divider>
-
-        <v-card-actions class="modal-actions">
-          <v-spacer></v-spacer>
-          <v-btn
-            @click="closeDeleteConfirmModal"
-            variant="outlined"
-            color="grey-darken-1"
-            size="large"
-            class="cancel-btn"
-          >
-            취소
-          </v-btn>
-          <v-btn
-            @click="confirmDeleteInquiry"
-            color="error"
-            variant="elevated"
-            size="large"
-            :loading="isDeleting"
-            class="confirm-delete-btn"
-            elevation="0"
-          >
-            삭제
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- ADMIN용 답변 모달 -->
-    <v-dialog v-model="showAnswerModal" max-width="600" persistent>
-      <v-card class="answer-modal" elevation="0" variant="outlined">
-        <v-card-title class="modal-header">
-          <div class="modal-title">
-            <v-icon color="success" size="24" class="mr-3">mdi-reply</v-icon>
-            <span>답변 등록</span>
-          </div>
-          <v-btn 
-            icon 
-            variant="text" 
-            size="small"
-            @click="closeAnswerModal"
-            class="close-btn"
-          >
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </v-card-title>
-        
-        <v-divider></v-divider>
-
-        <v-card-text class="modal-content">
-          <div class="inquiry-info">
-            <h4 class="inquiry-info-title">문의 정보</h4>
-            <div class="inquiry-info-content">
-              <div class="info-row">
-                <span class="info-label">제목:</span>
-                <span class="info-value">{{ selectedInquiry?.title }}</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">내용:</span>
-                <div class="info-content">{{ selectedInquiry?.contents }}</div>
-              </div>
-            </div>
-          </div>
-          
-          <v-divider class="my-4"></v-divider>
-          
-          <v-form @submit.prevent="submitAnswer" ref="answerForm">
+    <!-- 문의 등록 -->
+    <v-dialog v-model="showCreateModal" max-width="560" persistent>
+      <v-card class="form-card">
+        <header class="dialog-head">
+          <h2 class="dialog-title">문의 남기기</h2>
+          <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeCreateModal" />
+        </header>
+        <v-card-text class="dialog-body">
+          <v-form ref="form" @submit.prevent="submitInquiry">
+            <v-select
+              v-model="inquiryData.inquiryType"
+              :items="inquiryTypes"
+              label="종류"
+              :rules="[rules.required]"
+              variant="outlined"
+              class="form-field"
+            />
+            <v-text-field
+              v-model="inquiryData.title"
+              label="제목"
+              :rules="[rules.required]"
+              variant="outlined"
+              class="form-field"
+            />
             <v-textarea
-              v-model="answerData.contents"
-              label="답변 내용"
-              placeholder="답변 내용을 자세히 작성해주세요"
+              v-model="inquiryData.contents"
+              label="내용"
+              placeholder="어떤 화면에서 무엇을 하다가 생긴 일인지 적어 주면 빨리 확인할 수 있어요."
               :rules="[rules.required, rules.minLength]"
               variant="outlined"
               rows="6"
               class="form-field"
-              required
-            ></v-textarea>
+            />
+            <v-file-input
+              v-model="inquiryData.imageFiles"
+              multiple
+              accept="image/*"
+              label="사진 첨부 (선택)"
+              variant="outlined"
+              prepend-icon=""
+              prepend-inner-icon="mdi-image-outline"
+              show-size
+              counter
+              :rules="[rules.imageFiles]"
+              class="form-field"
+            />
           </v-form>
         </v-card-text>
-
-        <v-divider></v-divider>
-
-        <v-card-actions class="modal-actions">
-          <v-spacer></v-spacer>
-          <v-btn
-            @click="closeAnswerModal"
-            variant="outlined"
-            color="grey-darken-1"
-            size="large"
-            class="cancel-btn"
-          >
-            취소
-          </v-btn>
-          <v-btn
-            @click="submitAnswer"
-            color="success"
-            variant="elevated"
-            size="large"
-            :loading="isSubmittingAnswer"
-            :disabled="!isAnswerValid"
-            class="submit-answer-btn"
-            elevation="0"
-          >
-            답변 등록
+        <v-card-actions class="dialog-actions">
+          <v-spacer />
+          <v-btn variant="text" @click="closeCreateModal">취소</v-btn>
+          <v-btn color="primary" variant="flat" :loading="isSubmitting" :disabled="!isFormValid" @click="submitInquiry">
+            문의 남기기
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- 성공/에러 메시지 -->
+    <!-- 문의 수정 -->
+    <v-dialog v-model="showEditModal" max-width="560" persistent>
+      <v-card class="form-card">
+        <header class="dialog-head">
+          <h2 class="dialog-title">문의 수정</h2>
+          <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeEditModal" />
+        </header>
+        <v-card-text class="dialog-body">
+          <v-form ref="editForm" @submit.prevent="submitEditInquiry">
+            <v-select
+              v-model="editData.inquiryType"
+              :items="inquiryTypes"
+              label="종류"
+              :rules="[rules.required]"
+              variant="outlined"
+              class="form-field"
+            />
+            <v-text-field
+              v-model="editData.title"
+              label="제목"
+              :rules="[rules.required]"
+              variant="outlined"
+              class="form-field"
+            />
+            <v-textarea
+              v-model="editData.contents"
+              label="내용"
+              :rules="[rules.required, rules.minLength]"
+              variant="outlined"
+              rows="6"
+              class="form-field"
+            />
+
+            <div v-if="editData.existingImages && editData.existingImages.length > 0" class="existing-images">
+              <p class="field-label">첨부한 사진</p>
+              <div class="image-grid">
+                <div v-for="(imageUrl, index) in editData.existingImages" :key="index" class="image-item is-editable">
+                  <img
+                    :src="imageUrl"
+                    :alt="`첨부 사진 ${index + 1}`"
+                    @click="openImageModal(editData.existingImages, index)"
+                  />
+                  <button type="button" class="image-remove" aria-label="사진 빼기" @click.stop="removeExistingImage(index)">
+                    <v-icon size="14">mdi-close</v-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <v-file-input
+              v-model="editData.newImageFiles"
+              multiple
+              accept="image/*"
+              label="사진 더 첨부 (선택)"
+              variant="outlined"
+              prepend-icon=""
+              prepend-inner-icon="mdi-image-outline"
+              show-size
+              counter
+              :rules="[rules.imageFiles]"
+              class="form-field"
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions class="dialog-actions">
+          <v-spacer />
+          <v-btn variant="text" @click="closeEditModal">취소</v-btn>
+          <v-btn color="primary" variant="flat" :loading="isSubmittingEdit" :disabled="!isEditFormValid" @click="submitEditInquiry">
+            수정 내용 저장
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- 삭제 확인 -->
+    <v-dialog v-model="showDeleteConfirmModal" max-width="400" persistent>
+      <v-card class="pa-2">
+        <v-card-title class="dialog-title">문의를 삭제할까요?</v-card-title>
+        <v-card-text class="confirm-text">삭제한 문의와 답변은 되돌릴 수 없어요.</v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="closeDeleteConfirmModal">취소</v-btn>
+          <v-btn color="error" variant="flat" :loading="isDeleting" @click="confirmDeleteInquiry">삭제</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- 관리자 답변 -->
+    <v-dialog v-model="showAnswerModal" max-width="600" persistent>
+      <v-card class="form-card">
+        <header class="dialog-head">
+          <h2 class="dialog-title">답변 남기기</h2>
+          <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeAnswerModal" />
+        </header>
+        <v-card-text class="dialog-body">
+          <div class="quoted">
+            <p class="quoted-title">{{ selectedInquiry?.title }}</p>
+            <p class="quoted-body">{{ selectedInquiry?.contents }}</p>
+          </div>
+          <v-form ref="answerForm" @submit.prevent="submitAnswer">
+            <v-textarea
+              v-model="answerData.contents"
+              label="답변"
+              :rules="[rules.required, rules.minLength]"
+              variant="outlined"
+              rows="6"
+              class="form-field"
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions class="dialog-actions">
+          <v-spacer />
+          <v-btn variant="text" @click="closeAnswerModal">취소</v-btn>
+          <v-btn color="primary" variant="flat" :loading="isSubmittingAnswer" :disabled="!isAnswerValid" @click="submitAnswer">
+            답변 남기기
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <CommonSnackbar ref="commonSnackbar" />
 
-    <!-- 이미지 확대 모달 -->
     <ImageModal
       v-model="showImageModal"
       :images="selectedImages"
@@ -667,10 +363,10 @@ export default {
         { title: '기타', value: 'ETC' }
       ],
       inquiryStatuses: [
-        { title: '대기중', value: 'PENDING', color: 'warning' },
-        { title: '처리중', value: 'IN_PROGRESS', color: 'info' },
-        { title: '완료', value: 'COMPLETED', color: 'success' },
-        { title: '취소됨', value: 'CANCELLED', color: 'error' }
+        { title: '답변 대기', value: 'PENDING', color: 'warning' },
+        { title: '확인 중', value: 'IN_PROGRESS', color: 'info' },
+        { title: '답변 완료', value: 'COMPLETED', color: 'success' },
+        { title: '취소', value: 'CANCELLED', color: 'error' }
       ],
       rules: {
         required: v => !!v || '필수 입력 항목입니다.',
@@ -1008,10 +704,10 @@ export default {
       
       // fallback 매핑
       const fallbackMap = {
-        'PENDING': '대기중',
-        'IN_PROGRESS': '처리중',
-        'COMPLETED': '완료',
-        'CANCELLED': '취소됨'
+        'PENDING': '답변 대기',
+        'IN_PROGRESS': '확인 중',
+        'COMPLETED': '답변 완료',
+        'CANCELLED': '취소'
       };
       
       return fallbackMap[status] || status;
@@ -1410,1516 +1106,420 @@ export default {
 
 <style scoped>
 .inquiry-page {
-  position: relative;
-  min-height: 100vh;
+  max-width: 880px;
+  min-height: 100%;
+  padding: 32px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
+}
+
+.page-head {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.background-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 300px;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  z-index: -1;
-}
-
-.content-container {
-  width: 100%;
-  max-width: 1200px;
-  padding: 0 20px;
-  box-sizing: border-box;
-}
-
-.header-section {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 24px;
-  padding: 32px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  margin-bottom: 32px;
-  border: 1px solid #e2e8f0;
-  position: relative;
-  overflow: hidden;
-}
-
-.header-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-}
-
-.header-section::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  width: 100%;
-  gap: 32px;
-}
-
-.header-text {
-  flex-grow: 1;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .page-title {
-  font-size: 2.5rem;
-  font-weight: 500;
-  background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 12px;
-  letter-spacing: -0.025em;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
 }
 
-.page-subtitle {
-  font-size: 1.125rem;
-  color: #64748b;
-  margin-bottom: 0;
-  font-weight: 400;
+.page-desc {
+  max-width: 52ch;
+  margin: 4px 0 0;
+  font-size: 15px;
   line-height: 1.6;
+  color: var(--sf-text-sub);
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .status-summary {
   display: flex;
-  gap: 20px;
-  margin-top: 16px;
   flex-wrap: wrap;
-  position: relative;
-  z-index: 1;
+  gap: 8px 24px;
+  margin: 0 0 16px;
+  font-size: 14px;
 }
 
-.status-item {
+.status-summary div {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
-  border-radius: 12px;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  cursor: pointer;
+  gap: 6px;
 }
 
-.status-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.6s ease;
+.status-summary dt {
+  color: var(--sf-text-sub);
 }
 
-.status-item:hover::before {
-  left: 100%;
-}
-
-.status-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  border-color: #d1d5db;
-}
-
-.status-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-indicator.pending {
-  background-color: #ff9800;
-  box-shadow: 0 0 8px rgba(255, 152, 0, 0.4);
-}
-
-.status-indicator.progress {
-  background-color: #2196f3;
-  box-shadow: 0 0 8px rgba(33, 150, 243, 0.4);
-}
-
-.status-indicator.completed {
-  background-color: #4caf50;
-  box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
-}
-
-.status-indicator.cancelled {
-  background-color: #f44336;
-  box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
-}
-
-.status-label {
-  font-weight: 500;
-  color: #333;
-  font-size: 0.875rem;
-}
-
-.status-count {
+.status-summary dd {
+  margin: 0;
   font-weight: 700;
-  color: #1976d2;
-  font-size: 1.125rem;
-  margin-left: auto;
+  color: var(--sf-text);
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.create-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
-  transition: all 0.3s ease;
-  position: relative;
+.list-panel {
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 56px;
-}
-
-.create-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.create-btn:hover::before {
-  left: 100%;
-}
-
-.create-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-}
-
-.refresh-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 56px;
-}
-
-.refresh-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.refresh-btn:hover::before {
-  left: 100%;
-}
-
-.refresh-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-.test-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 56px;
-}
-
-.test-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.test-btn:hover::before {
-  left: 100%;
-}
-
-.test-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
 }
 
 .inquiry-list {
-  min-height: 200px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inquiry-item + .inquiry-item {
+  border-top: 1px solid var(--sf-line);
+}
+
+.inquiry-summary {
   display: flex;
-  flex-direction: column;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 60px 0;
-}
-
-.loading-text {
-  margin-top: 20px;
-  color: #666;
-  font-size: 1rem;
-}
-
-.inquiry-list-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.inquiry-item {
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  background-color: #fff;
-  overflow: hidden;
-  position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.inquiry-item:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
-  transform: translateY(-4px);
-}
-
-.inquiry-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.inquiry-item:hover::before {
-  opacity: 1;
-}
-
-.inquiry-item::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 24px 24px 0;
-  border-color: transparent #f3f4f6 transparent transparent;
-  transition: border-color 0.3s ease;
-}
-
-.inquiry-item:hover::after {
-  border-color: transparent #e0e7ff transparent transparent;
-}
-
-.inquiry-content {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-  z-index: 1;
-}
-
-.inquiry-header {
-  display: flex;
-  justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
 }
 
-.inquiry-title-wrapper {
-  flex: 1;
+.inquiry-summary:hover {
+  background: #FAFBFC;
+}
+
+.inquiry-main {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
+  min-width: 0;
+}
+
+.inquiry-tags {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.status-tag,
+.type-tag {
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.type-tag {
+  background: var(--sf-bg);
+  color: var(--sf-text-sub);
+}
+
+.status-tag {
+  border: 1px solid var(--sf-line-strong);
+  color: var(--sf-text-sub);
+}
+
+.status-tag.status-completed {
+  border-color: transparent;
+  background: var(--sf-mint-soft);
+  color: var(--sf-primary);
+}
+
+.status-tag.status-progress {
+  border-color: transparent;
+  background: #E8F1FA;
+  color: #285E8E;
+}
+
+.status-tag.status-cancelled {
+  color: var(--sf-text-faint);
+  text-decoration: line-through;
 }
 
 .inquiry-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.inquiry-meta {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.type-badge, .status-badge {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 0.75rem;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.type-badge::before, .status-badge::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.6s ease;
-}
-
-.type-badge:hover::before, .status-badge:hover::before {
-  left: 100%;
-}
-
-.type-badge:hover, .status-badge:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.type-badge {
-  background-color: #f3f4f6;
-  color: #374151;
-  border-color: #d1d5db;
-}
-
-.type-badge.type-function {
-  background-color: #eef2ff;
-  color: #3730a3;
-  border-color: #c7d2fe;
-}
-
-.type-badge.type-bug {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-.type-badge.type-etc {
-  background-color: #fef3c7;
-  color: #d97706;
-  border-color: #fed7aa;
-}
-
-.status-badge {
-  background-color: #f9fafb;
-  color: #6b7280;
-  border-color: #e5e7eb;
-}
-
-.status-badge.status-pending {
-  background-color: #fffbeb;
-  color: #d97706;
-  border-color: #fed7aa;
-}
-
-.status-badge.status-progress {
-  background-color: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
-}
-
-.status-badge.status-completed {
-  background-color: #f0fdf4;
-  color: #16a34a;
-  border-color: #bbf7d0;
-}
-
-.status-badge.status-cancelled {
-  background-color: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-.inquiry-date {
-  font-size: 0.875rem;
-  color: #999;
-  white-space: nowrap;
-  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--sf-text);
 }
 
 .inquiry-preview {
-  margin: 0;
-}
-
-.inquiry-text {
-  font-size: 0.95rem;
-  color: #555;
-  line-height: 1.6;
-  margin: 0;
+  font-size: 14px;
+  color: var(--sf-text-sub);
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
+  white-space: nowrap;
 }
 
-.answer-status {
+.is-open .inquiry-preview {
+  display: none;
+}
+
+.inquiry-side {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.875rem;
-  color: #4caf50;
-  padding: 12px 16px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid #4caf50;
-}
-
-.answer-status.pending {
-  color: #dc2626;
-  border-left-color: #dc2626;
-  background-color: #fef2f2;
-}
-
-.answer-status.pending .pending-icon {
-  color: #dc2626 !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-.answer-status.pending .icon-fallback {
-  display: none;
-  color: #dc2626;
-  font-weight: bold;
-  font-size: 20px;
-  margin-left: 4px;
-}
-
-.answer-status.pending .pending-icon:not([style*="display: none"]) + .icon-fallback {
-  display: none;
-}
-
-.answer-status.pending .pending-icon[style*="display: none"] + .icon-fallback,
-.answer-status.pending .pending-icon:not(:visible) + .icon-fallback {
-  display: inline-block;
-}
-
-.answer-icon {
   flex-shrink: 0;
 }
 
-.answer-text {
-  font-weight: 600;
+.inquiry-date {
+  font-size: 13px;
+  color: var(--sf-text-faint);
 }
 
-.answer-date {
-  color: #999;
-  font-size: 0.8rem;
-  margin-left: auto;
+.chevron {
+  color: var(--sf-text-faint);
+  transition: transform 0.2s ease;
 }
 
-.pagination-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 20px;
-  padding: 10px 0;
-  border-top: 1px solid #eee;
+.is-open .chevron {
+  transform: rotate(180deg);
 }
 
-.pagination {
-  margin: 0;
+.inquiry-detail {
+  padding: 0 20px 18px;
 }
 
-.page-info {
-  font-size: 0.8rem;
-  color: #666;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.page-count {
-  font-weight: 600;
-  color: #333;
-}
-
-.empty-state {
-  background-color: #fff;
-  border-radius: 16px;
-  border: 2px dashed #e0e0e0;
-  padding: 40px 20px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  margin-top: 20px;
-}
-
-.empty-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.empty-icon {
-  margin-bottom: 15px;
-}
-
-.empty-title {
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: #333;
-  margin-bottom: 10px;
-}
-
-.empty-description {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-
-.empty-create-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-create-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-}
-
-.create-modal {
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 32px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e2e8f0;
-  position: relative;
-}
-
-.modal-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-}
-
-.modal-title {
-  display: flex;
-  align-items: center;
-  font-size: 1.375rem;
-  font-weight: 600;
-  color: #1e293b;
-  letter-spacing: -0.025em;
-}
-
-.close-btn {
-  color: #64748b;
-  transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  color: #ef4444;
-  transform: scale(1.1);
-}
-
-.modal-content {
-  padding: 32px;
-  background-color: #ffffff;
-}
-
-.form-field {
-  margin-bottom: 24px;
-}
-
-.modal-actions {
-  padding: 24px 32px;
-  border-top: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-  background-color: #f8fafc;
-}
-
-.cancel-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  border: 2px solid #e2e8f0;
-  color: #475569;
-  background-color: #ffffff;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cancel-btn:hover {
-  background-color: #f8fafc;
-  border-color: #64748b;
-  color: #374151;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.submit-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-}
-
-.answer-btn {
-  margin-top: 16px;
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-}
-
-.answer-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-.answer-modal {
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.inquiry-info {
-  margin-bottom: 24px;
-}
-
-.inquiry-info-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.inquiry-info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.info-label {
-  font-weight: 600;
-  color: #475569;
-  min-width: 60px;
-  flex-shrink: 0;
-}
-
-.info-value {
-  color: #1e293b;
-  font-weight: 500;
-  flex: 1;
-}
-
-.info-content {
-  color: #1e293b;
-  line-height: 1.6;
-  background-color: #f8fafc;
-  padding: 12px;
-  border-radius: 8px;
-  border-left: 3px solid #10b981;
-  flex: 1;
+.detail-body {
+  max-width: 68ch;
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.7;
   white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.submit-answer-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-}
-
-.submit-answer-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-}
-
-
-
-/* 상세 보기 모달 스타일 */
-
-.detail-section {
-  margin-bottom: 24px;
-}
-
-.detail-section-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e0e0e0;
-}
-
-.detail-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.detail-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.detail-label {
-  font-weight: 600;
-  color: #555;
-  min-width: 100px;
-  flex-shrink: 0;
-}
-
-.detail-value {
-  color: #333;
-  flex: 1;
-}
-
-.detail-chip {
-  font-weight: 500;
-}
-
-.detail-content-text {
-  color: #333;
-  line-height: 1.6;
-  background-color: #f8f9fa;
-  padding: 16px;
-  border-radius: 8px;
-  border-left: 4px solid #1976d2;
-  white-space: pre-wrap;
-  word-break: break-word;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-.answer-text {
-  border-left-color: #4caf50;
-  background-color: #f1f8e9;
-}
-
-.waiting-answer-content {
-  text-align: center;
-  padding: 20px;
-}
-
-.waiting-icon {
-  margin-bottom: 16px;
-}
-
-.waiting-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 12px;
-}
-
-.waiting-description {
-  color: #666;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.admin-answer-section {
-  text-align: center;
-  padding: 20px;
-}
-
-.image-section {
-  margin-top: 24px;
+  color: var(--sf-text);
 }
 
 .image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .image-item {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
+  position: relative;
+  width: 88px;
+  height: 88px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--sf-line);
+  cursor: zoom-in;
+}
+
+.image-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.image-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--sf-surface);
+  border-radius: 50%;
+  background: var(--sf-text);
+  color: #fff;
   cursor: pointer;
 }
 
-.image-item:hover {
-  transform: scale(1.05);
+.answer-block {
+  padding: 14px 16px;
+  border-left: 3px solid var(--sf-primary);
+  border-radius: 0 10px 10px 0;
+  background: var(--sf-mint-soft);
 }
 
-.attached-image {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  display: block;
+.answer-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
 }
 
-.expand-btn {
-  color: #999;
-  transition: transform 0.3s ease;
-  margin-left: auto;
+.answer-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sf-primary);
 }
 
-.expand-btn:hover {
-  color: #1976d2;
+.answer-date {
+  font-size: 13px;
+  color: var(--sf-text-sub);
 }
 
-.inquiry-actions {
+.answer-body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--sf-text);
+}
+
+.waiting-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.detail-actions:empty {
+  display: none;
+}
+
+.list-foot {
+  padding: 12px;
+  border-top: 1px solid var(--sf-line);
+}
+
+.state-box,
+.empty-state {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
-  flex-shrink: 0;
-}
-
-.inquiry-detail-accordion {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* 반응형 디자인 */
-@media (max-width: 768px) {
-  .inquiry-page {
-    padding-top: 60px; /* Adjust for smaller screens */
-  }
-
-  .header-section {
-    flex-direction: column;
-    text-align: center;
-    padding: 16px;
-  }
-
-  .header-content {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .page-title {
-    font-size: 2rem;
-  }
-
-  .page-subtitle {
-    font-size: 0.9rem;
-  }
-
-  .create-btn {
-    width: 100%;
-  }
-
-  .inquiry-list-container {
-    grid-template-columns: 1fr; /* Single column on small screens */
-  }
-
-  .inquiry-item {
-    margin-bottom: 15px;
-  }
-
-  .inquiry-content {
-    padding: 20px;
-    gap: 12px;
-  }
-
-  .inquiry-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .inquiry-title {
-    font-size: 1.1rem;
-  }
-
-  .inquiry-text {
-    -webkit-line-clamp: 4; /* More lines on small screens */
-    line-clamp: 4;
-  }
-
-  .pagination-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .page-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-
-  .page-count {
-    font-size: 0.75rem;
-  }
-
-  .empty-state {
-    padding: 30px 15px;
-  }
-
-  .empty-title {
-    font-size: 1.3rem;
-  }
-
-  .empty-description {
-    font-size: 0.9rem;
-  }
-
-  .empty-create-btn {
-    width: 100%;
-  }
-
-  .modal-header {
-    padding: 15px 20px;
-  }
-
-  .modal-title {
-    font-size: 1.1rem;
-  }
-
-  .close-btn {
-    color: #999;
-  }
-
-  .modal-content {
-    padding: 20px;
-  }
-
-  .form-field {
-    margin-bottom: 12px;
-  }
-
-  .modal-actions {
-    padding: 15px 20px;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .cancel-btn, .submit-btn {
-    width: 100%;
-  }
-
-  /* 상세 보기 모달 반응형 */
-  .detail-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .detail-label {
-    min-width: auto;
-  }
-
-  .image-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .waiting-content {
-    padding: 30px 15px;
-  }
-
-  .waiting-title {
-    font-size: 1.1rem;
-  }
-
-  .waiting-description {
-    font-size: 0.9rem;
-  }
-
-  /* 아코디언 반응형 */
-  .inquiry-actions {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .detail-section-title {
-    font-size: 1.1rem;
-  }
-
-  .detail-content-text {
-    padding: 12px;
-    font-size: 0.9rem;
-  }
-
-  .waiting-answer-content {
-    padding: 20px 15px;
-  }
-
-  .waiting-title {
-    font-size: 1rem;
-  }
-
-  .waiting-description {
-    font-size: 0.85rem;
-  }
-}
-
-.answer-btn-small {
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.answer-btn-small::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
-}
-
-.answer-btn-small:hover::before {
-  left: 100%;
-}
-
-.answer-btn-small:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-}
-
-/* 수정/삭제 버튼 스타일 (우측 하단) */
-.user-actions-bottom {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-
-.edit-btn-bottom, .delete-btn-bottom {
-  border-radius: 8px;
-  text-transform: none;
-  font-weight: 500;
-  letter-spacing: 0.025em;
-  padding: 6px 12px;
-  font-size: 0.8rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-width: 1px;
-}
-
-.edit-btn-bottom {
-  color: #3b82f6 !important;
-  border-color: #dbeafe;
-  background-color: #f8fafc;
-}
-
-.edit-btn-bottom:hover {
-  background-color: #eff6ff;
-  border-color: #3b82f6;
-  transform: translateY(-1px);
-}
-
-.delete-btn-bottom {
-  color: #ef4444 !important;
-  border-color: #fecaca;
-  background-color: #fef2f2;
-}
-
-.delete-btn-bottom:hover {
-  background-color: #fee2e2;
-  border-color: #ef4444;
-  transform: translateY(-1px);
-}
-
-/* 비활성화된 수정/삭제 버튼 스타일 */
-.edit-btn-bottom:disabled,
-.delete-btn-bottom:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background-color: #f3f4f6 !important;
-  border-color: #d1d5db !important;
-  color: #9ca3af !important;
-}
-
-.edit-btn-bottom:disabled:hover,
-.delete-btn-bottom:disabled:hover {
-  transform: none;
-  box-shadow: none;
-  background-color: #f3f4f6 !important;
-  border-color: #d1d5db !important;
-}
-
-/* 기존 수정/삭제 버튼 스타일 (아코디언 내부용) */
-.user-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.edit-btn, .delete-btn {
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.edit-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: #fff !important;
-  border: none;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.edit-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.delete-btn {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: #fff !important;
-  border: none;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-}
-
-.delete-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-}
-
-/* 수정 모달 스타일 */
-.edit-modal {
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.submit-edit-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg,  #3b82f6 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-}
-
-.submit-edit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
-}
-
-/* 삭제 확인 모달 스타일 */
-.delete-confirm-modal {
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-}
-
-.delete-confirm-content {
+  padding: 56px 24px;
   text-align: center;
-  padding: 20px 0;
+  font-size: 14px;
+  color: var(--sf-text-sub);
 }
 
-.delete-confirm-text {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 12px;
-}
-
-.delete-confirm-subtext {
-  font-size: 0.875rem;
-  color: #64748b;
-  line-height: 1.6;
+.state-box p,
+.empty-state p {
   margin: 0;
 }
 
-.confirm-delete-btn {
-  border-radius: 16px;
-  text-transform: none;
-  font-weight: 600;
-  letter-spacing: 0.025em;
-  padding: 16px 32px;
-  font-size: 1rem;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  border: none;
-  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
-  transition: all 0.3s ease;
+.empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.empty-desc {
+  margin-bottom: 8px !important;
+}
+
+/* 다이얼로그 */
+.form-card {
+  padding: 8px;
+}
+
+.dialog-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 44px;
+  justify-content: space-between;
+  padding: 12px 8px 4px 16px;
 }
 
-.confirm-delete-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+.dialog-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--sf-text);
 }
 
-/* 이미지 업로드 섹션 스타일 */
-.image-upload-section, .existing-images-section {
-  margin-top: 24px;
+.dialog-body {
+  padding-top: 12px !important;
 }
 
-.image-upload-label, .existing-images-label {
-  display: block;
+.form-field {
+  margin-bottom: 4px;
+}
+
+.field-label {
+  margin: 0 0 8px;
+  font-size: 13px;
   font-weight: 600;
-  color: #374151;
-  margin-bottom: 12px;
-  font-size: 0.875rem;
+  color: var(--sf-text-sub);
 }
 
-.existing-images-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
+.existing-images {
+  margin-bottom: 8px;
 }
 
-.existing-image-item {
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
+.dialog-actions {
+  padding: 8px 16px 12px;
 }
 
-.existing-image-item:hover {
-  transform: scale(1.05);
+.confirm-text {
+  font-size: 15px;
+  color: var(--sf-text-sub);
 }
 
-.existing-image {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  display: block;
-  cursor: pointer;
+.quoted {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--sf-bg);
 }
 
-.remove-image-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background-color: rgba(239, 68, 68, 0.9) !important;
-  color: white !important;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
+.quoted-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-text);
 }
 
-.remove-image-btn:hover {
-  background-color: rgba(239, 68, 68, 1) !important;
-  transform: scale(1.1);
+.quoted-body {
+  margin: 0;
+  max-height: 160px;
+  overflow-y: auto;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--sf-text-sub);
 }
 
-/* 반응형 디자인에서 수정/삭제 버튼 */
-@media (max-width: 768px) {
-  .user-actions, .user-actions-bottom {
+@media (max-width: 600px) {
+  .inquiry-page {
+    padding: 16px 12px 32px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .page-head {
     flex-direction: column;
-    gap: 8px;
   }
 
-  .edit-btn, .delete-btn, .edit-btn-bottom, .delete-btn-bottom {
-    width: 100%;
-    justify-content: center;
+  .inquiry-summary {
+    padding: 16px;
   }
 
-  .existing-images-grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 12px;
+  .inquiry-date {
+    display: none;
   }
 
-  .existing-image {
-    height: 100px;
+  .inquiry-detail {
+    padding: 0 16px 16px;
   }
 }
 </style>
+
