@@ -3,7 +3,7 @@
   <v-app-bar v-if="isMobile" density="compact" flat border="b" class="mobile-app-bar">
     <v-app-bar-nav-icon aria-label="메뉴 열기" @click="drawer = !drawer" />
     <v-app-bar-title>
-      <span class="smartfridge-title gradient-text">SmartFridge</span>
+      <span class="smartfridge-title">SmartFridge</span>
     </v-app-bar-title>
   </v-app-bar>
 
@@ -30,14 +30,14 @@
           </v-container>
         </template>
 
-        <v-list-item-title class="smartfridge-title gradient-text">SmartFridge</v-list-item-title>
+        <v-list-item-title class="smartfridge-title">SmartFridge</v-list-item-title>
         <v-list-item-subtitle class="mt-1 truncate-text"
           :title="fridgeName"  
         >{{ fridgeName }}</v-list-item-subtitle>
         
         <v-chip
           :prepend-icon="refrigeratorItem.icon"
-          :color="refrigeratorItem.color"
+          color="primary"
           variant="tonal"
           size="small"
           label
@@ -62,7 +62,7 @@
         rounded="lg"
       >
         <template v-slot:prepend>
-          <v-icon :icon="item.icon" :color="item.color"></v-icon>
+          <v-icon :icon="item.icon" size="20"></v-icon>
         </template>
         <template v-slot:append v-if="item.badgeCount > 0">
           <div class="notification-indicator"></div>
@@ -90,7 +90,6 @@
           <div class="user-details">
             <div class="user-name">{{ displayUserName }}</div>
             <v-btn
-                :color="inquiryItem.color"
                 variant="text"
                 size="x-small"
                 class="inquiry-text-button"
@@ -106,6 +105,29 @@
       </div>
     </template>
   </v-navigation-drawer>
+
+  <!-- 모바일 하단 탭: 자주 쓰는 4곳. 나머지 메뉴는 상단 햄버거 드로어에 있다 -->
+  <v-bottom-navigation
+    v-if="isMobile"
+    :model-value="activeTab"
+    grow
+    height="64"
+    class="bottom-tabs"
+    aria-label="주요 메뉴"
+  >
+    <v-btn
+      v-for="tab in bottomTabs"
+      :key="tab.value"
+      :value="tab.value"
+      :to="tab.to"
+      class="bottom-tab"
+    >
+      <v-badge :model-value="!!tab.badge" dot color="error" offset-x="-2" offset-y="2">
+        <v-icon :icon="tab.icon" size="22" />
+      </v-badge>
+      <span class="bottom-tab-label">{{ tab.title }}</span>
+    </v-btn>
+  </v-bottom-navigation>
 </template>
 
 <script setup>
@@ -326,6 +348,28 @@ onMounted(async () => {
   });
 });
 
+// 하단 탭: 냉장고 | 공동구매 | 채팅 | 내 정보
+const bottomTabs = computed(() => {
+  const chatItem = menuItems.value.find(item => item.value === 'chat');
+  return [
+    { title: '냉장고', value: 'fridge', icon: 'mdi-fridge-outline', to: '/fridge/dashboard' },
+    { title: '공동구매', value: 'groupbuy', icon: 'mdi-cart-outline', to: { path: '/fridge/community', query: { board: '공동구매' } } },
+    { title: '채팅', value: 'chat', icon: 'mdi-chat-outline', to: '/chatpage', badge: (chatItem?.badgeCount || 0) > 0 },
+    { title: '내 정보', value: 'me', icon: 'mdi-account-outline', to: '/mypage' }
+  ];
+});
+
+const activeTab = computed(() => {
+  const path = route.path;
+  if (path.startsWith('/fridge/community') || path.startsWith('/fridge/post')) {
+    return route.query.board === '공동구매' ? 'groupbuy' : null;
+  }
+  if (path.startsWith('/chatpage')) return 'chat';
+  if (path.startsWith('/mypage')) return 'me';
+  if (path.startsWith('/fridge/dashboard') || path.startsWith('/fridge/food')) return 'fridge';
+  return null;
+});
+
 const menuItems = computed(() => {
   const inquiryBadgeCount = store.getters['notification/inquiryBadgeCount'];
   const chatBadgeCount = store.getters['notification/chatBadgeCount'];
@@ -445,19 +489,19 @@ const menuItems = computed(() => {
   width: clamp(256px) !important;
 }
 .custom-drawer {
-  background: rgba(255, 255, 255, 0.95);
-  /* box-shadow: 2px 0px 20px rgba(0, 0, 0, 0.1); */
-  backdrop-filter: blur(5px);
-  /* border-right: none !important; */
+  background: var(--sf-surface);
+  border-right: 1px solid var(--sf-line) !important;
 }
 .header-container {
   padding: 19px 20px;
 }
 .mobile-app-bar {
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: var(--sf-surface) !important;
 }
 .smartfridge-title {
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-primary);
   font-size: var(--font-title);
   line-height: 1.2;
 }
@@ -468,23 +512,28 @@ const menuItems = computed(() => {
   padding: 0;
   color: #666;
 }
-.gradient-text {
-  background: linear-gradient(96.94deg, #667EEA 0%, #764BA2 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.nav-link {
+  height: 46px;
+  margin: 0 12px 2px;
+  color: var(--sf-text-sub);
 }
-.nav-link { 
-  height: 51px;
-  margin: 0 12px;
+.nav-link :deep(.v-list-item__overlay) {
+  display: none;
 }
-.nav-link .v-list-item-title {
-  font-weight: 400;
+.nav-link:hover {
+  background: var(--sf-bg);
+}
+.nav-link :deep(.v-list-item-title) {
+  font-weight: 500;
   font-size: var(--font-nav);
-  color: #333;
+  color: var(--sf-text);
 }
-.nav-link.v-list-item--active .v-list-item-title { 
-  color: #000;
+.nav-link.v-list-item--active {
+  background: var(--sf-mint-soft);
+  color: var(--sf-primary);
+}
+.nav-link.v-list-item--active :deep(.v-list-item-title) {
+  color: var(--sf-primary);
   font-weight: 700;
 }
 .user-info-wrapper {
@@ -496,7 +545,7 @@ const menuItems = computed(() => {
   gap: 12px;
   padding: 15px;
   width: 100%;
-  border: 1px solid #E9ECEF;
+  border-top: 1px solid var(--sf-line);
 }
 .user-avatar-bg {
   display: flex;
@@ -505,13 +554,13 @@ const menuItems = computed(() => {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  background: linear-gradient(180deg, #0468FF 0%, #789DFB 100%);
+  background: var(--sf-mint-soft);
   border-radius: 20px;
 }
 .user-avatar-initial {
   font-weight: 700;
   font-size: 16px;
-  color: #FFF;
+  color: var(--sf-primary);
 }
 .user-avatar-image {
   border-radius: 20px;
@@ -543,12 +592,12 @@ const menuItems = computed(() => {
   text-transform: none;
   letter-spacing: normal;
   margin-top: 2px;
-  opacity: 0.7;
+  color: var(--sf-text-faint);
 }
 .logout-button.v-btn {
-  border: 2px solid #667EEA;
+  border: 1px solid var(--sf-line-strong);
   padding: 6px 12px;
-  color: #667EEA;
+  color: var(--sf-text-sub);
   font-size: 13px;
   font-weight: 400;
   text-transform: none;
@@ -559,8 +608,31 @@ const menuItems = computed(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #f44336;
-  box-shadow: 0 0 8px rgba(244, 67, 54, 0.4);
+  background-color: var(--sf-expired);
   flex-shrink: 0;
+}
+.bottom-tabs {
+  border-top: 1px solid var(--sf-line);
+  box-shadow: none !important;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bottom-tab {
+  color: var(--sf-text-faint) !important;
+  min-width: 0 !important;
+}
+.bottom-tab :deep(.v-btn__content) {
+  flex-direction: column;
+  gap: 2px;
+}
+.bottom-tab :deep(.v-btn__overlay) {
+  display: none;
+}
+.bottom-tab.v-btn--active {
+  color: var(--sf-primary) !important;
+}
+.bottom-tab-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 </style>
