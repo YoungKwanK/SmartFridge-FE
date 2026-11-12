@@ -1,51 +1,46 @@
 <template>
-  <div class="stats-section">
-    <v-row>
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card total-food">
-          <v-card-text class="text-center">
-            <v-icon color="brown" size="36">mdi-package-variant</v-icon>
-            <div class="stat-number">{{ foodStats.totalCount }}</div>
-            <div class="stat-label">총 식품 수</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card fresh-food">
-          <v-card-text class="text-center">
-            <v-icon color="green" size="36">mdi-check-circle</v-icon>
-            <div class="stat-number">{{ foodStats.freshCount }}</div>
-            <div class="stat-label">신선한 식품</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card expiring-soon">
-          <v-card-text class="text-center">
-            <v-icon color="amber" size="36">mdi-alert</v-icon>
-            <div class="stat-number">{{ foodStats.expiringSoonCount }}</div>
-            <div class="stat-label">유통기한 임박</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col cols="12" sm="6" md="3">
-        <v-card class="stat-card expired-food">
-          <v-card-text class="text-center">
-            <v-icon color="red" size="36">mdi-close-circle</v-icon>
-            <div class="stat-number">{{ foodStats.expiredCount }}</div>
-            <div class="stat-label">유통기한 초과</div>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-  </div>
+  <section class="stats-panel" aria-labelledby="stats-title">
+    <h2 id="stats-title" class="stats-title">냉장고 상태</h2>
+    <p class="stats-total">
+      <span class="total-number sf-num">{{ total }}</span>
+      <span class="total-unit">개 보관 중</span>
+    </p>
+
+    <!-- 신선·임박·만료 비율 막대 -->
+    <div
+      class="ratio-bar"
+      role="img"
+      :aria-label="`신선 ${fresh}개, 임박 ${soon}개, 만료 ${expired}개`"
+    >
+      <span v-if="total === 0" class="seg seg-empty" />
+      <template v-else>
+        <span class="seg seg-fresh" :style="{ flexGrow: fresh }" />
+        <span class="seg seg-soon" :style="{ flexGrow: soon }" />
+        <span class="seg seg-expired" :style="{ flexGrow: expired }" />
+      </template>
+    </div>
+
+    <dl class="stats-list">
+      <div class="stat">
+        <dt><span class="dot dot-fresh" aria-hidden="true" />신선</dt>
+        <dd class="sf-num">{{ fresh }}</dd>
+      </div>
+      <div class="stat">
+        <dt><span class="dot dot-soon" aria-hidden="true" />임박</dt>
+        <dd class="sf-num">{{ soon }}</dd>
+      </div>
+      <div class="stat">
+        <dt><span class="dot dot-expired" aria-hidden="true" />만료</dt>
+        <dd class="sf-num" :class="{ 'is-alert': expired > 0 }">{{ expired }}</dd>
+      </div>
+    </dl>
+  </section>
 </template>
 
 <script setup>
 import axios from 'axios';
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 
-// Props 정의
 const props = defineProps({
   fridgeId: {
     type: String,
@@ -55,13 +50,18 @@ const props = defineProps({
 
 const foodStats = ref({});
 
+const total = computed(() => foodStats.value.totalCount || 0);
+const fresh = computed(() => foodStats.value.freshCount || 0);
+const soon = computed(() => foodStats.value.expiringSoonCount || 0);
+const expired = computed(() => foodStats.value.expiredCount || 0);
+
 const fetchFoodStats = async () => {
   try {
     if (!props.fridgeId) {
       console.warn('Props에서 냉장고 ID를 찾을 수 없습니다.');
       return;
     }
-    
+
     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/food/stats`);
     foodStats.value = response.data.result;
   } catch (error) {
@@ -75,49 +75,102 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.stats-section {
-  margin-bottom: 32px;
+.stats-panel {
+  background: var(--sf-surface);
+  border-radius: var(--sf-radius-lg);
+  box-shadow: var(--sf-shadow);
+  padding: 24px;
 }
 
-.stat-card {
-  height: 140px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
+.stats-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--sf-text-sub);
 }
 
-.stat-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+.stats-total {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 8px 0 16px;
 }
 
-.stat-card .v-card-text {
-  padding: 16px;
+.total-number {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
 }
 
-.stat-number {
-  font-size: 28px;
+.total-unit {
+  font-size: 15px;
+  color: var(--sf-text-sub);
+}
+
+.ratio-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--sf-bg);
+}
+
+.seg {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.seg-empty { flex-grow: 1; background: var(--sf-line); }
+.seg-fresh { background: var(--sf-fresh-bar); }
+.seg-soon { background: var(--sf-soon); }
+.seg-expired { background: var(--sf-expired); }
+
+.stats-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 16px 0 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat + .stat {
+  padding-left: 16px;
+  border-left: 1px solid var(--sf-line);
+}
+
+.stat dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--sf-text-sub);
+}
+
+.stat dd {
+  margin: 0;
+  font-size: 22px;
   font-weight: 700;
-  color: #333;
-  margin: 12px 0 6px 0;
+  color: var(--sf-text);
 }
 
-.stat-label {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
+.stat dd.is-alert {
+  color: var(--sf-expired-ink);
 }
 
-@media (max-width: 600px) {
-  .stat-card {
-    height: 140px;
-  }
-  
-  .stat-number {
-    font-size: 28px;
-  }
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
+
+.dot-fresh { background: var(--sf-fresh-bar); box-shadow: inset 0 0 0 1px #8FD6B8; }
+.dot-soon { background: var(--sf-soon); }
+.dot-expired { background: var(--sf-expired); }
 </style>

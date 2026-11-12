@@ -1,81 +1,140 @@
 <template>
   <div class="fridge-dashboard">
     <DashboardHeader :fridgeId="currentFridgeId" />
-    <DashboardStats :fridgeId="currentFridgeId" :key="refreshKey" />
-    <FoodPreviewTable :fridgeId="currentFridgeId" @food-saved="handleFoodSaved" />
+
+    <div class="dash-top">
+      <ExpiringPanel :foods="expiringFoods" :loading="loading" />
+      <DashboardStats :fridgeId="currentFridgeId" :key="refreshKey" />
+    </div>
+
+    <FoodPreviewTable
+      :fridgeId="currentFridgeId"
+      :personal-foods="recentPersonal"
+      :shared-foods="recentShared"
+      :loading="loading"
+      @food-saved="handleFoodSaved"
+    />
   </div>
 </template>
 
 <script setup>
+import axios from 'axios'
 import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
 import { getFridgeId } from '@/utils/commonDataHandler'
+import { freshnessStatus } from '@/utils/foodFreshness'
 import DashboardHeader from '@/components/FridgeDashboard/DashboardHeader.vue'
 import DashboardStats from '@/components/FridgeDashboard/DashboardStats.vue'
+import ExpiringPanel from '@/components/FridgeDashboard/ExpiringPanel.vue'
 import FoodPreviewTable from '@/components/FridgeDashboard/FoodPreviewTable.vue'
 
-// Vuex store 사용
 const store = useStore()
 
 // 현재 선택된 냉장고 ID를 Vuex store에서 가져오기
 const currentFridgeId = computed(() => getFridgeId(store))
 
-// 컴포넌트 새로고침을 위한 키
+// 통계 컴포넌트를 다시 그리기 위한 키
 const refreshKey = ref(0)
 
-// 식품 저장 이벤트 핸들러
-const handleFoodSaved = () => {
-  // refreshKey를 변경하여 DashboardStats 컴포넌트를 새로고침
-  refreshKey.value++
+const loading = ref(true)
+const recentPersonal = ref([])
+const recentShared = ref([])
+const expiringFoods = ref([])
+
+const RECENT_SIZE = 5
+const EXPIRING_SCAN_SIZE = 30
+
+const fetchFoodPage = async (isShared, params) => {
+  const response = await axios.get(
+    `${import.meta.env.VITE_API_BASE_URL}/fridge/${currentFridgeId.value}/food/list`,
+    { params: { isShared, ...params } }
+  )
+  return response.data?.result?.content || []
 }
 
-// 컴포넌트 마운트 시 냉장고 ID 확인 및 알림 초기화
+// 최근 등록 목록과 '먼저 확인할 식품' 목록을 함께 불러온다
+const fetchFoods = async () => {
+  if (!currentFridgeId.value) return
+  loading.value = true
+  try {
+    const recent = { sort: 'id,desc', size: RECENT_SIZE }
+    const bySoonest = { sort: 'expirationDateTime,asc', size: EXPIRING_SCAN_SIZE }
+    const [personal, shared, personalSoon, sharedSoon] = await Promise.all([
+      fetchFoodPage(false, recent),
+      fetchFoodPage(true, recent),
+      fetchFoodPage(false, bySoonest),
+      fetchFoodPage(true, bySoonest)
+    ])
+    recentPersonal.value = personal
+    recentShared.value = shared
+
+    const now = new Date()
+    expiringFoods.value = [...personalSoon, ...sharedSoon]
+      .filter(food => ['expired', 'soon'].includes(freshnessStatus(food.expirationDateTime, now)))
+      .sort((a, b) => new Date(a.expirationDateTime) - new Date(b.expirationDateTime))
+  } catch (error) {
+    console.error('식품 목록을 불러오는데 실패했습니다:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 식품을 등록하면 목록과 통계를 모두 새로 고친다
+const handleFoodSaved = () => {
+  refreshKey.value++
+  fetchFoods()
+}
+
 onMounted(async () => {
-  
-  // 냉장고 ID가 없으면 처리
   if (!currentFridgeId.value) {
     console.warn('선택된 냉장고가 없습니다.')
-    // 필요시 다른 페이지로 리다이렉트하거나 처리
-  } else {
-    // SSE 연결이 없으면 초기화
-    const isSSEConnected = store.getters['notification/isSSEConnected'];
-    if (!isSSEConnected) {
-      await store.dispatch('notification/initSSE');
-    }
-    
-    // 냉장고 진입 시 채팅 목록 조회하여 배지 상태 업데이트 (그룹 채팅만, MANAGER_CHAT 배지 보호)
-    await store.dispatch('notification/updateChatBadgesOnFridgeEnter', currentFridgeId.value)
-    
-    // 유저 관리 페이지 배지 상태 초기 설정은 제거 (MANAGER_CHAT 배지 보호)
-    // await store.dispatch('notification/initializeUserManagementBadge', currentFridgeId.value)
+    return
   }
+
+  fetchFoods()
+
+  // SSE 연결이 없으면 초기화
+  const isSSEConnected = store.getters['notification/isSSEConnected'];
+  if (!isSSEConnected) {
+    await store.dispatch('notification/initSSE');
+  }
+
+  // 냉장고 진입 시 채팅 목록 조회하여 배지 상태 업데이트 (그룹 채팅만, MANAGER_CHAT 배지 보호)
+  await store.dispatch('notification/updateChatBadgesOnFridgeEnter', currentFridgeId.value)
 })
 </script>
 
 <style scoped>
 .fridge-dashboard {
-  padding: 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  position: relative;
+  min-height: 100%;
+  padding: 32px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1280px;
 }
 
-.fridge-dashboard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.1;
-  z-index: -1;
+.dash-top {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .dash-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 600px) {
   .fridge-dashboard {
-    padding: 16px;
-    margin-left: 8px;
+    padding: 16px 12px 32px;
+    gap: 12px;
+  }
+  .dash-top {
+    gap: 12px;
   }
 }
 </style>
