@@ -1,189 +1,151 @@
 <template>
-  <v-dialog v-model="dialog" max-width="1200" persistent>
-    <v-card>
-      <v-card-title class="modal-header">
-        <span class="modal-title">{{ editingPost.id ? '게시글 수정' : '새 게시글 작성' }}</span>
-        <v-btn icon @click="closeModal" class="close-btn">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
-      </v-card-title>
+  <v-dialog v-model="dialog" max-width="1080" persistent scrollable>
+    <v-card class="post-form">
+      <header class="form-head">
+        <h2 class="form-title">{{ editingPost.id ? '글 수정' : (isPurchase ? '공동구매 모집하기' : '글쓰기') }}</h2>
+        <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeModal" />
+      </header>
 
-      <v-card-text class="modal-content">
+      <v-card-text class="form-body">
         <v-form ref="form" v-model="isValid">
           <div class="form-layout">
-            <!-- 왼쪽: 작성 영역 -->
-            <div class="form-section">
-              <!-- 게시판 선택 -->
-              <div class="form-row">
-                <label class="form-label">게시판</label>
+            <div class="write-col">
+              <div class="field">
+                <label class="field-label" for="post-board">게시판</label>
                 <v-select
+                  id="post-board"
                   v-model="formData.category"
                   :items="filteredBoardTypeOptions"
                   variant="outlined"
-                  density="compact"
-                  class="form-field"
+                  density="comfortable"
+                  hide-details
                   :disabled="!!editingPost.id"
-                  required
-                ></v-select>
+                />
               </div>
 
-              <!-- 공동구매 모집 정보 (새 글일 때만. 등록하면 채팅방이 같이 생긴다) -->
-              <template v-if="isPurchase && !editingPost.id">
-                <div class="form-row">
-                  <label class="form-label">모집 인원 <span class="required">*</span></label>
-                  <v-text-field
-                    v-model.number="formData.maxParticipants"
-                    type="number"
-                    :min="MIN_PARTICIPANTS"
-                    :max="MAX_PARTICIPANTS"
-                    variant="outlined"
-                    density="compact"
-                    class="form-field"
-                    suffix="명 (본인 포함)"
-                    :rules="participantRules"
-                  ></v-text-field>
-                </div>
-                <div class="form-row">
-                  <label class="form-label">상품 링크</label>
-                  <v-text-field
-                    v-model="formData.productUrl"
-                    placeholder="https://"
-                    variant="outlined"
-                    density="compact"
-                    class="form-field"
-                    :rules="urlRules"
-                  ></v-text-field>
-                  <small class="text-body-small text-grey">
-                    등록하면 공동구매 채팅방이 같이 만들어지고, 작성자가 방장이 됩니다.
-                  </small>
-                </div>
-              </template>
-              <div v-else-if="isPurchase && editingPost.id" class="form-row">
-                <small class="text-body-small text-grey">
-                  모집 인원·상태는 공동구매 채팅방에서 관리합니다. 제목을 바꾸면 채팅방 이름도 같이 바뀝니다.
-                </small>
-              </div>
-
-              <!-- 제목 입력 -->
-              <div class="form-row">
-                <label class="form-label">제목 <span class="required">*</span></label>
-                <v-text-field
-                  v-model="formData.title"
-                  placeholder="제목을 입력하세요"
-                  variant="outlined"
-                  density="compact"
-                  class="form-field"
-                  :rules="[v => !!v || '제목을 입력해주세요']"
-                  required
-                ></v-text-field>
-              </div>
-
-              <!-- 내용 입력 -->
-              <div class="form-row">
-                <label class="form-label">내용 <span class="required">*</span></label>
-                <v-textarea
-                  ref="contentTextarea"
-                  v-model="formData.content"
-                  placeholder="내용을 입력하세요"
-                  variant="outlined"
-                  density="compact"
-                  class="form-field"
-                  :rules="[v => !!v || '내용을 입력해주세요']"
-                  rows="12"
-                  auto-grow
-                  required
-                ></v-textarea>
-              </div>
-
-              <!-- 이미지 미리보기 및 삽입 -->
-              <div class="form-row" v-if="formData.imageFiles && formData.imageFiles.length > 0">
-                <label class="form-label">이미지 미리보기</label>
-                <div class="image-preview-container">
-                  <div 
-                    v-for="(file, index) in formData.imageFiles" 
-                    :key="index" 
-                    class="image-preview-item"
-                  >
-                    <img 
-                      :src="getImagePreview(file)" 
-                      :alt="`이미지 ${index + 1}`"
-                      class="image-preview"
+              <div v-if="isPurchase && !editingPost.id" class="purchase-fields">
+                <div class="field-row">
+                  <div class="field">
+                    <label class="field-label" for="post-max">모집 인원</label>
+                    <v-text-field
+                      id="post-max"
+                      v-model.number="formData.maxParticipants"
+                      type="number"
+                      :min="MIN_PARTICIPANTS"
+                      :max="MAX_PARTICIPANTS"
+                      variant="outlined"
+                      density="comfortable"
+                      suffix="명 (나 포함)"
+                      hide-details="auto"
+                      :rules="participantRules"
                     />
-                    <div class="image-actions">
-                      <v-btn 
-                        size="small" 
-                        color="primary" 
-                        @click="insertImageToContent(file, index)"
-                        class="insert-btn"
-                      >
-                        내용에 삽입
-                      </v-btn>
-                      <v-btn 
-                        size="small" 
-                        color="error" 
-                        @click="removeImage(index)"
-                        class="remove-btn"
-                      >
-                        제거
-                      </v-btn>
-                    </div>
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="post-url">상품 링크 <span class="optional">선택</span></label>
+                    <v-text-field
+                      id="post-url"
+                      v-model="formData.productUrl"
+                      placeholder="https://"
+                      variant="outlined"
+                      density="comfortable"
+                      hide-details="auto"
+                      :rules="urlRules"
+                    />
                   </div>
                 </div>
+                <p class="field-hint">글을 올리면 공동구매 채팅방이 같이 만들어지고, 내가 방장이 돼요.</p>
+              </div>
+              <p v-else-if="isPurchase && editingPost.id" class="field-hint is-block">
+                모집 인원과 마감은 공동구매 채팅방에서 바꿀 수 있어요. 제목을 바꾸면 채팅방 이름도 같이 바뀌어요.
+              </p>
+
+              <div class="field">
+                <label class="field-label" for="post-title">제목</label>
+                <v-text-field
+                  id="post-title"
+                  v-model="formData.title"
+                  :placeholder="isPurchase ? '예: 코스트코 계란 30구 나눠 사실 분' : '제목을 입력하세요'"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details="auto"
+                  :rules="[v => !!v || '제목을 입력하세요']"
+                />
               </div>
 
-              <!-- 첨부파일 (선택사항) -->
-              <div class="form-row">
-                <label class="form-label">이미지 첨부</label>
+              <div class="field">
+                <label class="field-label" for="post-content">내용</label>
+                <v-textarea
+                  id="post-content"
+                  ref="contentTextarea"
+                  v-model="formData.content"
+                  :placeholder="isPurchase ? '언제, 어디서 사는지, 한 사람당 얼마인지, 어떻게 나눌지 적어 주세요.' : '내용을 입력하세요'"
+                  variant="outlined"
+                  density="comfortable"
+                  rows="10"
+                  auto-grow
+                  hide-details="auto"
+                  :rules="[v => !!v || '내용을 입력하세요']"
+                />
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="post-images">사진 <span class="optional">선택</span></label>
                 <v-file-input
+                  id="post-images"
                   :key="fileInputKey"
                   v-model="formData.imageFiles"
                   multiple
                   variant="outlined"
-                  density="compact"
-                  class="form-field"
+                  density="comfortable"
                   accept="image/*"
-                  prepend-icon="mdi-image"
-                  placeholder="이미지 파일을 선택하세요 (여러 개 선택 가능)"
+                  prepend-icon=""
+                  prepend-inner-icon="mdi-image-outline"
+                  placeholder="사진 고르기 (여러 장 가능)"
                   hide-details
                   @update:model-value="handleImageFilesChange"
                   @click:clear="clearFileInput"
-                ></v-file-input>
-                <small class="text-body-small text-grey">
-                  여러 이미지를 선택할 수 있습니다. 각 이미지는 내용에 삽입하거나 첨부파일로 저장할 수 있습니다.<br>
-                  <strong>참고:</strong> 이미지를 삽입한 후 내용에서 이미지 태그를 삭제하면 해당 이미지는 게시글에 포함되지 않습니다.
-                </small>
+                />
+                <p class="field-hint">"본문에 넣기"를 누른 사진만 글에 들어가요. 본문에서 사진 줄을 지우면 그 사진은 빠져요.</p>
               </div>
+
+              <ul v-if="formData.imageFiles && formData.imageFiles.length > 0" class="image-list">
+                <li v-for="(file, index) in formData.imageFiles" :key="index" class="image-item">
+                  <img :src="getImagePreview(file)" :alt="`사진 ${index + 1}`" />
+                  <div class="image-actions">
+                    <v-btn size="small" variant="tonal" color="primary" @click="insertImageToContent(file, index)">본문에 넣기</v-btn>
+                    <v-btn size="small" variant="text" @click="removeImage(index)">빼기</v-btn>
+                  </div>
+                </li>
+              </ul>
             </div>
 
-            <!-- 오른쪽: 미리보기 영역 -->
-            <div class="preview-section">
-              <div class="preview-header">
-                <h3 class="preview-title">미리보기</h3>
+            <aside class="preview-col" aria-label="미리보기">
+              <p class="preview-label">미리보기</p>
+              <div class="preview-body">
+                <p class="preview-title">{{ formData.title || '제목' }}</p>
+                <div v-if="formData.content" class="preview-content" v-html="convertMarkdownToHtml(formData.content)" />
+                <p v-else class="preview-empty">내용을 쓰면 여기에 보여요.</p>
               </div>
-              <div class="preview-content" v-html="convertMarkdownToHtml(formData.content)"></div>
-            </div>
+            </aside>
           </div>
         </v-form>
       </v-card-text>
 
-      <v-card-actions class="modal-actions">
-        <v-spacer></v-spacer>
-        <v-btn @click="closeModal" variant="text" class="cancel-btn">
-          취소
-        </v-btn>
-        <v-btn 
-          @click="savePost" 
-          color="primary" 
+      <v-card-actions class="form-actions">
+        <v-spacer />
+        <v-btn variant="text" @click="closeModal">취소</v-btn>
+        <v-btn
+          :color="isPurchase && !editingPost.id ? 'cta' : 'primary'"
+          variant="flat"
           :loading="isSaving"
           :disabled="!isValid"
-          class="save-btn"
+          @click="savePost"
         >
-          {{ editingPost.id ? '수정' : '등록' }}
+          {{ editingPost.id ? '수정 내용 저장' : (isPurchase ? '모집 글 올리기' : '글 올리기') }}
         </v-btn>
       </v-card-actions>
     </v-card>
-    
-    <!-- Snackbar 컴포넌트 추가 -->
+
     <CommonSnackbar ref="commonSnackbar" />
   </v-dialog>
 </template>
@@ -608,189 +570,203 @@ export default {
 </script>
 
 <style scoped>
-.modal-header {
+.post-form {
+  border-radius: var(--sf-radius-lg) !important;
+}
+
+.form-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 20px 24px 0;
-  border-bottom: 1px solid #e0e0e0;
+  justify-content: space-between;
+  padding: 20px 16px 8px 24px;
 }
 
-.modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-}
-
-.close-btn {
+.form-title {
   margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--sf-text);
 }
 
-.modal-content {
-  padding: 24px;
+.form-body {
+  padding: 8px 24px 16px !important;
 }
 
 .form-layout {
-  display: flex;
-  gap: 20px; /* 작성 영역과 미리보기 사이의 간격 */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: 24px;
+  align-items: start;
 }
 
-.form-section {
-  flex: 1; /* 작성 영역과 미리보기 영역을 동일한 너비로 설정 */
-  display: flex;
-  flex-direction: column;
+.field {
+  margin-bottom: 18px;
+  min-width: 0;
 }
 
-.form-row {
-  margin-bottom: 20px;
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 12px;
 }
 
-.form-label {
+.field-row .field {
+  margin-bottom: 0;
+}
+
+.field-label {
   display: block;
-  font-size: 14px;
-  color: #555;
   margin-bottom: 8px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-text);
 }
 
-.required {
-  color: #f44336;
+.optional {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--sf-text-faint);
 }
 
-.form-field {
-  width: 100%;
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sf-text-faint);
 }
 
-.modal-actions {
-  padding: 16px 24px 24px;
-  border-top: 1px solid #e0e0e0;
+.field-hint.is-block {
+  margin: 0 0 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--sf-bg);
+  color: var(--sf-text-sub);
 }
 
-.cancel-btn {
-  margin-right: 12px;
+.purchase-fields {
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid #FFD9C2;
+  border-radius: var(--sf-radius-md);
+  background: #FFF7F2;
 }
 
-.save-btn {
-  text-transform: none;
-  font-weight: 500;
-}
-
-.image-preview-container {
+.image-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 12px;
+  margin: -6px 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.image-preview-item {
-  position: relative;
-  width: 100px;
+.image-item {
+  width: 148px;
+}
+
+.image-item img {
+  display: block;
+  width: 100%;
   height: 100px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f5f5f5;
-}
-
-.image-preview {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--sf-line);
 }
 
 .image-actions {
-  position: absolute;
-  top: 5px;
-  right: 5px;
   display: flex;
-  gap: 5px;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
-  padding: 2px 5px;
-  z-index: 1;
+  gap: 4px;
+  margin-top: 6px;
 }
 
-.insert-btn, .remove-btn {
-  color: white;
-  font-size: 12px;
-  padding: 2px 5px;
-  border-radius: 3px;
-  text-transform: none;
+.preview-col {
+  position: sticky;
+  top: 0;
+  min-height: 320px;
+  padding: 16px;
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-bg);
 }
 
-.insert-btn:hover, .remove-btn:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+.preview-label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-faint);
 }
 
-.preview-section {
-  flex: 1; /* 미리보기 영역을 동일한 너비로 설정 */
-  padding-left: 20px; /* 작성 영역과 미리보기 사이의 간격 */
-  border-left: 1px solid #e0e0e0; /* 작성 영역과 미리보기 사이의 구분선 */
-}
-
-.preview-header {
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e0e0e0;
+.preview-body {
+  padding: 18px;
+  border-radius: 10px;
+  background: var(--sf-surface);
 }
 
 .preview-title {
+  margin: 0 0 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--sf-line);
   font-size: 18px;
-  font-weight: 600;
-  color: #333;
+  font-weight: 800;
+  word-break: keep-all;
+  color: var(--sf-text);
 }
 
 .preview-content {
-  /* 마크다운 이미지 태그를 제외한 텍스트 스타일 */
-  white-space: pre-wrap; /* 줄바꿈 유지 */
-  word-break: break-all; /* 단어 단위로 줄바꿈 */
-  font-size: 14px;
-  color: #333;
-  line-height: 1.6;
-  min-height: 400px; /* 미리보기 영역의 최소 높이 설정 */
-  padding: 15px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  font-size: 15px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--sf-text);
 }
 
-.preview-content img {
+.preview-content :deep(img) {
+  display: block;
   max-width: 100%;
   height: auto;
-  margin: 10px 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin: 12px 0;
+  border-radius: 10px;
+  box-shadow: none !important;
 }
 
-.preview-content:empty::before {
-  content: "내용을 입력하면 여기에 미리보기가 표시됩니다.";
-  color: #999;
-  font-style: italic;
+.preview-empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--sf-text-faint);
+}
+
+.form-actions {
+  padding: 12px 24px 20px !important;
+  border-top: 1px solid var(--sf-line);
+}
+
+@media (max-width: 960px) {
+  .form-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .preview-col {
+    position: static;
+    min-height: 0;
+  }
 }
 
 @media (max-width: 600px) {
-  .modal-header {
-    padding: 16px 20px 0;
-  }
-  
-  .modal-content {
-    padding: 20px;
+  .form-head {
+    padding: 16px 8px 4px 16px;
   }
 
-  .form-layout {
-    flex-direction: column;
+  .form-body {
+    padding: 8px 16px 12px !important;
   }
 
-  .form-section {
-    padding-left: 0;
-    border-left: none;
+  .field-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
   }
 
-  .modal-actions {
-    padding: 16px 20px 20px;
+  .form-actions {
+    padding: 12px 16px 16px !important;
   }
 }
 </style>
+

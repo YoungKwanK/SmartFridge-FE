@@ -1,122 +1,121 @@
 <template>
-  <div class="community-container">
-    <!-- 헤더 섹션 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-info">
-          <h1 class="page-title">커뮤니티</h1>
-          <p class="page-subtitle">냉장고 멤버들과 소통하고 정보를 공유해보세요</p>
-        </div>
-        <div class="header-actions">
-          <v-btn 
-            @click="openCreateModal" 
-            color="primary" 
-            prepend-icon="mdi-plus" 
-            size="large" 
-            class="write-post-btn"
-          >
-            글쓰기
-          </v-btn>
-        </div>
+  <div class="community-page">
+    <header class="page-head">
+      <div>
+        <h1 class="page-title">커뮤니티</h1>
+        <p class="page-desc">{{ boardDescription }}</p>
       </div>
+      <v-btn
+        v-if="canWrite"
+        :color="isGroupBuyBoard ? 'cta' : 'primary'"
+        variant="flat"
+        prepend-icon="mdi-plus"
+        @click="openCreateModal"
+      >
+        {{ isGroupBuyBoard ? '공동구매 모집하기' : '글쓰기' }}
+      </v-btn>
+    </header>
+
+    <!-- 게시판 고르기 -->
+    <div class="board-tabs" role="tablist" aria-label="게시판">
+      <button
+        v-for="board in boardOptions"
+        :key="board.value"
+        type="button"
+        role="tab"
+        class="board-tab"
+        :class="{ 'is-on': activeBoard === board.value }"
+        :aria-selected="activeBoard === board.value"
+        @click="activeBoard !== board.value && onBoardChange(board.value)"
+      >
+        {{ board.label }}
+      </button>
     </div>
 
-    <!-- 메인 콘텐츠 -->
-    <v-card class="main-content-card">
-      <!-- 게시판 종류 탭 -->
-      <v-card-title class="board-tabs-header">
-        <v-tabs v-model="activeBoard" class="board-tabs" color="primary" density="compact" @update:model-value="onBoardChange">
-          <!-- 전체보기 탭 추가 -->
-          <v-tab value="전체" class="board-tab">
-            전체보기
-          </v-tab>
-          <!-- 기존 카테고리 탭들 -->
-          <v-tab v-for="category in boardCategories" :key="category" :value="category" class="board-tab">
-            {{ category }}
-          </v-tab>
-        </v-tabs>
-      </v-card-title>
+    <section class="list-panel" aria-label="게시글 목록">
+      <div class="search-bar">
+        <v-text-field
+          v-model="searchQuery"
+          placeholder="제목, 내용, 작성자로 찾기"
+          aria-label="게시글 찾기"
+          variant="outlined"
+          density="compact"
+          hide-details
+          prepend-inner-icon="mdi-magnify"
+          class="search-field"
+          @input="onSearchInput"
+        />
+      </div>
 
-      <!-- 검색 -->
-      <v-card-text class="search-section">
-        <div class="search-row">
-          <div class="search-item">
-            <v-text-field v-model="searchQuery" placeholder="제목, 내용, 작성자로 검색" variant="outlined" density="compact"
-              class="search-field" prepend-inner-icon="mdi-magnify" @input="onSearchInput" hide-details></v-text-field>
-          </div>
-        </div>
-      </v-card-text>
+      <div v-if="isLoading" class="state-box">
+        <v-progress-circular indeterminate color="primary" size="36" />
+        <p>게시글을 불러오는 중이에요</p>
+      </div>
 
-      <v-card-text>
-        <!-- 로딩 상태 표시 -->
-        <div v-if="isLoading" class="loading-container">
-          <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
-          <p class="loading-text">게시글을 불러오는 중...</p>
-        </div>
-
-        <!-- 게시글 목록 -->
-        <div v-else-if="postList && postList.length > 0" class="post-list">
-          <div v-for="post in postList" :key="post.id" class="post-item" :class="{ 'is-pinned': post.pinned }" @click="viewPost(post)">
-            <div class="post-content">
-              <div class="post-header">
-                <h3 class="post-title">
-                  <v-icon v-if="post.pinned" size="18" color="error" class="pin-icon">mdi-pin</v-icon>
-                  {{ post.title }}
-                </h3>
-                <div class="post-meta">
-                  <span class="post-author">{{ post.writer }}</span>
-                  <span class="post-category">{{ post.categoryName }}</span>
-                  <span class="post-time">{{ post.timeAgo }}</span>
-                </div>
-              </div>
-              <div class="post-stats">
-                <div class="stat-item">
-                  <v-icon size="16" color="blue">mdi-eye</v-icon>
-                  <span>{{ post.viewCount }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 데이터가 없을 때 표시 -->
-        <div v-else class="no-data-container">
-          <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-post-outline</v-icon>
-          <h3 class="no-data-title">등록된 게시글이 없습니다</h3>
-          <p class="no-data-subtitle">
-            {{ isNoticeTab && !isManager ? '공지사항은 관리자만 작성할 수 있습니다' : '첫 번째 게시글을 작성해보세요' }}
-          </p>
-          <v-btn 
-            v-if="!(isNoticeTab && !isManager)" 
-            color="primary" 
-            @click="openCreateModal" 
-            prepend-icon="mdi-plus" 
-            class="mt-4"
-          >
-            첫 게시글 작성하기
-          </v-btn>
-        </div>
-
-        <!-- 페이징 컴포넌트 -->
-        <div v-if="!isLoading && postList && postList.length > 0" class="pagination-container">
-          <v-pagination v-model="currentPage" :length="totalPages" :total-visible="7" @update:model-value="onPageChange"
-            color="primary" class="pagination-controls"></v-pagination>
-
-          <!-- 페이지 정보 표시 -->
-          <div class="page-info">
-            <span class="page-text">
-              {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalElements) }} / 총 {{
-              totalElements }}개
+      <ul v-else-if="postList && postList.length > 0" class="post-list">
+        <li
+          v-for="post in postList"
+          :key="post.id"
+          class="post-item"
+          :class="{ 'is-pinned': post.pinned }"
+        >
+          <button type="button" class="post-link" @click="viewPost(post)">
+            <span class="post-icon" :class="iconClass(post)" aria-hidden="true">
+              <v-icon size="20">{{ iconOf(post) }}</v-icon>
             </span>
-          </div>
-        </div>
-      </v-card-text>
-    </v-card>
+            <span class="post-body">
+              <span class="post-title">
+                <span v-if="post.pinned" class="pin-tag">고정</span>
+                {{ post.title }}
+              </span>
+              <span class="post-meta">
+                <span v-if="activeBoard === '전체'" class="post-board">{{ post.categoryName }}</span>
+                <span>{{ post.writer }}</span>
+                <span>{{ post.timeAgo }}</span>
+              </span>
+            </span>
+            <span class="post-views sf-num" :aria-label="`조회 ${post.viewCount}회`">
+              <v-icon size="16" aria-hidden="true">mdi-eye-outline</v-icon>
+              {{ post.viewCount }}
+            </span>
+          </button>
+        </li>
+      </ul>
+
+      <div v-else class="state-box">
+        <p class="empty-title">{{ emptyTitle }}</p>
+        <p>{{ emptyHint }}</p>
+        <v-btn
+          v-if="canWrite && !searchQuery"
+          :color="isGroupBuyBoard ? 'cta' : 'primary'"
+          variant="flat"
+          prepend-icon="mdi-plus"
+          class="mt-2"
+          @click="openCreateModal"
+        >
+          {{ isGroupBuyBoard ? '공동구매 모집하기' : '글쓰기' }}
+        </v-btn>
+      </div>
+
+      <footer v-if="!isLoading && postList && postList.length > 0" class="list-foot">
+        <span class="page-text sf-num">
+          총 {{ totalElements }}개 중 {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, totalElements) }}
+        </span>
+        <v-pagination
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="5"
+          density="comfortable"
+          rounded="lg"
+          active-color="primary"
+          @update:model-value="onPageChange"
+        />
+      </footer>
+    </section>
 
     <!-- 게시글 작성 모달 -->
     <PostFormModal v-model="isModalOpen" :board-type="activeBoard" @save="handleSave" />
-    
-    <!-- Snackbar 컴포넌트 추가 -->
+
     <CommonSnackbar ref="commonSnackbar" />
   </div>
 </template>
@@ -127,7 +126,7 @@ import { getFridgeId } from '@/utils/commonDataHandler';
 import PostFormModal from '../components/Community/PostFormModal.vue';
 import CommonSnackbar from '@/components/common/CommonSnackbar.vue';
 import { useStore } from 'vuex';
-import { fetchPostCategories } from '@/utils/postCategory';
+import { fetchPostCategories, NOTICE_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
 
 export default {
   components: {
@@ -154,6 +153,12 @@ export default {
       fridgeInfo: null // 현재 냉장고 정보
     }
   },
+  watch: {
+    // 커뮤니티 화면에 있는 상태에서 하단 탭으로 게시판을 바꾼 경우
+    '$route.query.board'(board) {
+      this.onBoardChange(board || '전체');
+    }
+  },
   computed: {
     // 현재 사용자가 관리자인지 확인
     isManager() {
@@ -161,7 +166,37 @@ export default {
     },
     // 공지사항 탭인지 확인
     isNoticeTab() {
-      return this.activeBoard === '공지사항';
+      return this.activeBoard === NOTICE_CATEGORY;
+    },
+    isGroupBuyBoard() {
+      return this.activeBoard === PURCHASE_CATEGORY;
+    },
+    // 공지사항은 관리자만 쓸 수 있다
+    canWrite() {
+      return !(this.isNoticeTab && !this.isManager);
+    },
+    boardOptions() {
+      return [
+        { label: '전체', value: '전체' },
+        ...this.boardCategories.map(category => ({ label: category, value: category }))
+      ];
+    },
+    boardDescription() {
+      if (this.isGroupBuyBoard) return '같이 사면 더 싼 식재료를 멤버와 나눠 사요. 글을 올리면 참여자 채팅방이 함께 열려요.';
+      if (this.isNoticeTab) return '냉장고 관리자가 올린 안내예요.';
+      return '냉장고 멤버들과 이야기를 나눠요.';
+    },
+    emptyTitle() {
+      if (this.searchQuery) return `'${this.searchQuery}'에 맞는 글이 없어요`;
+      if (this.isGroupBuyBoard) return '모집 중인 공동구매가 없어요';
+      if (this.isNoticeTab) return '공지사항이 없어요';
+      return '아직 올라온 글이 없어요';
+    },
+    emptyHint() {
+      if (this.searchQuery) return '다른 단어로 찾아 보세요.';
+      if (this.isGroupBuyBoard) return '함께 살 식재료가 있다면 먼저 모집해 보세요.';
+      if (this.isNoticeTab) return this.isManager ? '멤버에게 알릴 내용을 올려 보세요.' : '관리자가 공지를 올리면 여기에 보여요.';
+      return '첫 글을 남겨 보세요.';
     }
   },
   async created() {
@@ -234,6 +269,12 @@ export default {
     // 카테고리 이름 목록 가져오기 (작성 모달과 같은 결과를 공유해서 요청은 한 번만 나감)
     async fetchCategories() {
       this.boardCategories = await fetchPostCategories();
+      // 하단 탭 '공동구매'처럼 ?board=공동구매 로 들어오면 그 게시판을 연다.
+      // 카테고리를 받기 전에는 v-tabs가 첫 탭(전체)을 강제로 고르므로, 받은 뒤에 적용한다.
+      const board = this.$route.query.board;
+      if (board && this.boardCategories.includes(board)) {
+        this.activeBoard = board;
+      }
     },
     async fetchPostList() {
       try {
@@ -325,6 +366,17 @@ export default {
 
 
 
+    iconOf(post) {
+      if (post.categoryName === PURCHASE_CATEGORY) return 'mdi-cart-outline';
+      if (post.categoryName === NOTICE_CATEGORY) return 'mdi-bullhorn-outline';
+      return 'mdi-message-text-outline';
+    },
+    iconClass(post) {
+      return {
+        'is-groupbuy': post.categoryName === PURCHASE_CATEGORY,
+        'is-notice': post.categoryName === NOTICE_CATEGORY
+      };
+    },
     onBoardChange(newValue) {
       console.log('=== 카테고리 변경 이벤트 발생 ===');
       console.log('이전 값:', this.activeBoard);
@@ -374,359 +426,248 @@ export default {
 </script>
 
 <style scoped>
-.community-container {
-  padding: 32px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
-  position: relative;
+.community-page {
+  max-width: 960px;
+  min-height: 100%;
+  padding: 32px clamp(16px, 3vw, 40px) 48px;
+  background: var(--sf-bg);
 }
 
-.community-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  opacity: 0.1;
-  z-index: -1;
-}
-
-.page-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin-bottom: 24px;
-}
-
-.header-content {
+.page-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-}
-
-.header-info {
-  flex: 1;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 8px 0;
-}
-
-.page-subtitle {
-  font-size: 16px;
-  color: #666;
-  margin: 0;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-}
-
-.write-post-btn {
-  border-radius: 12px;
-  text-transform: none;
-  font-weight: 600;
-  box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
-  transition: all 0.3s ease;
-}
-
-.write-post-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
-}
-
-.main-content-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  overflow: hidden;
-}
-
-.board-tabs-header {
-  padding: 20px 24px 0;
-  background: transparent;
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.board-tabs {
-  background: transparent;
-  border-radius: 0;
-  overflow: visible;
-  box-shadow: none;
-}
-
-.board-tab {
-  font-weight: 500;
-  color: #666;
-  text-transform: none;
-  font-size: 14px;
-  padding: 12px 16px;
-  border-radius: 0;
-  margin: 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.board-tab:hover {
-  background-color: transparent;
-  color: #333;
-}
-
-.board-tab.v-tab--active {
-  background-color: transparent;
-  color: #1976d2;
-  font-weight: 600;
-  border-bottom: 2px solid #1976d2;
-}
-
-.search-section {
-  padding: 20px 24px 0;
-}
-
-.search-row {
-  display: flex;
-  gap: 20px;
+  gap: 16px;
   margin-bottom: 20px;
 }
 
-.search-item {
-  flex: 1;
+.page-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--sf-text);
 }
 
-.search-field,
-.sort-select {
-  width: 100%;
+.page-desc {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--sf-text-sub);
+}
+
+/* 게시판 탭: 밑줄형 */
+.board-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--sf-line-strong);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.board-tab {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.board-tab:hover {
+  color: var(--sf-text);
+}
+
+.board-tab.is-on {
+  border-bottom-color: var(--sf-text);
+  color: var(--sf-text);
+  font-weight: 700;
+}
+
+.list-panel {
+  background: var(--sf-surface);
+  border-radius: var(--sf-radius-lg);
+  box-shadow: var(--sf-shadow);
+  overflow: hidden;
+}
+
+.search-bar {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--sf-line);
 }
 
 .post-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .post-item {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  padding: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--sf-line);
 }
 
-.post-item:hover {
-  border-color: #1976d2;
-  box-shadow: 0 8px 24px rgba(25, 118, 210, 0.15);
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.95);
-}
-
-/* 상단 고정된 공지사항 */
 .post-item.is-pinned {
-  background: rgba(255, 243, 224, 0.9);
-  border-color: rgba(239, 108, 0, 0.35);
+  background: #FAFBFC;
 }
 
-.pin-icon {
-  margin-right: 4px;
-  vertical-align: -2px;
+.post-link {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
 }
 
-.post-header {
+.post-link:hover .post-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.post-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--sf-bg);
+  color: var(--sf-text-sub);
+}
+
+/* 공동구매 글만 주황으로 구분 */
+.post-icon.is-groupbuy {
+  background: #FFF0E6;
+  color: #C2501A;
+}
+
+.post-icon.is-notice {
+  background: var(--sf-mint-soft);
+  color: var(--sf-primary);
+}
+
+.post-body {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .post-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #333;
-  margin: 0;
-  flex: 1;
-  margin-right: 16px;
+  color: var(--sf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pin-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--sf-mint-soft);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sf-primary);
+  vertical-align: 2px;
 }
 
 .post-meta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--sf-text-faint);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.post-author {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-.post-category {
-  font-size: 12px;
-  color: #1976d2;
-  font-weight: 500;
-  background: rgba(25, 118, 210, 0.1);
-  padding: 2px 8px;
-  border-radius: 12px;
-}
-
-.post-time {
-  font-size: 12px;
-  color: #999;
-}
-
-.post-preview {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-.post-stats {
-  display: flex;
-  gap: 20px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #666;
-}
-
-.no-data-container {
-  text-align: center;
-  padding: 60px 20px;
-  color: #888;
-}
-
-.no-data-title {
-  margin-top: 16px;
-  margin-bottom: 8px;
-  font-size: 20px;
+.post-board {
   font-weight: 600;
+  color: var(--sf-text-sub);
 }
 
-.no-data-subtitle {
-  margin-bottom: 24px;
-  font-size: 16px;
-  color: #666;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
+.post-views {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #888;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--sf-text-faint);
 }
 
-.loading-text {
-  margin-top: 16px;
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.pagination-container {
+.list-foot {
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-top: 20px;
-  padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(5px);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.pagination-controls {
-  margin: 0;
-}
-
-.page-info {
-  position: absolute;
-  right: 24px;
-  font-size: 14px;
-  color: #666;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
 }
 
 .page-text {
-  font-weight: 500;
+  font-size: 13px;
+  color: var(--sf-text-faint);
+  white-space: nowrap;
 }
 
-@media (max-width: 960px) {
-  .community-container {
-    padding: 24px;
-  }
-  
-  .page-header {
-    padding: 20px;
-  }
-  
-  .header-content {
-    flex-direction: column;
-    gap: 16px;
-    align-items: flex-start;
-  }
-  
-  .page-title {
-    font-size: 24px;
-  }
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 64px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.state-box p {
+  margin: 0;
+}
+
+.empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
 }
 
 @media (max-width: 600px) {
-  .community-container {
-    padding: 16px;
+  .community-page {
+    padding: 16px 12px 32px;
   }
 
-  .page-header {
-    padding: 16px;
-  }
-
-  .search-row {
+  .page-head {
     flex-direction: column;
-    gap: 16px;
+    align-items: stretch;
   }
 
-  .post-header {
-    flex-direction: column;
+  .page-title {
+    font-size: 22px;
+  }
+
+  .search-bar {
+    padding: 12px 16px;
+  }
+
+  .post-link {
+    padding: 12px 16px;
     gap: 12px;
-    align-items: flex-start;
   }
 
-  .post-meta {
-    align-items: flex-start;
-  }
-
-  .pagination-container {
+  .list-foot {
     flex-direction: column;
-    gap: 16px;
-    align-items: center;
-    text-align: center;
-    padding: 20px 16px;
-  }
-
-  .page-info {
-    position: static;
-    right: auto;
-    margin-top: 8px;
   }
 }
 </style>
