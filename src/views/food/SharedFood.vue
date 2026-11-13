@@ -167,18 +167,17 @@
       @cancel="deleteDialog = false"
     />
 
-    <CommonSnackbar ref="snackbar" />
   </div>
 </template>
 
 <script>
 import axios from 'axios';
 import FoodFormModal from '@/components/food/FoodFormModal.vue';
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue';
 import FoodFinishDialog from '@/components/food/FoodFinishDialog.vue';
 import { getFridgeId } from '@/utils/commonDataHandler';
 import DdayBadge from '@/components/food/DdayBadge.vue';
 import { categoryEmoji, freshnessStatus } from '@/utils/foodFreshness';
+import { snackbar } from '@/composables/snackbar';
 
 // 처리 선택지별 완료 메시지와 스낵바 색
 const FINISH_MESSAGES = {
@@ -190,7 +189,6 @@ const FINISH_MESSAGES = {
 export default {
   components: {
     FoodFormModal,
-    CommonSnackbar,
     FoodFinishDialog,
     DdayBadge
   },
@@ -372,16 +370,16 @@ export default {
         if (!Array.isArray(foodData) && foodData.id) {
           response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/update/${foodData.id}`, foodData);
           console.log('식품 수정 성공:', response.data);
-          this.$refs.snackbar.showSuccess('식품이 성공적으로 수정되었습니다.');
+          snackbar.success('식품이 성공적으로 수정되었습니다.');
         } else {
           response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
           console.log('식품 등록 성공:', response.data);
-          this.$refs.snackbar.showSuccess(`식품 ${foodData.length}개가 성공적으로 등록되었습니다.`);
+          snackbar.success(`식품 ${foodData.length}개가 성공적으로 등록되었습니다.`);
         }
         await this.fetchFoodList();
       } catch (error) {
         console.error('식품 저장 실패:', error);
-        this.$refs.snackbar.showError('식품 저장에 실패했습니다: ' + this.getErrorMessage(error));
+        snackbar.error('식품 저장에 실패했습니다: ' + this.getErrorMessage(error));
       }
     },
     async deleteFood(food) {
@@ -411,7 +409,7 @@ export default {
         this.showSnackbar(done.text, done.color);
       } catch (error) {
         console.error('식품 처리 실패:', error);
-        this.$refs.snackbar.showError('식품 처리에 실패했습니다: ' + this.getErrorMessage(error));
+        snackbar.error('식품 처리에 실패했습니다: ' + this.getErrorMessage(error));
       } finally {
         this.finishingType = '';
       }
@@ -496,7 +494,7 @@ export default {
     
     // Snackbar 메시지 표시
     showSnackbar(message, color) {
-      this.$refs.snackbar.showSnackbar(message, color);
+      snackbar.show(message, color);
     }
   }
 }

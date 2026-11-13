@@ -205,17 +205,15 @@
     </v-card>
   </v-dialog>
 
-  <CommonSnackbar ref="snackbar" />
 </template>
 
 <script>
 import axios from 'axios';
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue';
 import { categoryEmoji } from '@/utils/foodFreshness';
+import { snackbar } from '@/composables/snackbar';
 
 export default {
   components: {
-    CommonSnackbar
   },
   props: {
     modelValue: Boolean,
@@ -337,7 +335,7 @@ export default {
         this.storageTypes = response.data.storageTypes;
       } catch (error) {
         console.error("카테고리 및 보관위치 목록을 불러오는 데 실패했습니다.", error);
-        this.$refs.snackbar.showError("카테고리 및 보관위치 목록을 불러오는 데 실패했습니다.");
+        snackbar.error("카테고리 및 보관위치 목록을 불러오는 데 실패했습니다.");
       }
     },
     emojiOf(category) {
@@ -406,7 +404,7 @@ export default {
       ];
       const failed = checks.find(([isInvalid]) => isInvalid);
       if (failed) {
-        this.$refs.snackbar.showWarning(failed[1]);
+        snackbar.warning(failed[1]);
         return false;
       }
       return true;
@@ -439,11 +437,11 @@ export default {
     // 목록에 담을 때는 식품명만 필수. 나머지는 등록 전에 채우면 됨
     validateForListItem() {
       if (!this.formData.name || !this.formData.name.trim()) {
-        this.$refs.snackbar.showWarning("식품명을 입력해주세요.");
+        snackbar.warning("식품명을 입력해주세요.");
         return false;
       }
       if (this.formData.expirationDate && new Date(this.formData.expirationDate) < new Date(this.getTodayDate())) {
-        this.$refs.snackbar.showWarning("유통기한은 오늘 날짜 이후여야 합니다.");
+        snackbar.warning("유통기한은 오늘 날짜 이후여야 합니다.");
         return false;
       }
       return true;
@@ -456,7 +454,7 @@ export default {
         this.editingIndex = null;
       } else {
         if (this.pendingFoods.length >= this.maxCount) {
-          this.$refs.snackbar.showWarning(`식품은 한 번에 최대 ${this.maxCount}개까지 등록할 수 있습니다.`);
+          snackbar.warning(`식품은 한 번에 최대 ${this.maxCount}개까지 등록할 수 있습니다.`);
           return;
         }
         this.pendingFoods.push(item);
@@ -465,7 +463,7 @@ export default {
     },
     editListItem(index) {
       if (this.editingIndex === null && !this.isFormEmpty()) {
-        this.$refs.snackbar.showWarning("입력 중인 식품을 먼저 목록에 담거나 지워주세요.");
+        snackbar.warning("입력 중인 식품을 먼저 목록에 담거나 지워주세요.");
         return;
       }
       this.editingIndex = index;
@@ -501,7 +499,7 @@ export default {
       let foods = null;
       if (this.isCreateMode) {
         if (this.editingIndex !== null) {
-          this.$refs.snackbar.showWarning("수정 중인 식품을 목록에 반영하거나 수정을 취소해주세요.");
+          snackbar.warning("수정 중인 식품을 목록에 반영하거나 수정을 취소해주세요.");
           return;
         }
         foods = [...this.pendingFoods];
@@ -512,11 +510,11 @@ export default {
         const incomplete = foods.filter(item => !this.isItemComplete(item));
         if (incomplete.length > 0) {
           const names = incomplete.map(item => item.name).join(', ');
-          this.$refs.snackbar.showWarning(`입력이 끝나지 않은 식품이 있습니다: ${names}. 목록에서 ✏를 눌러 채워주세요.`);
+          snackbar.warning(`입력이 끝나지 않은 식품이 있습니다: ${names}. 목록에서 ✏를 눌러 채워주세요.`);
           return;
         }
         if (foods.length > this.maxCount) {
-          this.$refs.snackbar.showWarning(`식품은 한 번에 최대 ${this.maxCount}개까지 등록할 수 있습니다.`);
+          snackbar.warning(`식품은 한 번에 최대 ${this.maxCount}개까지 등록할 수 있습니다.`);
           return;
         }
       } else if (!this.validateForm()) {
@@ -535,7 +533,7 @@ export default {
         this.closeModal();
       } catch (error) {
         console.error("식품 저장 중 오류가 발생했습니다:", error);
-        this.$refs.snackbar.showError("식품 저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+        snackbar.error("식품 저장 중 오류가 발생했습니다. 다시 시도해주세요.");
       } finally {
         this.isLoading = false;
       }

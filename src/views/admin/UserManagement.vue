@@ -119,6 +119,7 @@
 
 <script>
 import axios from 'axios';
+import { snackbar } from '@/composables/snackbar';
 
 export default {
   name: 'UserManagement',
@@ -169,10 +170,7 @@ export default {
       } catch (error) {
         console.error('사용자 목록 로드 실패:', error);
         console.error('Error details:', error.response?.data);
-        this.$store.dispatch('showSnackbar', {
-          message: '사용자 목록 로드에 실패했습니다.',
-          color: 'error'
-        });
+        snackbar.show('사용자 목록 로드에 실패했습니다.', 'error');
       } finally {
         this.loading = false;
       }
@@ -305,10 +303,7 @@ export default {
         console.log('Delete Member API Response:', response.data);
 
         if (response.data.status_code === 200) {
-          this.$store.dispatch('showSnackbar', {
-            message: '사용자가 성공적으로 삭제되었습니다.',
-            color: 'success'
-          });
+          snackbar.show('사용자가 성공적으로 삭제되었습니다.', 'success');
 
           // 사용자 목록에서 제거
           this.users = this.users.filter(user => user.email !== this.userToDelete.email);
@@ -322,10 +317,7 @@ export default {
         console.error('사용자 삭제 실패:', error);
         console.error('Error details:', error.response?.data);
         
-        this.$store.dispatch('showSnackbar', {
-          message: error.response?.data?.status_message || '사용자 삭제에 실패했습니다.',
-          color: 'error'
-        });
+        snackbar.show(error.response?.data?.status_message || '사용자 삭제에 실패했습니다.', 'error');
       } finally {
         this.deleting = false;
       }

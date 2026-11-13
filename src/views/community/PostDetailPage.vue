@@ -179,7 +179,6 @@
       @cancel="showDeleteDialog = false"
     />
 
-    <CommonSnackbar ref="commonSnackbar" />
 
     <div v-if="isLoading" class="loading-overlay">
       <v-progress-circular indeterminate color="primary" size="40" />
@@ -192,16 +191,15 @@
 import axios from 'axios';
 import { mapGetters } from 'vuex';
 import PostFormModal from '@/components/community/PostFormModal.vue';
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue';
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue';
 import { getErrorMessage, getFridgeId } from '@/utils/commonDataHandler';
 import { NOTICE_CATEGORY } from '@/utils/postCategory';
+import { snackbar } from '@/composables/snackbar';
 
 export default {
   name: 'PostDetailPage',
   components: {
     PostFormModal,
-    CommonSnackbar,
     DeleteConfirmDialog
   },
   data() {
@@ -722,7 +720,7 @@ export default {
     },
 
     showSnackbar(message, color) {
-      this.$refs.commonSnackbar.showSnackbar(message, color);
+      snackbar.show(message, color);
     }
   }
 }

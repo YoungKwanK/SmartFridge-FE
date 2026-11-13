@@ -116,7 +116,6 @@
     <!-- 게시글 작성 모달 -->
     <PostFormModal v-model="isModalOpen" :board-type="activeBoard" @save="handleSave" />
 
-    <CommonSnackbar ref="commonSnackbar" />
   </div>
 </template>
 
@@ -124,14 +123,13 @@
 import axios from 'axios';
 import { getFridgeId } from '@/utils/commonDataHandler';
 import PostFormModal from '@/components/community/PostFormModal.vue';
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue';
 import { useStore } from 'vuex';
 import { fetchPostCategories, NOTICE_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
+import { snackbar } from '@/composables/snackbar';
 
 export default {
   components: {
     PostFormModal,
-    CommonSnackbar
   },
   setup() {
     const store = useStore();
@@ -410,7 +408,7 @@ export default {
     },
 
     showSnackbar(message, color) {
-      this.$refs.commonSnackbar.showSnackbar(message, color);
+      snackbar.show(message, color);
     },
     
     // 게시글 삭제 완료 메시지 확인 및 표시

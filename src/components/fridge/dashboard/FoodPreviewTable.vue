@@ -44,7 +44,6 @@
       @save="handleFoodSave"
     />
 
-    <CommonSnackbar ref="snackbar" />
   </div>
 </template>
 
@@ -54,7 +53,7 @@ import { computed, ref } from 'vue';
 import router from '@/router';
 import FoodFormModal from '@/components/food/FoodFormModal.vue';
 import FoodRow from '@/components/food/FoodRow.vue';
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue';
+import { snackbar } from '@/composables/snackbar';
 
 const props = defineProps({
   fridgeId: {
@@ -70,7 +69,6 @@ const emit = defineEmits(['food-saved']);
 
 const isFoodModalOpen = ref(false);
 const selectedFood = ref({});
-const snackbar = ref(null);
 
 const goToSharedFoodList = () => {
   router.push(`/fridge/food/shared`);
@@ -127,9 +125,7 @@ const handleFoodSave = async (foodData) => {
 
     await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${props.fridgeId}/food/register`, foodData);
 
-    if (snackbar.value) {
-      snackbar.value.showSuccess(`식품 ${foodData.length}개를 등록했어요.`);
-    }
+    snackbar.success(`식품 ${foodData.length}개를 등록했어요.`);
 
     // 부모가 목록과 통계를 다시 불러온다
     emit('food-saved');

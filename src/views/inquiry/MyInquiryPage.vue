@@ -331,7 +331,6 @@
       </v-card>
     </v-dialog>
 
-    <CommonSnackbar ref="commonSnackbar" />
 
     <ImageModal
       v-model="showImageModal"
@@ -344,12 +343,11 @@
 
 <script>
 import axios from 'axios'
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue'
 import ImageModal from '@/components/chat/ImageModal.vue'
+import { snackbar } from '@/composables/snackbar'
 
 export default {
   components: {
-    CommonSnackbar,
     ImageModal
   },
   data() {
@@ -754,7 +752,7 @@ export default {
     },
 
     showMessage(message, color = 'success') {
-      this.$refs.commonSnackbar.showSnackbar(message, color);
+      snackbar.show(message, color);
     },
 
     async refreshInquiries() {

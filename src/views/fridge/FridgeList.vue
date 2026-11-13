@@ -111,7 +111,6 @@
       @cancel="showLeaveDialog = false"
     />
 
-    <CommonSnackbar ref="commonSnackbar" />
   </div>
 </template>
 
@@ -315,13 +314,12 @@
 <script>
 import axios from 'axios';
 import FridgeFormModal from '@/components/fridge/FridgeFormModal.vue';
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue';
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue';
+import { snackbar } from '@/composables/snackbar';
 
 export default {
   components: {
     FridgeFormModal,
-    CommonSnackbar,
     DeleteConfirmDialog
   },
   data() {
@@ -446,7 +444,7 @@ export default {
       });
     },
     showSnackbar(message, color) {
-      this.$refs.commonSnackbar.showSnackbar(message, color);
+      snackbar.show(message, color);
     },
     
     doLogout() {

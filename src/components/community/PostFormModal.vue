@@ -146,15 +146,14 @@
       </v-card-actions>
     </v-card>
 
-    <CommonSnackbar ref="commonSnackbar" />
   </v-dialog>
 </template>
 
 <script>
 import axios from 'axios';
-import CommonSnackbar from '@/components/layout/CommonSnackbar.vue';
 import { useStore } from 'vuex';
 import { fetchPostCategories, NOTICE_CATEGORY, DEFAULT_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
+import { snackbar } from '@/composables/snackbar';
 
 // 공동구매 모집 인원 범위 (백엔드 PurchasePost.MIN/MAX_PARTICIPANTS 와 같은 값)
 const MIN_PARTICIPANTS = 2;
@@ -163,7 +162,6 @@ const MAX_PARTICIPANTS = 20;
 export default {
   name: 'PostFormModal',
   components: {
-    CommonSnackbar
   },
   props: {
     modelValue: {
@@ -563,7 +561,7 @@ export default {
     },
 
     showSnackbar(message, color) {
-      this.$refs.commonSnackbar.showSnackbar(message, color);
+      snackbar.show(message, color);
     }
   }
 }
