@@ -1,5 +1,9 @@
 <template>
-  <section class="expiring-panel" aria-labelledby="expiring-title">
+  <section
+    class="expiring-panel"
+    :class="{ 'expiring-panel--alert': foods.length }"
+    aria-labelledby="expiring-title"
+  >
     <header class="panel-head">
       <h2 id="expiring-title" class="panel-title">
         <template v-if="foods.length">먼저 확인할 식품 <span class="count sf-num">{{ foods.length }}</span></template>
@@ -51,8 +55,13 @@ const visibleFoods = computed(() => (expanded.value ? props.foods : props.foods.
   border-radius: var(--sf-radius-lg);
   box-shadow: var(--sf-shadow);
   padding: 24px 24px 12px;
-  /* 화면의 주인공: 왼쪽 띠로 '먼저 볼 곳'임을 표시 */
-  border-left: 4px solid var(--sf-soon);
+  /* 띠 자리는 늘 두고(내용이 밀리지 않게) 색은 확인할 식품이 있을 때만 */
+  border-left: 4px solid transparent;
+}
+
+/* 노랑은 '임박' 뜻으로만 쓴다: 확인할 식품이 있을 때만 왼쪽 띠를 칠한다 */
+.expiring-panel--alert {
+  border-left-color: var(--sf-soon);
 }
 
 .panel-head {
