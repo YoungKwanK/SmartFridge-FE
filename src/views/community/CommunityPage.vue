@@ -440,7 +440,7 @@ export default {
   border-bottom: 2px solid transparent;
   background: none;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 500;
   color: var(--sf-text-sub);
   cursor: pointer;
@@ -524,7 +524,7 @@ export default {
 }
 
 .post-title {
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -538,7 +538,7 @@ export default {
   padding: 1px 6px;
   border-radius: 6px;
   background: var(--sf-mint-soft);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 700;
   color: var(--sf-primary);
   vertical-align: 2px;
@@ -547,7 +547,7 @@ export default {
 .post-meta {
   display: flex;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -562,7 +562,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -575,7 +575,7 @@ export default {
 }
 
 .page-text {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   white-space: nowrap;
 }

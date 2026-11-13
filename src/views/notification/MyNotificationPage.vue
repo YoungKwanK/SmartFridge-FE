@@ -429,7 +429,7 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   background: var(--sf-surface);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 500;
   color: var(--sf-text-sub);
   cursor: pointer;
@@ -511,7 +511,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
 }
 
 .noti-type {
@@ -532,13 +532,13 @@ onBeforeUnmount(() => {
 }
 
 .noti-message {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.5;
   color: var(--sf-text);
 }
 
 .noti-time {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -573,12 +573,12 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 16px;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
 .dialog-body {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 

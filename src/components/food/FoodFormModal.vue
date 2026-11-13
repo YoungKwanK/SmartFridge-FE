@@ -564,7 +564,7 @@ export default {
 
 .form-desc {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -579,7 +579,7 @@ export default {
 
 .field-hint {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -615,7 +615,7 @@ export default {
   border-radius: 999px;
   background: var(--sf-surface);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text);
   cursor: pointer;
 }
@@ -651,7 +651,7 @@ export default {
   border-radius: 8px;
   background: none;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
   cursor: pointer;
 }
@@ -696,7 +696,7 @@ export default {
   border: none;
   border-inline: 1px solid var(--sf-line);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   text-align: center;
   color: var(--sf-text);
@@ -725,7 +725,7 @@ export default {
   border-radius: 999px;
   background: var(--sf-bg);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 600;
   color: var(--sf-text-sub);
   cursor: pointer;
@@ -749,14 +749,14 @@ export default {
 
 .share-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
 }
 
 .share-desc {
   margin: 2px 0 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
 }
 
@@ -779,13 +779,13 @@ export default {
   align-items: baseline;
   gap: 6px;
   margin: 0 0 8px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
 
 .pending-limit {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 400;
   color: var(--sf-text-faint);
 }
@@ -827,7 +827,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
 }
@@ -836,17 +836,17 @@ export default {
   padding: 0 6px;
   border-radius: 6px;
   background: var(--sf-mint-soft);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-primary);
 }
 
 .pending-meta {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
 .pending-warning {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 600;
   color: var(--sf-soon-ink);
 }

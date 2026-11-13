@@ -454,7 +454,7 @@ const menuItems = computed(() => {
 }
 
 .sidebar-brand.is-compact .sf-brand-name {
-  font-size: 17px;
+  font-size: var(--sf-fs-lg);
 }
 
 .sidebar-top {
@@ -502,13 +502,13 @@ const menuItems = computed(() => {
 }
 
 .fridge-switch-label {
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-faint);
 }
 
 .fridge-switch-name {
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -539,7 +539,7 @@ const menuItems = computed(() => {
 }
 
 .nav-link :deep(.v-list-item-title) {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 500;
   color: var(--sf-text);
 }
@@ -608,7 +608,7 @@ const menuItems = computed(() => {
 
 .user-name {
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -653,7 +653,7 @@ const menuItems = computed(() => {
 }
 
 .bottom-tab-label {
-  font-size: 11px;
+  font-size: var(--sf-fs-xs);
   font-weight: 600;
   letter-spacing: 0;
 }

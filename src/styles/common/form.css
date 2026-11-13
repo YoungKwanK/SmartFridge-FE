@@ -2,7 +2,7 @@
 
 .sf-form-title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--sf-fs-xl);
   font-weight: 800;
   color: var(--sf-text);
 }
@@ -10,7 +10,7 @@
 .sf-field-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
 }
@@ -23,6 +23,6 @@
 }
 
 .sf-dialog-title {
-  font-size: 19px;
+  font-size: var(--sf-fs-xl);
   font-weight: 800;
 }

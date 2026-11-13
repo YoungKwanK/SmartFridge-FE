@@ -345,7 +345,7 @@ export default {
 .intro-desc {
   max-width: 34em;
   margin: 20px 0 0;
-  font-size: 17px;
+  font-size: var(--sf-fs-lg);
   line-height: 1.7;
   color: var(--sf-text-sub);
 }
@@ -362,7 +362,7 @@ export default {
 
 .sample-title {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
@@ -382,7 +382,7 @@ export default {
 
 .login-title {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--sf-text);
@@ -390,7 +390,7 @@ export default {
 
 .login-desc {
   margin: 8px 0 24px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -415,7 +415,7 @@ export default {
   border: none;
   border-radius: var(--sf-radius-md);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   cursor: pointer;
 }
@@ -454,7 +454,7 @@ export default {
 
 .login-note {
   margin: 20px 0 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   line-height: 1.6;
   color: var(--sf-text-faint);
 }
@@ -499,7 +499,7 @@ export default {
   }
 
   .intro-desc {
-    font-size: 15px;
+    font-size: var(--sf-fs-md);
   }
 
   .login-panel {

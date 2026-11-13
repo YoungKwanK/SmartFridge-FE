@@ -31,7 +31,7 @@ const description = computed(() => ddayDescription(props.expirationDateTime));
   height: 26px;
   padding: 0 8px;
   border-radius: var(--sf-radius-sm);
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;

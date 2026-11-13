@@ -518,7 +518,7 @@ export default {
   border-radius: var(--sf-radius-sm);
   background: transparent;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text-sub);
   cursor: pointer;
@@ -556,7 +556,7 @@ export default {
   border-radius: 999px;
   background: var(--sf-surface);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 500;
   color: var(--sf-text-sub);
   cursor: pointer;
@@ -614,7 +614,7 @@ export default {
 
 .list-head {
   height: 40px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 500;
   color: var(--sf-text-faint);
   border-bottom: 1px solid var(--sf-line);
@@ -668,7 +668,7 @@ export default {
 }
 
 .item-name {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -686,7 +686,7 @@ export default {
 }
 
 .item-meta {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -694,7 +694,7 @@ export default {
 }
 
 .col-qty {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -705,7 +705,7 @@ export default {
 }
 
 .exp-date {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
   white-space: nowrap;
 }
@@ -714,7 +714,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -733,7 +733,7 @@ export default {
 }
 
 .page-text {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   white-space: nowrap;
 }

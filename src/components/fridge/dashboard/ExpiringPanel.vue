@@ -72,7 +72,7 @@ const visibleFoods = computed(() => (expanded.value ? props.foods : props.foods.
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 22px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--sf-text);
@@ -80,13 +80,13 @@ const visibleFoods = computed(() => (expanded.value ? props.foods : props.foods.
 }
 
 .count {
-  font-size: 28px;
+  font-size: var(--sf-fs-3xl);
   font-weight: 800;
 }
 
 .panel-hint {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -101,7 +101,7 @@ const visibleFoods = computed(() => (expanded.value ? props.foods : props.foods.
 
 .panel-empty {
   margin: 12px 0 12px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -113,7 +113,7 @@ const visibleFoods = computed(() => (expanded.value ? props.foods : props.foods.
   border-top: 1px solid var(--sf-line);
   background: none;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-primary);
   cursor: pointer;

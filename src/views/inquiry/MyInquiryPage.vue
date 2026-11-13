@@ -1106,7 +1106,7 @@ export default {
   flex-wrap: wrap;
   gap: 8px 24px;
   margin: 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
 }
 
 .status-summary div {
@@ -1170,7 +1170,7 @@ export default {
 .type-tag {
   padding: 1px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 600;
 }
 
@@ -1202,13 +1202,13 @@ export default {
 }
 
 .inquiry-title {
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
 
 .inquiry-preview {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1227,7 +1227,7 @@ export default {
 }
 
 .inquiry-date {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -1247,7 +1247,7 @@ export default {
 .detail-body {
   max-width: 68ch;
   margin: 0 0 16px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.7;
   white-space: pre-wrap;
   color: var(--sf-text);
@@ -1309,19 +1309,19 @@ export default {
 }
 
 .answer-label {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-primary);
 }
 
 .answer-date {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
 }
 
 .answer-body {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.7;
   white-space: pre-wrap;
   color: var(--sf-text);
@@ -1329,7 +1329,7 @@ export default {
 
 .waiting-note {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -1380,7 +1380,7 @@ export default {
 
 .field-label {
   margin: 0 0 8px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 600;
   color: var(--sf-text-sub);
 }
@@ -1394,7 +1394,7 @@ export default {
 }
 
 .confirm-text {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -1407,7 +1407,7 @@ export default {
 
 .quoted-title {
   margin: 0 0 4px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
@@ -1416,7 +1416,7 @@ export default {
   margin: 0;
   max-height: 160px;
   overflow-y: auto;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   white-space: pre-wrap;
   color: var(--sf-text-sub);

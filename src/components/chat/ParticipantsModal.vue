@@ -191,7 +191,7 @@ const closeModal = () => {
 
 .people-title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
@@ -202,7 +202,7 @@ const closeModal = () => {
 
 .people-room {
   margin: 2px 0 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -221,7 +221,7 @@ const closeModal = () => {
   gap: 8px;
   margin: 0;
   padding: 32px 16px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   text-align: center;
   color: var(--sf-text-sub);
 }
@@ -286,7 +286,7 @@ const closeModal = () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
 }
@@ -295,12 +295,12 @@ const closeModal = () => {
   padding: 0 6px;
   border-radius: 6px;
   background: var(--sf-bg);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-sub);
 }
 
 .person-email {
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -309,7 +309,7 @@ const closeModal = () => {
 
 .person-status {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-faint);
 }
 

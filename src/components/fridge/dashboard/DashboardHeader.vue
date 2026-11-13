@@ -493,7 +493,7 @@ const getNotificationColor = (type) => {
   border-radius: var(--sf-radius-sm);
   background: var(--sf-surface);
   border: 1px solid var(--sf-line);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 600;
   color: var(--sf-text-sub);
 }
@@ -550,7 +550,7 @@ const getNotificationColor = (type) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--sf-fs-xs);
   font-weight: 700;
   border: 2px solid var(--sf-surface);
   box-sizing: border-box;
@@ -574,7 +574,7 @@ const getNotificationColor = (type) => {
 .modal-title {
   display: flex;
   align-items: center;
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
   font-weight: 600;
   color: #333;
 }
@@ -644,18 +644,18 @@ const getNotificationColor = (type) => {
 }
 
 .notification-type {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: #495057;
 }
 
 .notification-time {
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: #6c757d;
 }
 
 .notification-content {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: #212529;
   line-height: 1.4;
 }
@@ -672,7 +672,7 @@ const getNotificationColor = (type) => {
 
 .no-notifications-text {
   margin-top: 16px;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
 }
 
 .modal-actions {
@@ -710,7 +710,7 @@ const getNotificationColor = (type) => {
 
   align-items: center;
 
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
 
   font-weight: 600;
 
@@ -831,7 +831,7 @@ const getNotificationColor = (type) => {
 
 .notification-type {
 
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
 
   font-weight: 600;
 
@@ -843,7 +843,7 @@ const getNotificationColor = (type) => {
 
 .notification-time {
 
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
 
   color: #6c757d;
 
@@ -853,7 +853,7 @@ const getNotificationColor = (type) => {
 
 .notification-content {
 
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
 
   color: #212529;
 
@@ -882,7 +882,7 @@ const getNotificationColor = (type) => {
 
   margin-top: 16px;
 
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
 
 }
 

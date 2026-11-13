@@ -201,7 +201,7 @@ const handleFoodSave = async (foodData) => {
 
 .panel-empty {
   margin: 12px 0 16px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   color: var(--sf-text-sub);
 }
