@@ -2,9 +2,10 @@
   <!-- 모바일(md 미만)에서는 상단 앱 바의 햄버거 버튼으로 드로어를 연다 -->
   <v-app-bar v-if="isMobile" density="compact" flat border="b" class="mobile-app-bar">
     <v-app-bar-nav-icon aria-label="메뉴 열기" @click="drawer = !drawer" />
-    <v-app-bar-title>
-      <span class="smartfridge-title">SmartFridge</span>
-    </v-app-bar-title>
+    <router-link to="/fridge/dashboard" class="sidebar-brand is-compact">
+      <img :src="logoUrl" alt="" class="brand-logo" />
+      <span class="sf-brand-name">SmartFridge</span>
+    </router-link>
   </v-app-bar>
 
   <!-- 데스크톱에서는 항상 펼쳐 두고, 모바일에서는 본문 위에 잠깐 띄우는 temporary 드로어로 쓴다 -->
@@ -12,96 +13,72 @@
     v-model="drawer"
     :permanent="!isMobile"
     :temporary="isMobile"
-    class="custom-drawer"
+    :width="248"
+    class="sf-sidebar"
   >
-    <div class="header-container">
-      <v-list-item class="pa-0">
-        <template v-slot:prepend>
-          <v-container class="d-flex flex-column align-center pa-0">
-            <router-link to="/#" class="logo-link">
-              <v-img
-                :width="100"
-                :height="100"
-                :src="logoUrl"
-                alt="SmartFridge Logo"
-                class="mb-2"
-              />
-            </router-link>
-          </v-container>
-        </template>
+    <div class="sidebar-top">
+      <router-link v-if="!isMobile" to="/fridge/dashboard" class="sidebar-brand">
+        <img :src="logoUrl" alt="" class="brand-logo" />
+        <span class="sf-brand-name">SmartFridge</span>
+      </router-link>
 
-        <v-list-item-title class="smartfridge-title">SmartFridge</v-list-item-title>
-        <v-list-item-subtitle class="mt-1 truncate-text"
-          :title="fridgeName"  
-        >{{ fridgeName }}</v-list-item-subtitle>
-        
-        <v-chip
-          :prepend-icon="refrigeratorItem.icon"
-          color="primary"
-          variant="tonal"
-          size="small"
-          label
-          :to="refrigeratorItem.to"
-          class="mt-3"
-        >
-          {{ refrigeratorItem.title }}
-        </v-chip>
-      </v-list-item>
+      <!-- 지금 들어와 있는 냉장고. 누르면 냉장고 목록에서 다른 냉장고를 고른다 -->
+      <router-link to="/fridge/list" class="fridge-switch" :title="fridgeName">
+        <span class="fridge-switch-icon" aria-hidden="true">
+          <v-icon size="20">mdi-fridge-outline</v-icon>
+        </span>
+        <span class="fridge-switch-text">
+          <span class="fridge-switch-label">지금 보는 냉장고</span>
+          <span class="fridge-switch-name">{{ fridgeName }}</span>
+        </span>
+        <v-icon size="18" class="fridge-switch-chevron" aria-label="냉장고 바꾸기">mdi-swap-horizontal</v-icon>
+      </router-link>
     </div>
 
-    <v-divider></v-divider>
+    <v-list v-model:selected="selectedItem" density="compact" nav class="sidebar-nav" aria-label="메뉴">
+      <template v-for="item in menuItems" :key="item.value">
+        <v-list-item
+          v-if="item.title !== '유저관리' || userType === 'MANAGER'"
+          :title="item.title"
+          :value="item.value"
+          :to="item.to"
+          class="nav-link"
+          rounded="lg"
+        >
+          <template v-slot:prepend>
+            <v-icon :icon="item.icon" size="20"></v-icon>
+          </template>
+          <template v-slot:append v-if="item.badgeCount > 0">
+            <span class="notification-indicator" aria-label="새 소식 있음"></span>
+          </template>
+        </v-list-item>
+      </template>
+    </v-list>
 
-    <v-list v-model:selected="selectedItem" density="compact" nav>
-    <template v-for="item in menuItems" :key="item.value">
-      <v-list-item
-        v-if="item.title !== '유저관리' || userType === 'MANAGER'"
-        :title="item.title"
-        :value="item.value"
-        :to="item.to"
-        class="nav-link"
-        rounded="lg"
-      >
-        <template v-slot:prepend>
-          <v-icon :icon="item.icon" size="20"></v-icon>
-        </template>
-        <template v-slot:append v-if="item.badgeCount > 0">
-          <div class="notification-indicator"></div>
-        </template>
-      </v-list-item>
-    </template>
-  </v-list>
-    
     <template v-slot:append>
-      <div class="user-info-wrapper">
-        <div class="user-info-frame">
-          <router-link to="/#" class="avatar-link">
-            <div class="user-avatar-bg" v-if="!userProfileImage">
-              <span class="user-avatar-initial">{{ userInitial }}</span>
-            </div>
-            <v-img
-              v-else
-              :src="userProfileImage"
-              alt="Profile Image"
-              class="user-avatar-image"
-              width="40"
-              height="40"
-            />
-          </router-link>  
-          <div class="user-details">
-            <div class="user-name">{{ displayUserName }}</div>
-            <v-btn
-                variant="text"
-                size="x-small"
-                class="inquiry-text-button"
-            >
-              {{ inquiryItem.title }}
-            </v-btn>
-          </div>
-          <v-spacer></v-spacer>
-          <v-btn class="logout-button" @click="doLogout" to="/#" variant="outlined" rounded="xl" size="x-small, y-small">
-            로그아웃
-          </v-btn>
-        </div>
+      <div class="sidebar-user">
+        <router-link to="/mypage" class="user-link" aria-label="내 정보로 가기">
+          <span v-if="!userProfileImage" class="user-avatar user-avatar-initial" aria-hidden="true">{{ userInitial }}</span>
+          <v-img
+            v-else
+            :src="userProfileImage"
+            alt=""
+            class="user-avatar"
+            width="36"
+            height="36"
+            cover
+          />
+          <span class="user-name">{{ displayUserName }}</span>
+        </router-link>
+        <v-btn
+          icon="mdi-logout"
+          variant="text"
+          size="small"
+          class="logout-button"
+          aria-label="로그아웃"
+          title="로그아웃"
+          @click="doLogout"
+        />
       </div>
     </template>
   </v-navigation-drawer>
@@ -144,8 +121,6 @@ const route = useRoute();
 
 const selectedItem = ref(['dashboard']);
 
-const refrigeratorItem = ref({ title: '냉장고목록', icon: 'mdi-fridge-outline', color: 'cyan-darken-2', to: "/fridge/list" });
-const inquiryItem = ref({ title: '문의하기', icon: 'mdi-comment-question-outline', color: 'pink-darken-1', to: "/#" });
 
 // 라우트 경로를 사이드바 value로 매핑하는 함수
 const getSidebarValueFromRoute = (path) => {
@@ -218,13 +193,8 @@ const displayUserName = computed(() => {
   return '사용자님';
 });
 
-// 냉장고 이름 (사용자 이름 기반)
-const fridgeName = computed(() => {
-  if (userName.value) {
-    return `${userName.value}의 냉장고`;
-  }
-  return '나의 냉장고';
-});
+// 지금 들어와 있는 냉장고 이름 (냉장고 목록에서 고를 때 저장한 정보)
+const fridgeName = computed(() => store.getters.getCurrentFridgeInfo?.fridgeName || '냉장고를 골라 주세요');
 
 const doLogout = () => {
   store.dispatch('logout');
@@ -458,178 +428,230 @@ const menuItems = computed(() => {
 </script>
 
 <style scoped>
-:root {
-  --font-title: clamp(20px, 1.8vw, 22.125px);
-  --font-subtitle: clamp(12px, 1.2vw, 14px);
-  --font-nav: clamp(14px, 1.3vw, 15px);
-  --font-user: clamp(11px, 1.3vw, 14px);
-  --font-button-size: clamp(12px, 1.1vw, 13.3px);
-}
-.truncate-text {
-  white-space: nowrap;      
-  overflow: hidden;        
-  text-overflow: ellipsis; 
-  max-width: 100%;          
-}
-.logo-link {
-  text-decoration: none; 
-  color: inherit;
-  height: 100px;
-  
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  display: inline-block; 
-}
-.custom-font-family { 
-  font-family: 'Arial', sans-serif; 
-}
-.responsive-card, .custom-drawer {
-  width: clamp(256px) !important;
-}
-.custom-drawer {
+.sf-sidebar {
   background: var(--sf-surface);
   border-right: 1px solid var(--sf-line) !important;
 }
-.header-container {
-  padding: 19px 20px;
+
+/* 로고 + 서비스 이름 */
+.sidebar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
 }
-.mobile-app-bar {
-  background: var(--sf-surface) !important;
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
 }
-.smartfridge-title {
-  font-weight: 800;
-  letter-spacing: -0.02em;
+
+.sidebar-brand.is-compact .brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.sidebar-brand.is-compact .sf-brand-name {
+  font-size: 17px;
+}
+
+.sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 16px 12px;
+}
+
+/* 지금 보는 냉장고 */
+.fridge-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--sf-line);
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-bg);
+  color: var(--sf-text);
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.fridge-switch:hover {
+  border-color: var(--sf-line-strong);
+}
+
+.fridge-switch-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--sf-radius-sm);
+  background: var(--sf-mint-soft);
   color: var(--sf-primary);
-  font-size: var(--font-title);
-  line-height: 1.2;
 }
-.dashboard-subtitle {
-  font-weight: 400;
-  font-size: 13px;
-  line-height: 1.2;
-  padding: 0;
-  color: #666;
+
+.fridge-switch-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
 }
+
+.fridge-switch-label {
+  font-size: 12px;
+  color: var(--sf-text-faint);
+}
+
+.fridge-switch-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fridge-switch-chevron {
+  flex-shrink: 0;
+  color: var(--sf-text-faint);
+}
+
+/* 메뉴 */
+.sidebar-nav {
+  padding: 4px 0 12px;
+}
+
 .nav-link {
-  height: 46px;
+  min-height: 44px;
   margin: 0 12px 2px;
   color: var(--sf-text-sub);
 }
+
 .nav-link :deep(.v-list-item__overlay) {
   display: none;
 }
+
 .nav-link:hover {
   background: var(--sf-bg);
 }
+
 .nav-link :deep(.v-list-item-title) {
+  font-size: 15px;
   font-weight: 500;
-  font-size: var(--font-nav);
   color: var(--sf-text);
 }
+
 .nav-link.v-list-item--active {
   background: var(--sf-mint-soft);
   color: var(--sf-primary);
 }
+
 .nav-link.v-list-item--active :deep(.v-list-item-title) {
   color: var(--sf-primary);
   font-weight: 700;
 }
-.user-info-wrapper {
-  padding: 0px;
-}
-.user-info-frame {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 15px;
-  width: 100%;
-  border-top: 1px solid var(--sf-line);
-}
-.user-avatar-bg {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  background: var(--sf-mint-soft);
-  border-radius: 20px;
-}
-.user-avatar-initial {
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--sf-primary);
-}
-.user-avatar-image {
-  border-radius: 20px;
-  object-fit: cover;
-}
-.user-details {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  line-height: 1.3;
-  flex-grow: 1; 
-  min-width: 0;  
-}
-.user-name {
-  font-weight: 400;
-  font-size: var(--font-user);
-  color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.inquiry-text-button.v-btn {
-  padding: 0;
-  height: auto;
-  font-size: 12px;
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: normal;
-  margin-top: 2px;
-  color: var(--sf-text-faint);
-}
-.logout-button.v-btn {
-  border: 1px solid var(--sf-line-strong);
-  padding: 6px 12px;
-  color: var(--sf-text-sub);
-  font-size: 13px;
-  font-weight: 400;
-  text-transform: none;
-  flex-shrink: 0;
-}
 
 .notification-indicator {
+  display: block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background-color: var(--sf-expired);
-  flex-shrink: 0;
 }
+
+/* 아래쪽 사용자 정보 */
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px 12px 16px;
+  border-top: 1px solid var(--sf-line);
+}
+
+.user-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px;
+  margin-left: -4px;
+  border-radius: var(--sf-radius-sm);
+  color: var(--sf-text);
+  text-decoration: none;
+}
+
+.user-link:hover {
+  background: var(--sf-bg);
+}
+
+.user-avatar {
+  /* v-img(.v-responsive)는 기본이 flex: 1이라 옆으로 늘어난다 */
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.user-avatar-initial {
+  display: grid;
+  place-items: center;
+  background: var(--sf-mint-soft);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sf-primary);
+}
+
+.user-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.logout-button {
+  flex-shrink: 0;
+  color: var(--sf-text-faint);
+}
+
+/* 모바일 */
+.mobile-app-bar {
+  background: var(--sf-surface) !important;
+}
+
+.mobile-app-bar .sidebar-brand {
+  margin-left: 4px;
+}
+
 .bottom-tabs {
   border-top: 1px solid var(--sf-line);
   box-shadow: none !important;
   padding-bottom: env(safe-area-inset-bottom);
 }
+
 .bottom-tab {
   color: var(--sf-text-faint) !important;
   min-width: 0 !important;
 }
+
 .bottom-tab :deep(.v-btn__content) {
   flex-direction: column;
   gap: 2px;
 }
+
 .bottom-tab :deep(.v-btn__overlay) {
   display: none;
 }
+
 .bottom-tab.v-btn--active {
   color: var(--sf-primary) !important;
 }
+
 .bottom-tab-label {
   font-size: 11px;
   font-weight: 600;
