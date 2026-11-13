@@ -870,6 +870,12 @@ export default {
     gap: 0;
   }
 
+  /* 날짜·시각을 한 줄에 두면 시각 칸이 좁아 시계 아이콘이 잘린다 */
+  .field-row.is-tight {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
   .form-actions {
     padding: 12px 16px 16px !important;
   }
