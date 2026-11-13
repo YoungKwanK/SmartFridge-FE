@@ -156,6 +156,43 @@
 
 ---
 
+## 📁 프론트엔드 디렉터리 구조
+
+```
+src/
+├── main.js                 # 앱 시작: 스토어·라우터·Vuetify·axios 설정 연결
+├── App.vue                 # 사이드바 + 화면 + 전역 스낵바
+├── assets/                 # 이미지
+├── components/             # 화면 조각 (도메인별)
+│   ├── common/             #   여러 도메인이 쓰는 UI (삭제 확인, 로그인 처리 화면)
+│   ├── layout/             #   앱 틀 (사이드바, 전역 스낵바)
+│   ├── chat/ community/ food/
+│   └── fridge/dashboard/   #   냉장고 대시보드 패널
+├── composables/            # 컴포넌트끼리 공유하는 상태·함수 (스낵바, 채팅 알림·확인 창)
+├── plugins/                # 앱 설정 (vuetify.js, axios.js: 토큰 첨부·401 재발급)
+├── router/
+│   ├── index.js            # 라우트 모음 + 가드 연결
+│   ├── guards.js           # 로그인·관리자 권한 검사, SSE 재연결
+│   └── routes/             # 도메인별 라우트 (화면은 지연 로딩)
+├── services/               # API 호출 (auth, fridge)
+├── store/                  # Vuex (user, notification)
+├── styles/
+│   ├── index.css           # 전역 스타일 진입점
+│   ├── base/               # 디자인 토큰, Vuetify 보정, html·body 기본값
+│   ├── common/             # 공통 sf-* 클래스 (페이지 머리말·패널·빈 상태·폼·로고)
+│   └── pages/              # 화면 묶음 전용 (admin.css)
+├── utils/                  # 순수 함수 (응답 파싱, 신선도 계산, 초대 코드 등)
+└── views/                  # 라우트 화면 (도메인별)
+    ├── main/ auth/ fridge/ food/ community/ chat/
+    └── mypage/ inquiry/ notification/ admin/
+```
+
+- 여러 화면이 같은 모양을 쓰면 `styles/common/`의 `sf-*` 클래스를 쓰고, 화면마다 다른 값만 각 화면의 `<style scoped>`에서 덮어씁니다.
+- 사이드바를 숨길 화면은 라우트에 `meta: { hideSidebar: true }`를 붙입니다.
+- 알림은 `import { snackbar } from '@/composables/snackbar'` 후 `snackbar.success('...')`처럼 띄웁니다.
+
+---
+
 ## 📋 프로젝트 산출물
 
 | 구분 | 링크 |
