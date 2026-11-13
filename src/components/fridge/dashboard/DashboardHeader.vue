@@ -1,14 +1,14 @@
 <template>
-  <div class="dashboard-header">
+  <div class="dashboard-header sf-page-head">
     <div class="header-info">
       <div class="fridge-title-section">
-        <h1 class="fridge-title">{{ fridge.fridgeName }}</h1>
+        <h1 class="sf-page-title">{{ fridge.fridgeName }}</h1>
         <span class="type-tag" :class="`is-${(fridge.type || 'member').toLowerCase()}`">
           <v-icon size="14" aria-hidden="true">{{ getTypeIcon(fridge.type) }}</v-icon>
           {{ getTypeText(fridge.type) }}
         </span>
       </div>
-      <p v-if="fridge.description" class="fridge-subtitle">{{ fridge.description }}</p>
+      <p v-if="fridge.description" class="sf-page-desc fridge-subtitle">{{ fridge.description }}</p>
     </div>
     <div class="header-actions">
       <button
@@ -472,14 +472,6 @@ const getNotificationColor = (type) => {
 </script>
 
 <style scoped>
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 4px 0 8px;
-}
-
 .header-info {
   flex: 1;
   min-width: 0;
@@ -490,15 +482,6 @@ const getNotificationColor = (type) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
-}
-
-.fridge-title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: var(--sf-text);
-  margin: 0;
 }
 
 .type-tag {
@@ -522,9 +505,6 @@ const getNotificationColor = (type) => {
 }
 
 .fridge-subtitle {
-  font-size: 15px;
-  color: var(--sf-text-sub);
-  margin: 6px 0 0;
   max-width: 60ch;
 }
 
@@ -575,12 +555,6 @@ const getNotificationColor = (type) => {
   border: 2px solid var(--sf-surface);
   box-sizing: border-box;
   line-height: 1;
-}
-
-@media (max-width: 600px) {
-  .fridge-title {
-    font-size: 22px;
-  }
 }
 
 /* 알림 모달 스타일 */

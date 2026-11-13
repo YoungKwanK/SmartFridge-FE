@@ -1,16 +1,14 @@
 <template>
-  <div class="food-page">
-    <header class="sf-page-head">
-      <div>
-        <h1 class="sf-page-title">식품 목록</h1>
-        <p class="sf-page-desc">
-          {{ isSharedView ? '멤버 모두가 먹을 수 있는 식품이에요.' : '내가 등록한 개인식품이에요.' }}
-        </p>
-      </div>
+  <PageLayout
+    title="식품 목록"
+    :description="isSharedView ? '멤버 모두가 먹을 수 있는 식품이에요.' : '내가 등록한 개인식품이에요.'"
+    width="wide"
+  >
+    <template #actions>
       <v-btn color="primary" variant="flat" prepend-icon="mdi-plus" @click="openCreateModal">
         식품 등록
       </v-btn>
-    </header>
+    </template>
 
     <!-- 공유 / 개인 전환 -->
     <div class="segmented" role="tablist" aria-label="식품 종류">
@@ -167,10 +165,11 @@
       @cancel="deleteDialog = false"
     />
 
-  </div>
+  </PageLayout>
 </template>
 
 <script>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import axios from 'axios';
 import FoodFormModal from '@/components/food/FoodFormModal.vue';
 import FoodFinishDialog from '@/components/food/FoodFinishDialog.vue';
@@ -188,6 +187,7 @@ const FINISH_MESSAGES = {
 
 export default {
   components: {
+    PageLayout,
     FoodFormModal,
     FoodFinishDialog,
     DdayBadge
@@ -501,22 +501,11 @@ export default {
 </script>
 
 <style scoped>
-.food-page {
-  max-width: 1280px;
-  min-height: 100%;
-  padding: 32px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-}
-
-.sf-page-title {
-  line-height: 1.25;
-}
-
 /* 공유 / 개인 전환 */
 .segmented {
   display: inline-flex;
+  align-self: flex-start;
   padding: 4px;
-  margin-bottom: 16px;
   border-radius: var(--sf-radius-md);
   background: #ECEEF2;
 }
@@ -784,10 +773,6 @@ export default {
 }
 
 @media (max-width: 600px) {
-  .food-page {
-    padding: 16px 12px 32px;
-  }
-
   .filter-bar {
     padding: 12px 16px;
   }

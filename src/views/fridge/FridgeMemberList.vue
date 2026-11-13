@@ -1,9 +1,9 @@
 <template>
-  <div class="members-page">
-    <header class="page-head">
-      <h1 class="sf-page-title">멤버 관리</h1>
-      <p class="sf-page-desc">멤버에게 1:1로 메시지를 보내고, 관리자 권한을 넘기거나 내보낼 수 있어요.</p>
-    </header>
+  <PageLayout
+    title="멤버 관리"
+    description="멤버에게 1:1로 메시지를 보내고, 관리자 권한을 넘기거나 내보낼 수 있어요."
+    width="wide"
+  >
 
     <div class="members-grid">
       <!-- 멤버 목록 -->
@@ -227,10 +227,11 @@
     </div>
 
     <ImageModal v-model="showImageModal" :images="modalImages" :start-index="modalStartIndex" />
-  </div>
+  </PageLayout>
 </template>
 
 <script setup>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from "vue";
 import SockJS from "sockjs-client";
 import Stomp from "webstomp-client";
@@ -1030,25 +1031,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.members-page {
-  max-width: 1280px;
-  min-height: 100%;
-  padding: 32px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-}
-
-.page-head {
-  margin-bottom: 20px;
-}
-
-.sf-page-desc {
-  margin: 4px 0 0;
-}
-
 .members-grid {
   display: grid;
   grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
-  gap: 20px;
+  gap: var(--sf-section-gap);
   align-items: stretch;
 }
 
@@ -1444,10 +1430,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 600px) {
-  .members-page {
-    padding: 16px 12px 32px;
-  }
-
   .msg-line {
     max-width: 85%;
   }

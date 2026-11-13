@@ -1,9 +1,8 @@
 <template>
-  <div class="notification-page">
-    <header class="sf-page-head">
-      <h1 class="sf-page-title">알림</h1>
+  <PageLayout title="알림" description="유통기한, 댓글, 문의 답변 같은 소식을 모아 봐요." width="narrow">
+    <template #actions>
       <v-btn variant="text" color="primary" prepend-icon="mdi-check-all" @click="readAll()">모두 읽음으로 표시</v-btn>
-    </header>
+    </template>
 
     <div class="type-filters" role="tablist" aria-label="알림 종류">
       <button
@@ -89,10 +88,11 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </div>
+  </PageLayout>
 </template>
 
 <script setup>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
@@ -414,22 +414,9 @@ onBeforeUnmount(() => {
 
 
 <style scoped>
-.notification-page {
-  max-width: 880px;
-  min-height: 100%;
-  padding: 32px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-}
-
-.sf-page-head {
-  align-items: center;
-  margin-bottom: 16px;
-}
-
 .type-filters {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -596,10 +583,6 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 600px) {
-  .notification-page {
-    padding: 16px 12px 32px;
-  }
-
   .noti-main {
     padding: 14px 44px 14px 16px;
     gap: 12px;

@@ -1,28 +1,30 @@
 <template>
-  <div class="post-page">
-    <nav class="post-nav">
-      <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="goBack">목록으로</v-btn>
-      <div v-if="postDetail && (isAuthor || canPin)" class="nav-actions">
-        <v-btn
-          v-if="canPin"
-          variant="text"
-          :prepend-icon="postDetail.pinned ? 'mdi-pin-off-outline' : 'mdi-pin-outline'"
-          :loading="isPinning"
-          @click="togglePin"
-        >
-          {{ postDetail.pinned ? '고정 풀기' : '맨 위에 고정' }}
-        </v-btn>
-        <v-menu v-if="isAuthor" location="bottom end">
-          <template #activator="{ props }">
-            <v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" aria-label="글 관리" />
-          </template>
-          <v-list density="compact" min-width="160">
-            <v-list-item prepend-icon="mdi-pencil-outline" title="글 수정" @click="openEditModal" />
-            <v-list-item prepend-icon="mdi-trash-can-outline" title="글 삭제" base-color="error" @click="openDeleteDialog" />
-          </v-list>
-        </v-menu>
-      </div>
-    </nav>
+  <PageLayout width="narrow">
+    <template #head>
+      <nav class="post-nav">
+        <v-btn variant="text" prepend-icon="mdi-arrow-left" @click="goBack">목록으로</v-btn>
+        <div v-if="postDetail && (isAuthor || canPin)" class="nav-actions">
+          <v-btn
+            v-if="canPin"
+            variant="text"
+            :prepend-icon="postDetail.pinned ? 'mdi-pin-off-outline' : 'mdi-pin-outline'"
+            :loading="isPinning"
+            @click="togglePin"
+          >
+            {{ postDetail.pinned ? '고정 풀기' : '맨 위에 고정' }}
+          </v-btn>
+          <v-menu v-if="isAuthor" location="bottom end">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" icon="mdi-dots-vertical" variant="text" aria-label="글 관리" />
+            </template>
+            <v-list density="compact" min-width="160">
+              <v-list-item prepend-icon="mdi-pencil-outline" title="글 수정" @click="openEditModal" />
+              <v-list-item prepend-icon="mdi-trash-can-outline" title="글 삭제" base-color="error" @click="openDeleteDialog" />
+            </v-list>
+          </v-menu>
+        </div>
+      </nav>
+    </template>
 
     <article v-if="postDetail" class="post panel">
       <header class="post-head">
@@ -184,10 +186,11 @@
       <v-progress-circular indeterminate color="primary" size="40" />
       <p>글을 불러오는 중이에요</p>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import axios from 'axios';
 import { mapGetters } from 'vuex';
 import PostFormModal from '@/components/community/PostFormModal.vue';
@@ -199,6 +202,7 @@ import { snackbar } from '@/composables/snackbar';
 export default {
   name: 'PostDetailPage',
   components: {
+    PageLayout,
     PostFormModal,
     DeleteConfirmDialog
   },
@@ -727,13 +731,6 @@ export default {
 </script>
 
 <style scoped>
-.post-page {
-  max-width: 800px;
-  min-height: 100%;
-  padding: 20px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-}
-
 .post-nav {
   display: flex;
   align-items: center;
@@ -755,7 +752,6 @@ export default {
 
 .post {
   padding: 28px 32px 20px;
-  margin-bottom: 16px;
 }
 
 .post-board {
@@ -1090,10 +1086,6 @@ export default {
 }
 
 @media (max-width: 600px) {
-  .post-page {
-    padding: 12px 12px 32px;
-  }
-
   .post,
   .comments {
     padding: 20px 16px;

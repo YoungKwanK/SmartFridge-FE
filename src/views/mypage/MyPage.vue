@@ -1,8 +1,5 @@
 <template>
-  <div class="mypage">
-    <header class="page-head">
-      <h1 class="sf-page-title">내 정보</h1>
-    </header>
+  <PageLayout title="내 정보" description="프로필과 알림 설정, 내가 쓴 글을 관리해요.">
 
     <div class="mypage-grid">
       <!-- 프로필 -->
@@ -141,14 +138,16 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </div>
+  </PageLayout>
 </template>
 
 <script>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import { mapGetters } from 'vuex'
 import axios from 'axios'
 
 export default {
+  components: { PageLayout },
   name: 'MyPage',
   data() {
     return {
@@ -643,17 +642,6 @@ export default {
 </script>
 
 <style scoped>
-.mypage {
-  max-width: 1080px;
-  min-height: 100%;
-  padding: 32px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-}
-
-.page-head {
-  margin-bottom: 20px;
-}
-
 .mypage-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
@@ -661,7 +649,7 @@ export default {
     'profile settings'
     'posts settings'
     'danger danger';
-  gap: 20px;
+  gap: var(--sf-section-gap);
   align-items: start;
 }
 
@@ -974,10 +962,6 @@ export default {
 }
 
 @media (max-width: 600px) {
-  .mypage {
-    padding: 16px 12px 32px;
-  }
-
   .panel {
     padding: 20px 16px;
   }
