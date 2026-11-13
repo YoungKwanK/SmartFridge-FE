@@ -172,7 +172,7 @@ const steps = [
 .hero-desc {
   max-width: 32em;
   margin: 20px 0 32px;
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
   line-height: 1.7;
   color: var(--sf-text-sub);
 }
@@ -187,7 +187,7 @@ const steps = [
 
 .sample-title {
   margin: 0 0 4px;
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
   font-weight: 700;
   color: var(--sf-text);
 }
@@ -227,21 +227,21 @@ const steps = [
   height: 32px;
   border-radius: 50%;
   background: var(--sf-text);
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: #fff;
 }
 
 .step-title {
   margin: 16px 0 8px;
-  font-size: 19px;
+  font-size: var(--sf-fs-xl);
   font-weight: 700;
   color: var(--sf-text);
 }
 
 .step-desc {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.7;
   color: var(--sf-text-sub);
 }
@@ -266,7 +266,7 @@ const steps = [
 
 .feature-title {
   margin: 0 0 10px;
-  font-size: 21px;
+  font-size: var(--sf-fs-xl);
   font-weight: 700;
   color: var(--sf-text);
 }
@@ -274,7 +274,7 @@ const steps = [
 .feature-desc {
   max-width: 30em;
   margin: 0;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   line-height: 1.7;
   color: var(--sf-text-sub);
 }
@@ -296,7 +296,7 @@ const steps = [
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
 }
@@ -330,7 +330,7 @@ const steps = [
 }
 
 .groupbuy-title {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -339,7 +339,7 @@ const steps = [
 }
 
 .groupbuy-meta {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -347,7 +347,7 @@ const steps = [
   padding: 8px 14px;
   border-radius: var(--sf-radius-sm);
   background: var(--sf-cta);
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-cta-ink);
 }
@@ -371,7 +371,7 @@ const steps = [
 
 .closing-desc {
   margin: 12px 0 28px;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -393,7 +393,7 @@ const steps = [
   }
 
   .hero-desc {
-    font-size: 16px;
+    font-size: var(--sf-fs-md);
   }
 
   .hero-cta {

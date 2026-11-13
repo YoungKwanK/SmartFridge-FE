@@ -13,16 +13,16 @@
     </template>
 
     <!-- 게시판 고르기 -->
-    <div class="board-tabs" role="tablist" aria-label="게시판">
+    <div class="sf-tabs" role="tablist" aria-label="게시판">
       <button
         v-for="board in boardOptions"
         :key="board.value"
         type="button"
         role="tab"
-        class="board-tab"
+        class="sf-tab"
         :class="{ 'is-on': activeBoard === board.value }"
         :aria-selected="activeBoard === board.value"
-        @click="activeBoard !== board.value && onBoardChange(board.value)"
+        @click="activeBoard !== board.value && selectBoard(board.value)"
       >
         {{ board.label }}
       </button>
@@ -373,6 +373,14 @@ export default {
         'is-notice': post.categoryName === NOTICE_CATEGORY
       };
     },
+    // 게시판 탭을 누르면 주소(?board=)를 바꾼다. 실제 전환은 $route.query.board watch가 한다.
+    // 주소와 게시판이 늘 같아야 사이드바·하단 탭의 '공동구매'와 '커뮤니티' 선택 표시가 맞는다.
+    selectBoard(board) {
+      const query = { ...this.$route.query };
+      if (board === '전체') delete query.board;
+      else query.board = board;
+      this.$router.replace({ query });
+    },
     onBoardChange(newValue) {
       console.log('=== 카테고리 변경 이벤트 발생 ===');
       console.log('이전 값:', this.activeBoard);
@@ -422,40 +430,6 @@ export default {
 </script>
 
 <style scoped>
-/* 게시판 탭: 밑줄형 */
-.board-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--sf-line-strong);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.board-tab {
-  flex-shrink: 0;
-  height: 44px;
-  padding: 0 14px;
-  margin-bottom: -1px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--sf-text-sub);
-  cursor: pointer;
-}
-
-.board-tab:hover {
-  color: var(--sf-text);
-}
-
-.board-tab.is-on {
-  border-bottom-color: var(--sf-text);
-  color: var(--sf-text);
-  font-weight: 700;
-}
-
 .search-bar {
   padding: 16px 20px;
   border-bottom: 1px solid var(--sf-line);
@@ -472,7 +446,7 @@ export default {
 }
 
 .post-item.is-pinned {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .post-link {
@@ -524,7 +498,7 @@ export default {
 }
 
 .post-title {
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -538,7 +512,7 @@ export default {
   padding: 1px 6px;
   border-radius: 6px;
   background: var(--sf-mint-soft);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 700;
   color: var(--sf-primary);
   vertical-align: 2px;
@@ -547,7 +521,7 @@ export default {
 .post-meta {
   display: flex;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -562,7 +536,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -575,7 +549,7 @@ export default {
 }
 
 .page-text {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   white-space: nowrap;
 }

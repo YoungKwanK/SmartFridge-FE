@@ -102,7 +102,7 @@ export default {
 
 .form-desc {
   margin: 6px 0 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   color: var(--sf-text-sub);
 }

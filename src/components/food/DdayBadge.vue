@@ -1,7 +1,7 @@
 <template>
   <span
     class="dday-badge sf-num"
-    :class="`is-${status}`"
+    :class="[`is-${status}`, { 'is-today': isToday }]"
     :title="description"
   >
     <span aria-hidden="true">{{ label }}</span>
@@ -11,7 +11,7 @@
 
 <script setup>
 import { computed } from 'vue';
-import { freshnessStatus, ddayLabel, ddayDescription } from '@/utils/foodFreshness';
+import { freshnessStatus, ddayLabel, ddayDescription, daysLeft } from '@/utils/foodFreshness';
 
 const props = defineProps({
   expirationDateTime: { type: String, default: null }
@@ -20,6 +20,8 @@ const props = defineProps({
 const status = computed(() => freshnessStatus(props.expirationDateTime));
 const label = computed(() => ddayLabel(props.expirationDateTime));
 const description = computed(() => ddayDescription(props.expirationDateTime));
+// 임박 중에서도 오늘이 마지막 날인 식품
+const isToday = computed(() => status.value === 'soon' && daysLeft(props.expirationDateTime) <= 0);
 </script>
 
 <style scoped>
@@ -31,7 +33,7 @@ const description = computed(() => ddayDescription(props.expirationDateTime));
   height: 26px;
   padding: 0 8px;
   border-radius: var(--sf-radius-sm);
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -46,7 +48,13 @@ const description = computed(() => ddayDescription(props.expirationDateTime));
 
 .is-soon {
   background: var(--sf-soon);
-  color: #3D2D00;
+  color: var(--sf-soon-on);
+}
+
+/* 오늘까지: 같은 노랑 계열에서 한 단계 진하게 뒤집어 D-1·D-2보다 먼저 눈에 띄게 */
+.is-soon.is-today {
+  background: var(--sf-soon-ink);
+  color: var(--sf-soon-bg);
 }
 
 .is-expired {

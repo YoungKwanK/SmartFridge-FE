@@ -716,7 +716,7 @@ export default {
 
 .profile-name {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--sf-text);
@@ -734,7 +734,7 @@ export default {
   flex-wrap: wrap;
   gap: 4px 24px;
   margin: 8px 0 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
 }
 
 .profile-facts div {
@@ -765,13 +765,13 @@ export default {
 }
 
 .activity dt {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
 }
 
 .activity dd {
   margin: 4px 0 0;
-  font-size: 22px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 700;
   color: var(--sf-text);
 }
@@ -823,7 +823,7 @@ export default {
 }
 
 .post-title {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -834,7 +834,7 @@ export default {
 .post-meta {
   display: flex;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -842,7 +842,7 @@ export default {
   display: flex;
   gap: 12px;
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -854,7 +854,7 @@ export default {
 
 .empty-text {
   margin: 8px 0 16px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -891,13 +891,13 @@ export default {
 }
 
 .setting-title {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
 }
 
 .setting-desc {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   line-height: 1.5;
   color: var(--sf-text-faint);
 }
@@ -915,7 +915,7 @@ export default {
 
 .changes-text {
   flex: 1 1 100%;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-soon-ink);
 }
 
@@ -932,19 +932,19 @@ export default {
 
 .danger-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
 
 .danger-desc {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
 }
 
 .dialog-body {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   color: var(--sf-text-sub);
 }

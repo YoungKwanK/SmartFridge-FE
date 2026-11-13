@@ -379,7 +379,7 @@ async function refreshUnreadCounts() {
 
 .sidebar-title {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--sf-text);
@@ -456,7 +456,7 @@ async function refreshUnreadCounts() {
 }
 
 .room-name {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -466,7 +466,7 @@ async function refreshUnreadCounts() {
 
 .host-tag {
   margin-left: 4px;
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 600;
   color: var(--sf-text-faint);
 }
@@ -474,7 +474,7 @@ async function refreshUnreadCounts() {
 .room-meta {
   display: flex;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   white-space: nowrap;
   overflow: hidden;
@@ -496,7 +496,7 @@ async function refreshUnreadCounts() {
   padding: 0 7px;
   border-radius: 999px;
   background: var(--sf-expired);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 700;
   line-height: 22px;
   text-align: center;
@@ -515,7 +515,7 @@ async function refreshUnreadCounts() {
   align-items: center;
   gap: 8px;
   padding: 48px 16px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -526,7 +526,7 @@ async function refreshUnreadCounts() {
 .empty-hint {
   margin: 0;
   padding: 12px 20px 20px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   line-height: 1.6;
   color: var(--sf-text-faint);
 }

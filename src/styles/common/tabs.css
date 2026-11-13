@@ -1,0 +1,47 @@
+/*
+ * 한 화면 안에서 보기를 바꾸는 탭 (식품 목록의 공유·개인, 커뮤니티 게시판)
+ * 화면마다 모양이 달랐던 전환 UI를 밑줄 탭 하나로 맞춘다.
+ * 목록을 거르는 필터는 탭이 아니라 칩(동그란 버튼)으로 둔다.
+ */
+.sf-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--sf-line-strong);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sf-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sf-tab {
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: var(--sf-fs-md);
+  font-weight: 500;
+  color: var(--sf-text-sub);
+  cursor: pointer;
+}
+
+.sf-tab:hover {
+  color: var(--sf-text);
+}
+
+.sf-tab:focus-visible {
+  outline: 2px solid var(--sf-primary);
+  outline-offset: -2px;
+  border-radius: var(--sf-radius-sm) var(--sf-radius-sm) 0 0;
+}
+
+.sf-tab.is-on {
+  border-bottom-color: var(--sf-text);
+  color: var(--sf-text);
+  font-weight: 700;
+}

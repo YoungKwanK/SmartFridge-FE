@@ -1120,7 +1120,7 @@ onUnmounted(() => {
 }
 
 .member-row:not(.is-selected) .member-main:not(:disabled):hover {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .member-avatar {
@@ -1154,7 +1154,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
 }
@@ -1163,13 +1163,13 @@ onUnmounted(() => {
   padding: 1px 6px;
   border-radius: 6px;
   background: var(--sf-bg);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 600;
   color: var(--sf-text-sub);
 }
 
 .member-email {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1181,7 +1181,7 @@ onUnmounted(() => {
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--sf-expired);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 700;
   text-align: center;
   color: #fff;
@@ -1194,7 +1194,7 @@ onUnmounted(() => {
 
 .empty-hint {
   margin: 8px 20px 16px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -1219,7 +1219,7 @@ onUnmounted(() => {
   gap: 6px;
   padding: 24px;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -1250,7 +1250,7 @@ onUnmounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 8px 0 16px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -1264,7 +1264,7 @@ onUnmounted(() => {
   padding: 3px 12px;
   border-radius: 999px;
   background: var(--sf-surface);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-sub);
 }
 
@@ -1284,7 +1284,7 @@ onUnmounted(() => {
 
 .msg-sender {
   margin: 8px 4px 4px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 600;
   color: var(--sf-text-sub);
 }
@@ -1311,7 +1311,7 @@ onUnmounted(() => {
   margin: 0;
   padding: 9px 13px;
   border-radius: 16px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1332,7 +1332,7 @@ onUnmounted(() => {
 
 .msg-time {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-faint);
 }
 

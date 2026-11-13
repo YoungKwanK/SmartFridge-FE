@@ -854,7 +854,7 @@ onUnmounted(() => {
 .connection-status {
   display: flex;
   align-items: center;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
   padding: 0 8px 8px;
 }
@@ -959,7 +959,7 @@ onUnmounted(() => {
 
 /* 보낸 메시지 하단 시간 */
 .message-time-bottom-sent {
-  font-size: 0.65rem;
+  font-size: var(--sf-fs-xs);
   opacity: 0.7;
   font-weight: 500;
   letter-spacing: 0.025em;
@@ -976,22 +976,22 @@ onUnmounted(() => {
 
 /* 받은 메시지 상단 이름 */
 .sender-name-top {
-  font-size: 0.8rem;
+  font-size: var(--sf-fs-sm);
   opacity: 0.9;
   font-weight: 600;
   letter-spacing: 0.025em;
-  color: #5f6368;
+  color: var(--sf-text-sub);
   margin-bottom: 4px;
   align-self: flex-start;
 }
 
 /* 받은 메시지 하단 시간 */
 .message-time-bottom {
-  font-size: 0.65rem;
+  font-size: var(--sf-fs-xs);
   opacity: 0.7;
   font-weight: 500;
   letter-spacing: 0.025em;
-  color: #5f6368;
+  color: var(--sf-text-sub);
   background: rgba(95, 99, 104, 0.1);
   padding: 1px 6px;
   border-radius: 8px;
@@ -1017,10 +1017,10 @@ onUnmounted(() => {
 /* 받은 메시지 버블 스타일 */
 .received-message-layout .message-bubble { 
   background: var(--sf-surface);
-  color: #2c2c2c;
+  color: var(--sf-text);
   border-bottom-left-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8eaed;
+  border: 1px solid var(--sf-line);
 }
 
 .received-message-layout .message-bubble:hover {
@@ -1030,7 +1030,7 @@ onUnmounted(() => {
 
 /* 메시지 텍스트 스타일 */
 .message-text { 
-  font-size: 0.95rem; 
+  font-size: var(--sf-fs-md); 
   line-height: 1.5; 
   font-weight: 400;
   letter-spacing: 0.01em;
@@ -1045,13 +1045,13 @@ onUnmounted(() => {
 }
 
 .received-message-layout .message-text {
-  color: #2c2c2c;
+  color: var(--sf-text);
   font-weight: 400;
 }
 
 /* 메시지 시간 스타일 */
 .message-time { 
-  font-size: 0.65rem; 
+  font-size: var(--sf-fs-xs); 
   opacity: 0.7; 
   font-weight: 500;
   letter-spacing: 0.025em;
@@ -1153,7 +1153,7 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
   min-width: 20px;
-  background-color: #ff4444;
+  background-color: var(--sf-expired);
 }
 .image-preview-item .remove-image-btn .v-icon {
   font-size: 16px;
@@ -1211,7 +1211,7 @@ onUnmounted(() => {
 
 .date-text {
   padding: 0 16px;
-  font-size: 0.75rem;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-sub);
   background: var(--sf-surface);
   border-radius: 16px;
@@ -1254,7 +1254,7 @@ onUnmounted(() => {
 }
 
 .loading-text {
-  font-size: 1rem;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
   margin: 0;
   font-weight: 500;
@@ -1284,7 +1284,7 @@ onUnmounted(() => {
 }
 
 .load-more-text {
-  font-size: 0.9rem;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
   margin: 0;
   font-weight: 500;
@@ -1311,7 +1311,7 @@ onUnmounted(() => {
 }
 
 .no-more-text {
-  font-size: 0.85rem;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-faint);
   font-weight: 500;
   letter-spacing: 0.025em;
@@ -1344,15 +1344,15 @@ onUnmounted(() => {
 }
 
 .empty-chat-title {
-  font-size: 1.5rem;
+  font-size: var(--sf-fs-2xl);
   font-weight: 600;
-  color: #374151;
+  color: var(--sf-text);
   margin-bottom: 12px;
   line-height: 1.4;
 }
 
 .empty-chat-description {
-  font-size: 1rem;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
   line-height: 1.5;
   margin: 0;
@@ -1408,14 +1408,14 @@ onUnmounted(() => {
 
 .no-room-title {
   margin: 8px 0 0;
-  font-size: 17px;
+  font-size: var(--sf-fs-lg);
   font-weight: 700;
   color: var(--sf-text);
 }
 
 .no-room-desc {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 

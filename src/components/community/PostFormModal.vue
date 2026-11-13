@@ -607,7 +607,7 @@ export default {
 
 .field-hint {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   line-height: 1.5;
   color: var(--sf-text-faint);
 }
@@ -667,7 +667,7 @@ export default {
 
 .preview-label {
   margin: 0 0 10px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 600;
   color: var(--sf-text-faint);
 }
@@ -682,14 +682,14 @@ export default {
   margin: 0 0 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--sf-line);
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
   font-weight: 800;
   word-break: keep-all;
   color: var(--sf-text);
 }
 
 .preview-content {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
@@ -707,7 +707,7 @@ export default {
 
 .preview-empty {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-faint);
 }
 

@@ -94,7 +94,7 @@ const logout = () => store.dispatch('logout');
   padding: 2px 8px;
   border-radius: var(--sf-radius-sm);
   background: var(--sf-bg);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 700;
   color: var(--sf-text-sub);
 }
@@ -110,7 +110,7 @@ const logout = () => store.dispatch('logout');
   flex-shrink: 0;
   padding: 10px 14px 12px;
   border-bottom: 2px solid transparent;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 500;
   color: var(--sf-text-sub);
   text-decoration: none;

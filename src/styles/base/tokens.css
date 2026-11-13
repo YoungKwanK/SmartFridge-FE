@@ -27,7 +27,8 @@
   /* 상태 (의미 고정) */
   --sf-soon: #F5B400;
   --sf-soon-bg: #FFF4CC;
-  --sf-soon-ink: #6B4E00;
+  --sf-soon-ink: #6B4E00;   /* 오늘까지 배지 배경·노랑 위 진한 글자 */
+  --sf-soon-on: #3D2D00;    /* 노랑(--sf-soon) 배지 위 글자 */
   --sf-expired: #D93A3F;
   --sf-expired-bg: #FDECEC;
   --sf-expired-ink: #B4232A;
@@ -36,6 +37,16 @@
   /* 공동구매 행동 유도 */
   --sf-cta: #FF7A2F;
   --sf-cta-ink: #2A1200; /* 흰 글자는 주황 위에서 대비가 부족하다 */
+
+  /* 글자 크기: 이 8단계만 쓴다 (아이콘·이모지·아바타 글자는 예외) */
+  --sf-fs-xs: 12px;      /* 배지·작은 보조 정보 */
+  --sf-fs-sm: 13px;      /* 메타 정보·캡션 */
+  --sf-fs-md: 15px;      /* 본문·버튼·입력 */
+  --sf-fs-lg: 17px;      /* 카드·패널 제목 */
+  --sf-fs-xl: 20px;      /* 다이얼로그 제목 */
+  --sf-fs-2xl: 24px;     /* 큰 패널 제목·좁은 화면의 화면 제목 */
+  --sf-fs-3xl: 28px;     /* 화면 제목 */
+  --sf-fs-display: 40px; /* 대시보드 큰 숫자 */
 
   /* 모양 */
   --sf-radius-lg: 16px;  /* 큰 패널 */

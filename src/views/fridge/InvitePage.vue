@@ -108,20 +108,20 @@ export default {
 
 .invite-title {
   margin: 20px 0 0;
-  font-size: 20px;
+  font-size: var(--sf-fs-xl);
   font-weight: 800;
   color: var(--sf-text);
 }
 
 .invite-message {
   margin: 6px 0 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
 .invite-hint {
   margin: 4px 0 24px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 </style>

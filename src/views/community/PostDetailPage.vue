@@ -759,7 +759,7 @@ export default {
   align-items: center;
   gap: 8px;
   margin: 0 0 8px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-primary);
 }
@@ -768,13 +768,13 @@ export default {
   padding: 1px 6px;
   border-radius: 6px;
   background: var(--sf-bg);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   color: var(--sf-text-sub);
 }
 
 .post-title {
   margin: 0;
-  font-size: 26px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 800;
   line-height: 1.35;
   letter-spacing: -0.02em;
@@ -789,7 +789,7 @@ export default {
   margin-top: 12px;
   padding-bottom: 20px;
   border-bottom: 1px solid var(--sf-line);
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-faint);
 }
 
@@ -818,7 +818,7 @@ export default {
 
 .purchase-state {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 700;
   color: var(--sf-text-sub);
 }
@@ -829,12 +829,12 @@ export default {
 
 .purchase-count {
   margin: 2px 0 8px;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
 .purchase-count strong {
-  font-size: 22px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 800;
   color: var(--sf-text);
 }
@@ -859,7 +859,7 @@ export default {
   align-items: center;
   gap: 4px;
   margin-top: 10px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-primary);
   text-decoration: none;
@@ -874,7 +874,7 @@ export default {
 .post-body {
   max-width: 68ch;
   padding: 24px 0;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-word;
@@ -906,7 +906,7 @@ export default {
   border-radius: 999px;
   background: var(--sf-surface);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text-sub);
   cursor: pointer;
@@ -929,7 +929,7 @@ export default {
 
 .comments-title {
   margin: 0 0 8px;
-  font-size: 17px;
+  font-size: var(--sf-fs-lg);
   font-weight: 700;
   color: var(--sf-text);
 }
@@ -977,13 +977,13 @@ export default {
 }
 
 .comment-author {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
 
 .comment-date {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
 }
 
@@ -998,7 +998,7 @@ export default {
   border: none;
   background: none;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
   cursor: pointer;
 }
@@ -1015,7 +1015,7 @@ export default {
 
 .comment-body {
   margin: 4px 0 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1039,14 +1039,14 @@ export default {
   justify-content: center;
   gap: 12px;
   padding: 12px 0 0;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
 }
 
 .empty-text {
   margin: 8px 0 0;
   padding: 16px 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -1077,7 +1077,7 @@ export default {
   justify-content: center;
   gap: 12px;
   background: rgba(247, 248, 250, 0.8);
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -1092,7 +1092,7 @@ export default {
   }
 
   .post-title {
-    font-size: 22px;
+    font-size: var(--sf-fs-2xl);
   }
 
   .purchase {

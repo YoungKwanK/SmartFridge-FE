@@ -62,7 +62,7 @@ const status = computed(() => freshnessStatus(props.food.expirationDateTime));
 }
 
 .food-name {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -77,7 +77,7 @@ const status = computed(() => freshnessStatus(props.food.expirationDateTime));
 .food-meta {
   display: flex;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   min-width: 0;
   white-space: nowrap;
@@ -101,7 +101,7 @@ const status = computed(() => freshnessStatus(props.food.expirationDateTime));
 }
 
 .food-qty {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 </style>

@@ -493,7 +493,7 @@ const getNotificationColor = (type) => {
   border-radius: var(--sf-radius-sm);
   background: var(--sf-surface);
   border: 1px solid var(--sf-line);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 600;
   color: var(--sf-text-sub);
 }
@@ -550,7 +550,7 @@ const getNotificationColor = (type) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--sf-fs-xs);
   font-weight: 700;
   border: 2px solid var(--sf-surface);
   box-sizing: border-box;
@@ -567,20 +567,20 @@ const getNotificationColor = (type) => {
   justify-content: space-between;
   align-items: center;
   padding: 16px 24px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  background-color: var(--sf-bg);
+  border-bottom: 1px solid var(--sf-line);
 }
 
 .modal-title {
   display: flex;
   align-items: center;
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
   font-weight: 600;
-  color: #333;
+  color: var(--sf-text);
 }
 
 .close-btn {
-  color: #6c757d;
+  color: var(--sf-text-sub);
 }
 
 .modal-content {
@@ -597,7 +597,7 @@ const getNotificationColor = (type) => {
   display: flex;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--sf-line);
   cursor: pointer; /* 클릭 가능하도록 커서 변경 */
   transition: all 0.2s ease;
   border-radius: 8px;
@@ -606,7 +606,7 @@ const getNotificationColor = (type) => {
 }
 
 .notification-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--sf-bg);
   transform: translateX(4px);
 }
 
@@ -620,7 +620,7 @@ const getNotificationColor = (type) => {
 }
 
 .notification-item.unread:hover {
-  background-color: #e8f5e8;
+  background-color: var(--sf-mint-soft);
 }
 
 .notification-icon-wrapper {
@@ -644,19 +644,19 @@ const getNotificationColor = (type) => {
 }
 
 .notification-type {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
-  color: #495057;
+  color: var(--sf-text-sub);
 }
 
 .notification-time {
-  font-size: 12px;
-  color: #6c757d;
+  font-size: var(--sf-fs-xs);
+  color: var(--sf-text-sub);
 }
 
 .notification-content {
-  font-size: 14px;
-  color: #212529;
+  font-size: var(--sf-fs-md);
+  color: var(--sf-text);
   line-height: 1.4;
 }
 
@@ -672,13 +672,13 @@ const getNotificationColor = (type) => {
 
 .no-notifications-text {
   margin-top: 16px;
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
 }
 
 .modal-actions {
   padding: 16px 24px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #e9ecef;
+  background-color: var(--sf-bg);
+  border-top: 1px solid var(--sf-line);
 }
 
 .view-all-btn {
@@ -696,9 +696,9 @@ const getNotificationColor = (type) => {
 
   padding: 16px 24px;
 
-  background-color: #f8f9fa;
+  background-color: var(--sf-bg);
 
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--sf-line);
 
 }
 
@@ -710,11 +710,11 @@ const getNotificationColor = (type) => {
 
   align-items: center;
 
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
 
   font-weight: 600;
 
-  color: #333;
+  color: var(--sf-text);
 
 }
 
@@ -722,7 +722,7 @@ const getNotificationColor = (type) => {
 
 .close-btn {
 
-  color: #6c757d;
+  color: var(--sf-text-sub);
 
 }
 
@@ -756,7 +756,7 @@ const getNotificationColor = (type) => {
 
   padding: 12px 0;
 
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--sf-line);
 
   cursor: pointer; /* 클릭 가능하도록 커서 변경 */
   transition: all 0.2s ease;
@@ -766,7 +766,7 @@ const getNotificationColor = (type) => {
 }
 
 .notification-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--sf-bg);
   transform: translateX(4px);
 }
 
@@ -785,7 +785,7 @@ const getNotificationColor = (type) => {
 }
 
 .notification-item.unread:hover {
-  background-color: #e8f5e8;
+  background-color: var(--sf-mint-soft);
 }
 
 
@@ -831,11 +831,11 @@ const getNotificationColor = (type) => {
 
 .notification-type {
 
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
 
   font-weight: 600;
 
-  color: #495057;
+  color: var(--sf-text-sub);
 
 }
 
@@ -843,9 +843,9 @@ const getNotificationColor = (type) => {
 
 .notification-time {
 
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
 
-  color: #6c757d;
+  color: var(--sf-text-sub);
 
 }
 
@@ -853,9 +853,9 @@ const getNotificationColor = (type) => {
 
 .notification-content {
 
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
 
-  color: #212529;
+  color: var(--sf-text);
 
   line-height: 1.4;
 
@@ -882,7 +882,7 @@ const getNotificationColor = (type) => {
 
   margin-top: 16px;
 
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
 
 }
 
@@ -892,9 +892,9 @@ const getNotificationColor = (type) => {
 
   padding: 16px 24px;
 
-  background-color: #f8f9fa;
+  background-color: var(--sf-bg);
 
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--sf-line);
 
 }
 

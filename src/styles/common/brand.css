@@ -7,7 +7,7 @@
 }
 
 .sf-brand-name {
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--sf-primary);

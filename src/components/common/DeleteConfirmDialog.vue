@@ -49,14 +49,14 @@ export default {
 
 .confirm-title {
   margin: 0;
-  font-size: 19px;
+  font-size: var(--sf-fs-xl);
   font-weight: 800;
   color: var(--sf-text);
 }
 
 .confirm-message {
   margin: 8px 0 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   white-space: pre-line;
   color: var(--sf-text-sub);

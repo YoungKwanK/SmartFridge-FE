@@ -201,7 +201,7 @@
 }
 
 .fridge-name {
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
   font-weight: 700;
   color: var(--sf-text);
   overflow: hidden;
@@ -214,7 +214,7 @@
   padding: 2px 8px;
   border-radius: var(--sf-radius-sm);
   border: 1px solid var(--sf-line);
-  font-size: 12px;
+  font-size: var(--sf-fs-xs);
   font-weight: 600;
   color: var(--sf-text-sub);
 }
@@ -226,7 +226,7 @@
 }
 
 .fridge-desc {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -236,7 +236,7 @@
 .enter-label {
   display: inline-flex;
   align-items: center;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-primary);
 }
@@ -271,13 +271,13 @@
 
 .sf-empty-title {
   margin: 4px 0 0;
-  font-size: 18px;
+  font-size: var(--sf-fs-lg);
 }
 
 .empty-desc {
   max-width: 28em;
   margin: 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   color: var(--sf-text-sub);
 }
@@ -289,7 +289,7 @@
   }
 
   .sf-page-title {
-    font-size: 24px;
+    font-size: var(--sf-fs-2xl);
   }
 
   .fridge-enter {

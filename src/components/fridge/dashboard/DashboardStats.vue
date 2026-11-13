@@ -84,7 +84,7 @@ onMounted(() => {
 
 .stats-title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text-sub);
 }
@@ -97,7 +97,7 @@ onMounted(() => {
 }
 
 .total-number {
-  font-size: 40px;
+  font-size: var(--sf-fs-display);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -105,7 +105,7 @@ onMounted(() => {
 }
 
 .total-unit {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -149,13 +149,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
 }
 
 .stat dd {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--sf-fs-2xl);
   font-weight: 700;
   color: var(--sf-text);
 }

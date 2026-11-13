@@ -64,7 +64,7 @@ const steps = ['로그인 정보 확인', '계정 연결', '냉장고로 이동'
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 17px;
+  font-size: var(--sf-fs-lg);
   font-weight: 800;
   color: var(--sf-text);
   text-decoration: none;
@@ -90,7 +90,7 @@ const steps = ['로그인 정보 확인', '계정 연결', '냉장고로 이동'
 
 .auth-title {
   margin: 20px 0 0;
-  font-size: 20px;
+  font-size: var(--sf-fs-xl);
   font-weight: 800;
   color: var(--sf-text);
 }
@@ -98,7 +98,7 @@ const steps = ['로그인 정보 확인', '계정 연결', '냉장고로 이동'
 .auth-status {
   min-height: 1.5em;
   margin: 6px 0 0;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -117,7 +117,7 @@ const steps = ['로그인 정보 확인', '계정 연결', '냉장고로 이동'
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-faint);
 }
 

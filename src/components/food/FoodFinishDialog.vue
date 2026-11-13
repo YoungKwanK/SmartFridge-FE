@@ -84,7 +84,7 @@ export default {
 
 .finish-title {
   margin: 0;
-  font-size: 19px;
+  font-size: var(--sf-fs-xl);
   font-weight: 800;
   line-height: 1.4;
   word-break: keep-all;
@@ -93,7 +93,7 @@ export default {
 
 .finish-desc {
   margin: 6px 0 16px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   line-height: 1.6;
   color: var(--sf-text-sub);
 }
@@ -140,13 +140,13 @@ export default {
 }
 
 .option-title {
-  font-size: 16px;
+  font-size: var(--sf-fs-md);
   font-weight: 700;
   color: var(--sf-text);
 }
 
 .option-desc {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
 }
 

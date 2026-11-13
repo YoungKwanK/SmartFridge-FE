@@ -11,13 +11,13 @@
     </template>
 
     <!-- 공유 / 개인 전환 -->
-    <div class="segmented" role="tablist" aria-label="식품 종류">
+    <div class="sf-tabs" role="tablist" aria-label="식품 종류">
       <button
         v-for="option in viewOptions"
         :key="option.value"
         type="button"
         role="tab"
-        class="segment"
+        class="sf-tab"
         :class="{ 'is-on': isSharedView === option.value }"
         :aria-selected="isSharedView === option.value"
         @click="isSharedView !== option.value && onToggleChange()"
@@ -238,7 +238,7 @@ export default {
       const filters = [
         { label: '전체', value: 'ALL', tone: 'plain' },
         { label: '3일 이내', value: 'EXPIRES_IN_THREE_DAYS', tone: 'soon' },
-        { label: '오늘까지', value: 'EXPIRES_TODAY', tone: 'soon' },
+        { label: '오늘까지', value: 'EXPIRES_TODAY', tone: 'today' },
         { label: '만료', value: 'EXPIRED', tone: 'expired' }
       ];
       if (this.isManager) {
@@ -374,7 +374,7 @@ export default {
         } else {
           response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
           console.log('식품 등록 성공:', response.data);
-          snackbar.success(`식품 ${foodData.length}개가 성공적으로 등록되었습니다.`);
+          snackbar.success(`식품 ${foodData.length}개를 등록했어요.`);
         }
         await this.fetchFoodList();
       } catch (error) {
@@ -501,35 +501,6 @@ export default {
 </script>
 
 <style scoped>
-/* 공유 / 개인 전환 */
-.segmented {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: 4px;
-  border-radius: var(--sf-radius-md);
-  background: #ECEEF2;
-}
-
-.segment {
-  min-width: 96px;
-  height: 36px;
-  padding: 0 16px;
-  border: none;
-  border-radius: var(--sf-radius-sm);
-  background: transparent;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--sf-text-sub);
-  cursor: pointer;
-}
-
-.segment.is-on {
-  background: var(--sf-surface);
-  color: var(--sf-text);
-  box-shadow: 0 1px 3px rgba(34, 34, 34, 0.08);
-}
-
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -556,7 +527,7 @@ export default {
   border-radius: 999px;
   background: var(--sf-surface);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   font-weight: 500;
   color: var(--sf-text-sub);
   cursor: pointer;
@@ -580,6 +551,8 @@ export default {
 }
 
 .tone-soon .chip-dot { background: var(--sf-soon); }
+/* 오늘까지는 임박 중에서도 가장 급하니 노랑을 한 단계 진하게 */
+.tone-today .chip-dot { background: var(--sf-soon-ink); }
 .tone-expired .chip-dot { background: var(--sf-expired); }
 
 .search-row {
@@ -614,7 +587,7 @@ export default {
 
 .list-head {
   height: 40px;
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   font-weight: 500;
   color: var(--sf-text-faint);
   border-bottom: 1px solid var(--sf-line);
@@ -632,7 +605,7 @@ export default {
 }
 
 .food-item:hover {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .item-main {
@@ -668,7 +641,7 @@ export default {
 }
 
 .item-name {
-  font-size: 15px;
+  font-size: var(--sf-fs-md);
   font-weight: 600;
   color: var(--sf-text);
   overflow: hidden;
@@ -686,7 +659,7 @@ export default {
 }
 
 .item-meta {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -694,7 +667,7 @@ export default {
 }
 
 .col-qty {
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -705,7 +678,7 @@ export default {
 }
 
 .exp-date {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-sub);
   white-space: nowrap;
 }
@@ -714,7 +687,7 @@ export default {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 14px;
+  font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
 }
 
@@ -733,7 +706,7 @@ export default {
 }
 
 .page-text {
-  font-size: 13px;
+  font-size: var(--sf-fs-sm);
   color: var(--sf-text-faint);
   white-space: nowrap;
 }
