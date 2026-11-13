@@ -1,7 +1,10 @@
 <template>
   <div class="fridge-list-page">
     <header class="top-bar">
-      <span class="sf-brand-name">SmartFridge</span>
+      <span class="sf-brand">
+        <img :src="logoUrl" alt="" class="sf-brand-logo" />
+        <span class="sf-brand-name">SmartFridge</span>
+      </span>
       <v-btn variant="text" size="small" prepend-icon="mdi-logout" @click="doLogout">로그아웃</v-btn>
     </header>
 
@@ -312,6 +315,7 @@
 
 
 <script>
+import logoUrl from '@/assets/images/SFlogo/smartFridge_logo.png';
 import axios from 'axios';
 import FridgeFormModal from '@/components/fridge/FridgeFormModal.vue';
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue';
@@ -324,6 +328,7 @@ export default {
   },
   data() {
     return {
+      logoUrl,
       fridgeList: [],
       isFormModalOpen: false,
       showDeleteDialog: false,
