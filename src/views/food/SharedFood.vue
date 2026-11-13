@@ -11,13 +11,13 @@
     </template>
 
     <!-- 공유 / 개인 전환 -->
-    <div class="segmented" role="tablist" aria-label="식품 종류">
+    <div class="sf-tabs" role="tablist" aria-label="식품 종류">
       <button
         v-for="option in viewOptions"
         :key="option.value"
         type="button"
         role="tab"
-        class="segment"
+        class="sf-tab"
         :class="{ 'is-on': isSharedView === option.value }"
         :aria-selected="isSharedView === option.value"
         @click="isSharedView !== option.value && onToggleChange()"
@@ -501,35 +501,6 @@ export default {
 </script>
 
 <style scoped>
-/* 공유 / 개인 전환 */
-.segmented {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: 4px;
-  border-radius: var(--sf-radius-md);
-  background: var(--sf-line);
-}
-
-.segment {
-  min-width: 96px;
-  height: 36px;
-  padding: 0 16px;
-  border: none;
-  border-radius: var(--sf-radius-sm);
-  background: transparent;
-  font: inherit;
-  font-size: var(--sf-fs-md);
-  font-weight: 600;
-  color: var(--sf-text-sub);
-  cursor: pointer;
-}
-
-.segment.is-on {
-  background: var(--sf-surface);
-  color: var(--sf-text);
-  box-shadow: 0 1px 3px rgba(34, 34, 34, 0.08);
-}
-
 .filter-bar {
   display: flex;
   flex-wrap: wrap;

@@ -13,13 +13,13 @@
     </template>
 
     <!-- 게시판 고르기 -->
-    <div class="board-tabs" role="tablist" aria-label="게시판">
+    <div class="sf-tabs" role="tablist" aria-label="게시판">
       <button
         v-for="board in boardOptions"
         :key="board.value"
         type="button"
         role="tab"
-        class="board-tab"
+        class="sf-tab"
         :class="{ 'is-on': activeBoard === board.value }"
         :aria-selected="activeBoard === board.value"
         @click="activeBoard !== board.value && selectBoard(board.value)"
@@ -430,40 +430,6 @@ export default {
 </script>
 
 <style scoped>
-/* 게시판 탭: 밑줄형 */
-.board-tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--sf-line-strong);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.board-tab {
-  flex-shrink: 0;
-  height: 44px;
-  padding: 0 14px;
-  margin-bottom: -1px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: var(--sf-fs-md);
-  font-weight: 500;
-  color: var(--sf-text-sub);
-  cursor: pointer;
-}
-
-.board-tab:hover {
-  color: var(--sf-text);
-}
-
-.board-tab.is-on {
-  border-bottom-color: var(--sf-text);
-  color: var(--sf-text);
-  font-weight: 700;
-}
-
 .search-bar {
   padding: 16px 20px;
   border-bottom: 1px solid var(--sf-line);
