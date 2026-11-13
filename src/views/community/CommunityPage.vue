@@ -22,7 +22,7 @@
         class="board-tab"
         :class="{ 'is-on': activeBoard === board.value }"
         :aria-selected="activeBoard === board.value"
-        @click="activeBoard !== board.value && onBoardChange(board.value)"
+        @click="activeBoard !== board.value && selectBoard(board.value)"
       >
         {{ board.label }}
       </button>
@@ -372,6 +372,14 @@ export default {
         'is-groupbuy': post.categoryName === PURCHASE_CATEGORY,
         'is-notice': post.categoryName === NOTICE_CATEGORY
       };
+    },
+    // 게시판 탭을 누르면 주소(?board=)를 바꾼다. 실제 전환은 $route.query.board watch가 한다.
+    // 주소와 게시판이 늘 같아야 사이드바·하단 탭의 '공동구매'와 '커뮤니티' 선택 표시가 맞는다.
+    selectBoard(board) {
+      const query = { ...this.$route.query };
+      if (board === '전체') delete query.board;
+      else query.board = board;
+      this.$router.replace({ query });
     },
     onBoardChange(newValue) {
       console.log('=== 카테고리 변경 이벤트 발생 ===');

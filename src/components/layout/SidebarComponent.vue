@@ -38,10 +38,11 @@
     <v-list v-model:selected="selectedItem" density="compact" nav class="sidebar-nav" aria-label="메뉴">
       <template v-for="item in menuItems" :key="item.value">
         <v-list-item
-          v-if="item.title !== '유저관리' || userType === 'MANAGER'"
+          v-if="item.value !== 'usermanagement' || userType === 'MANAGER'"
           :title="item.title"
           :value="item.value"
           :to="item.to"
+          :active="selectedItem[0] === item.value"
           class="nav-link"
           rounded="lg"
         >
@@ -123,7 +124,12 @@ const selectedItem = ref(['dashboard']);
 
 
 // 라우트 경로를 사이드바 value로 매핑하는 함수
-const getSidebarValueFromRoute = (path) => {
+const getSidebarValueFromRoute = (path, query = {}) => {
+  // 공동구매 게시판은 커뮤니티와 같은 화면이지만 메뉴는 따로 둔다 (모바일 하단 탭과 같게)
+  if (path.startsWith('/fridge/community') && query.board === '공동구매') {
+    return 'groupbuy';
+  }
+
   const routeMapping = {
     '/fridge/dashboard': 'dashboard',
     '/fridge/food/shared': 'sharedfoodlist',
@@ -155,7 +161,7 @@ const getSidebarValueFromRoute = (path) => {
 
 // 현재 라우트에 따라 selectedItem 업데이트
 const updateSelectedItem = () => {
-  const currentValue = getSidebarValueFromRoute(route.path);
+  const currentValue = getSidebarValueFromRoute(route.path, route.query);
   selectedItem.value = [currentValue];
 };
 
@@ -169,7 +175,7 @@ watch(isMobile, (mobile) => {
 });
 
 // 라우트 변경 감지
-watch(() => route.path, () => {
+watch(() => route.fullPath, () => {
   updateSelectedItem();
   // 모바일에서 메뉴를 고르면 드로어를 닫는다
   if (isMobile.value) {
@@ -394,31 +400,26 @@ const menuItems = computed(() => {
   
 
   
+  // 메뉴 이름은 각 화면 제목과 같게 둔다
   const baseMenuItems = [
-    { 
-      title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', color: 'blue-darken-1', 
-      to: "/fridge/dashboard"
-    },
-    { title: '식품목록', icon: 'mdi-food-fork-drink', value: 'sharedfoodlist', color: 'green-darken-2', to: "/fridge/food/shared", badgeCount: 0 },
-    
-    { title: '알림목록', icon: 'mdi-bell-outline', value: 'notifications', color: 'orange-darken-2', to: '/notification/list'},
-    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', color: 'purple-darken-1', to: "/fridge/community" },
-    { 
-      title: '채팅', icon: 'mdi-chat-outline', value: 'chat', color: 'teal-darken-1', to: "/chatpage",  
-      badgeCount: finalChatBadgeCount
-    },
-    { title: '마이페이지', icon: 'mdi-account', value: 'mypage', color: 'indigo-darken-1', to: "/mypage" },
-    { 
-      title: '문의하기', icon: 'mdi-email-outline', value: 'inquiry', color: 'cyan-darken-1', 
-      to: "/inquiry", 
+    { title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', to: '/fridge/dashboard' },
+    { title: '식품 목록', icon: 'mdi-food-fork-drink', value: 'sharedfoodlist', to: '/fridge/food/shared', badgeCount: 0 },
+    { title: '알림', icon: 'mdi-bell-outline', value: 'notifications', to: '/notification/list' },
+    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', to: '/fridge/community' },
+    { title: '공동구매', icon: 'mdi-cart-outline', value: 'groupbuy', to: { path: '/fridge/community', query: { board: '공동구매' } } },
+    { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', to: '/chatpage', badgeCount: finalChatBadgeCount },
+    { title: '내 정보', icon: 'mdi-account', value: 'mypage', to: '/mypage' },
+    {
+      title: '문의하기', icon: 'mdi-email-outline', value: 'inquiry',
+      to: '/inquiry',
       badgeCount: inquiryBadgeCount > 0 ? 1 : 0
     }
   ];
 
-  // 관리자(MANAGER)인 경우에만 유저관리 탭 추가
+  // 관리자(MANAGER)인 경우에만 멤버 관리 메뉴 추가
   if (isManager) {
     baseMenuItems.splice(-1, 0, {
-      title: '유저관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', color: 'red-darken-2', to: "/fridge/member/list",
+      title: '멤버 관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', to: '/fridge/member/list',
       badgeCount: userManagementBadgeCount
     });
   }
