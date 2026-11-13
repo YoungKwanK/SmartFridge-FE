@@ -83,7 +83,7 @@
       </section>
 
       <!-- 1:1 대화 -->
-      <section class="panel chat-panel" aria-label="1:1 대화">
+      <section ref="chatPanelRef" class="panel chat-panel" aria-label="1:1 대화">
         <header class="chat-head">
           <h2 class="sf-panel-title">{{ selectedUser ? `${selectedUser.name}님과 대화` : '1:1 대화' }}</h2>
         </header>
@@ -91,7 +91,7 @@
         <div v-if="!selectedUser" class="chat-empty">
           <v-icon size="40" color="medium-emphasis" aria-hidden="true">mdi-message-outline</v-icon>
           <p class="sf-empty-title">대화할 멤버를 고르세요</p>
-          <p>왼쪽 목록에서 멤버를 누르면 여기서 바로 메시지를 주고받을 수 있어요.</p>
+          <p>멤버 목록에서 멤버를 누르면 여기서 바로 메시지를 주고받을 수 있어요.</p>
         </div>
 
         <div v-else class="chat-body">
@@ -614,9 +614,16 @@ const shouldShowDateSeparator = (currentMessage, previousMessage) => {
   return currentDate !== previousDate;
 };
 
+const chatPanelRef = ref(null);
+
 const selectUser = (user) => {
   if (user.role !== "MANAGER") {
     selectedUser.value = user;
+    // 좁은 화면에서는 대화창이 목록 아래에 있으니 고른 뒤 대화창으로 내려 준다
+    // 아래 @media (max-width: 960px)에서 한 단으로 바뀌는 기준과 맞춘다
+    if (window.matchMedia("(max-width: 960px)").matches) {
+      nextTick(() => chatPanelRef.value?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
   }
 };
 
@@ -1426,6 +1433,9 @@ onUnmounted(() => {
 
   .chat-panel {
     height: 70vh;
+    height: 70dvh;
+    /* 상단 앱 바에 머리말이 가리지 않게 */
+    scroll-margin-top: calc(var(--v-layout-top, 0px) + 12px);
   }
 }
 
