@@ -530,4 +530,4 @@ export default {
 }
 </script>
 
-<style scoped src="@/styles/admin.css"></style>
+<style scoped src="@/styles/pages/admin.css"></style>

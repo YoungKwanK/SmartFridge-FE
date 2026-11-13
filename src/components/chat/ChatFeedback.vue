@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { feedbackState, closeConfirm } from './chatFeedback';
+import { feedbackState, closeConfirm } from '@/composables/chatFeedback';
 </script>
 
 <style scoped>
