@@ -83,12 +83,19 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
   height: calc(100vh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  /* 모바일 브라우저는 주소창이 접히고 펴질 때 100vh가 실제 보이는 높이보다 커서 입력창이 가려진다 */
+  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
   overflow: hidden;
   background: var(--sf-bg);
 }
 
 .chat-page.is-compact {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* 한 단일 때는 목록이 화면 전체라 오른쪽 구분선이 화면 끝에 붙어 보인다 */
+.chat-page.is-compact :deep(.chat-sidebar) {
+  border-right: 0;
 }
 
 .chat-list-col,
