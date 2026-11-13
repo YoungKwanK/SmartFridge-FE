@@ -374,7 +374,7 @@ export default {
         } else {
           response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/register`, foodData);
           console.log('식품 등록 성공:', response.data);
-          snackbar.success(`식품 ${foodData.length}개가 성공적으로 등록되었습니다.`);
+          snackbar.success(`식품 ${foodData.length}개를 등록했어요.`);
         }
         await this.fetchFoodList();
       } catch (error) {

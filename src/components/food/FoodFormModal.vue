@@ -372,7 +372,7 @@ export default {
     getSaveButtonText() {
       if (this.isEditMode) return '수정 완료';
       if (this.pendingFoods.length > 0) return `${this.totalCount}개 등록`;
-      return '등록 완료';
+      return '식품 등록';
     },
     formatShortDate(date) {
       const [, month, day] = date.split('-');
