@@ -27,7 +27,8 @@
   /* 상태 (의미 고정) */
   --sf-soon: #F5B400;
   --sf-soon-bg: #FFF4CC;
-  --sf-soon-ink: #6B4E00;
+  --sf-soon-ink: #6B4E00;   /* 오늘까지 배지 배경·노랑 위 진한 글자 */
+  --sf-soon-on: #3D2D00;    /* 노랑(--sf-soon) 배지 위 글자 */
   --sf-expired: #D93A3F;
   --sf-expired-bg: #FDECEC;
   --sf-expired-ink: #B4232A;

@@ -238,7 +238,7 @@ export default {
       const filters = [
         { label: '전체', value: 'ALL', tone: 'plain' },
         { label: '3일 이내', value: 'EXPIRES_IN_THREE_DAYS', tone: 'soon' },
-        { label: '오늘까지', value: 'EXPIRES_TODAY', tone: 'soon' },
+        { label: '오늘까지', value: 'EXPIRES_TODAY', tone: 'today' },
         { label: '만료', value: 'EXPIRED', tone: 'expired' }
       ];
       if (this.isManager) {
@@ -551,6 +551,8 @@ export default {
 }
 
 .tone-soon .chip-dot { background: var(--sf-soon); }
+/* 오늘까지는 임박 중에서도 가장 급하니 노랑을 한 단계 진하게 */
+.tone-today .chip-dot { background: var(--sf-soon-ink); }
 .tone-expired .chip-dot { background: var(--sf-expired); }
 
 .search-row {

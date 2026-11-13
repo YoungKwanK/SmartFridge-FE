@@ -528,7 +528,7 @@ onBeforeUnmount(() => {
   border-radius: 6px;
   background: var(--sf-soon);
   font-weight: 700;
-  color: #3D2D00;
+  color: var(--sf-soon-on);
 }
 
 .noti-message {
