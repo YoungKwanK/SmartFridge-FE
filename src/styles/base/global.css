@@ -1,0 +1,33 @@
+/* 앱 전역 기본 스타일 (글꼴·포커스·숫자 정렬) */
+html,
+body,
+.v-application {
+  font-family: var(--sf-font);
+  color: var(--sf-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Vuetify 타이포 클래스도 Pretendard로 통일 */
+.v-application [class*='text-h'],
+.v-application [class*='text-body'],
+.v-application [class*='text-subtitle'],
+.v-application .v-btn,
+.v-application .v-chip {
+  font-family: var(--sf-font) !important;
+}
+
+.v-application .v-btn {
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 600;
+}
+
+/* 숫자(D-day, 수량, 통계)는 폭을 맞춰 세로로 정렬되게 */
+.sf-num {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--sf-primary);
+  outline-offset: 2px;
+}

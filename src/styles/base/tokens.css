@@ -1,0 +1,45 @@
+/*
+ * SmartFridge 디자인 토큰
+ * 원칙: 화면은 흰색·연회색으로 비우고, 색은 상태를 알릴 때만 쓴다.
+ *  - 임박(D-3 이내) = 노랑, 만료 = 빨강, 신선 = 색 없음(회색 글자)
+ *  - 주황은 공동구매 참여 버튼에만 쓴다.
+ */
+:root {
+  --sf-font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+
+  /* 브랜드 */
+  --sf-mint: #2DBE8C;       /* 넓은 면·장식 (흰 글자 금지) */
+  --sf-mint-soft: #E7F7F0;  /* 선택된 메뉴 배경 등 */
+  --sf-primary: #13865F;    /* 버튼 배경·링크 글자 (흰 배경 대비 4.5:1 이상) */
+  --sf-primary-hover: #0F7351;
+
+  /* 면 */
+  --sf-bg: #F7F8FA;
+  --sf-surface: #FFFFFF;
+  --sf-line: #E8EBEF;
+  --sf-line-strong: #D9DDE3;
+
+  /* 글자 */
+  --sf-text: #222222;
+  --sf-text-sub: #666666;
+  --sf-text-faint: #6E737B;
+
+  /* 상태 (의미 고정) */
+  --sf-soon: #F5B400;
+  --sf-soon-bg: #FFF4CC;
+  --sf-soon-ink: #6B4E00;
+  --sf-expired: #D93A3F;
+  --sf-expired-bg: #FDECEC;
+  --sf-expired-ink: #B4232A;
+  --sf-fresh-bar: #BFE9D7;  /* 비율 막대에서만 쓰는 신선 구간 */
+
+  /* 공동구매 행동 유도 */
+  --sf-cta: #FF7A2F;
+  --sf-cta-ink: #2A1200; /* 흰 글자는 주황 위에서 대비가 부족하다 */
+
+  /* 모양 */
+  --sf-radius-lg: 16px;  /* 큰 패널 */
+  --sf-radius-md: 12px;  /* 카드·입력 */
+  --sf-radius-sm: 8px;   /* 뱃지·작은 버튼 */
+  --sf-shadow: 0 1px 2px rgba(34, 34, 34, 0.04), 0 4px 16px rgba(34, 34, 34, 0.05);
+}

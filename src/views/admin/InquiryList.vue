@@ -154,6 +154,7 @@
 
 <script>
 import axios from 'axios';
+import { snackbar } from '@/composables/snackbar';
 
 export default {
   name: 'InquiryList',
@@ -215,10 +216,7 @@ export default {
       } catch (error) {
         console.error('문의 목록 로드 실패:', error);
         console.error('Error details:', error.response?.data);
-        this.$store.dispatch('showSnackbar', {
-          message: '문의 목록 로드에 실패했습니다.',
-          color: 'error'
-        });
+        snackbar.show('문의 목록 로드에 실패했습니다.', 'error');
       } finally {
         this.loading = false;
       }
@@ -332,17 +330,11 @@ export default {
           this.filterInquiries();
           this.closeModal();
           
-          this.$store.dispatch('showSnackbar', {
-            message: '답변이 성공적으로 등록되었습니다.',
-            color: 'success'
-          });
+          snackbar.show('답변이 성공적으로 등록되었습니다.', 'success');
         }
       } catch (error) {
         console.error('답변 등록 실패:', error);
-        this.$store.dispatch('showSnackbar', {
-          message: '답변 등록에 실패했습니다.',
-          color: 'error'
-        });
+        snackbar.show('답변 등록에 실패했습니다.', 'error');
       }
     },
     
@@ -397,17 +389,11 @@ export default {
           this.filterInquiries();
           this.cancelEditReply();
           
-          this.$store.dispatch('showSnackbar', {
-            message: '답변이 성공적으로 수정되었습니다.',
-            color: 'success'
-          });
+          snackbar.show('답변이 성공적으로 수정되었습니다.', 'success');
         }
       } catch (error) {
         console.error('답변 수정 실패:', error);
-        this.$store.dispatch('showSnackbar', {
-          message: '답변 수정에 실패했습니다.',
-          color: 'error'
-        });
+        snackbar.show('답변 수정에 실패했습니다.', 'error');
       }
     },
     
@@ -512,22 +498,16 @@ export default {
           
           this.filterInquiries();
           
-          this.$store.dispatch('showSnackbar', {
-            message: '상태가 성공적으로 변경되었습니다.',
-            color: 'success'
-          });
+          snackbar.show('상태가 성공적으로 변경되었습니다.', 'success');
         }
       } catch (error) {
         console.error('상태 변경 실패:', error);
         inquiry.newStatus = ''; // 실패 시 선택 초기화
-        this.$store.dispatch('showSnackbar', {
-          message: '상태 변경에 실패했습니다.',
-          color: 'error'
-        });
+        snackbar.show('상태 변경에 실패했습니다.', 'error');
       }
     }
   }
 }
 </script>
 
-<style scoped src="@/styles/admin.css"></style>
+<style scoped src="@/styles/pages/admin.css"></style>

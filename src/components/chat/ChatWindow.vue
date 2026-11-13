@@ -235,7 +235,7 @@ import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
 import ImageModal from './ImageModal.vue';
 import ParticipantsModal from './ParticipantsModal.vue';
-import { notify, notifyError, confirmAction } from './chatFeedback';
+import { notify, notifyError, confirmAction } from '@/composables/chatFeedback';
 
 const props = defineProps({
   selectedRoom: { type: Object, default: null },

@@ -103,7 +103,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import RoomInfoModal from './RoomInfoModal.vue';
-import { notify, notifyError, confirmAction } from './chatFeedback';
+import { notify, notifyError, confirmAction } from '@/composables/chatFeedback';
 import axios from 'axios';
 import { getErrorMessage, getFridgeId, getResultData } from '@/utils/commonDataHandler';
 import { useStore } from 'vuex';

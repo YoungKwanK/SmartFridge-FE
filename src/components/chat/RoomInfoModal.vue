@@ -104,7 +104,7 @@
 import { ref, watch, computed } from 'vue';
 import axios from 'axios';
 import { getResultData } from '@/utils/commonDataHandler';
-import { notify, notifyError } from './chatFeedback';
+import { notify, notifyError } from '@/composables/chatFeedback';
 
 // [수정] props: room 객체 대신 roomId를 받도록 변경
 const props = defineProps({

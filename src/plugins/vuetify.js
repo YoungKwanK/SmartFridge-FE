@@ -1,10 +1,8 @@
 import 'vuetify/styles'
-import '@/styles/vuetify-v3-compat.css'
-import '@/styles/tokens.css'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 
-// 색 값은 src/styles/tokens.css 와 같게 유지한다
+// 색 값은 src/styles/base/tokens.css 와 같게 유지한다
 const fresh = {
   dark: false,
   colors: {

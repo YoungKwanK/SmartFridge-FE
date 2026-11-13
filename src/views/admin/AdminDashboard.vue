@@ -37,6 +37,7 @@
 
 <script>
 import axios from 'axios';
+import { snackbar } from '@/composables/snackbar';
 
 export default {
   name: 'AdminDashboard',
@@ -73,10 +74,7 @@ export default {
         }
       } catch (error) {
         console.error('대시보드 데이터 로드 실패:', error);
-        this.$store.dispatch('showSnackbar', {
-          message: '대시보드 데이터 로드에 실패했습니다.',
-          color: 'error'
-        });
+        snackbar.show('대시보드 데이터 로드에 실패했습니다.', 'error');
       } finally {
         this.loading = false;
       }
@@ -131,4 +129,4 @@ export default {
 }
 </script>
 
-<style scoped src="@/styles/admin.css"></style>
+<style scoped src="@/styles/pages/admin.css"></style>

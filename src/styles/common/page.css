@@ -1,0 +1,71 @@
+/*
+ * 화면 공통 레이아웃
+ * 여러 화면이 같은 모양으로 쓰는 페이지 머리말·목록 패널·빈 상태.
+ * 화면마다 다른 값은 각 화면의 <style scoped>에서 같은 클래스로 덮어쓴다.
+ */
+
+/* 페이지 머리말: 왼쪽 제목·설명, 오른쪽 버튼 */
+.sf-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.sf-page-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-text);
+}
+
+.sf-page-desc {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--sf-text-sub);
+}
+
+/* 흰 카드 형태의 목록 패널 */
+.sf-list-panel {
+  background: var(--sf-surface);
+  border-radius: var(--sf-radius-lg);
+  box-shadow: var(--sf-shadow);
+  overflow: hidden;
+}
+
+.sf-panel-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+/* 불러오는 중 · 비어 있음 · 오류 안내 */
+.sf-state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 56px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--sf-text-sub);
+}
+
+.sf-state-box p {
+  margin: 0;
+}
+
+.sf-empty-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+@media (max-width: 600px) {
+  .sf-page-title {
+    font-size: 22px;
+  }
+}

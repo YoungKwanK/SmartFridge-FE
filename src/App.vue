@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <SidebarComponent v-if="!isLoginPage"/>
+    <SidebarComponent v-if="!hideSidebar"/>
     <v-main>
       <router-view/>
     </v-main>
@@ -9,8 +9,8 @@
 </template>
 
 <script>
-import SidebarComponent from './components/common/SidebarComponent.vue'
-import CommonSnackbar from './components/common/CommonSnackbar.vue'
+import SidebarComponent from '@/components/layout/SidebarComponent.vue'
+import CommonSnackbar from '@/components/layout/CommonSnackbar.vue'
 import { useStore } from 'vuex';
 import { onMounted, onUnmounted, watch } from 'vue';
 
@@ -21,24 +21,10 @@ export default {
     CommonSnackbar
   },
   computed: {
-    isLoginPage() {
-      // 로그인 관련 페이지들, NoFridgePage, FridgeList, 관리자 페이지에서는 사이드바를 숨김
-      const hideSidebarRoutes = [
-        '/', 
-        '/login', 
-        '/admin/login',
-        '/no-fridge', 
-        '/fridge/list', 
-        '/dashboard',
-        '/oauth/google/redirect', 
-        '/oauth/kakao/redirect', 
-        '/oauth/naver/redirect',
-        '/admin',
-        '/admin/inquiry',
-        '/admin/notification',
-        '/admin/users'
-      ];
-      return hideSidebarRoutes.includes(this.$route.path) || this.$route.path.startsWith('/invite/');
+    hideSidebar() {
+      // 사이드바를 숨길 화면은 라우트의 meta.hideSidebar 로 지정한다 (src/router/routes/*)
+      // 첫 진입 시 라우트가 아직 정해지지 않았으면(matched 비어 있음) 숨겨 둔다
+      return this.$route.matched.length === 0 || Boolean(this.$route.meta.hideSidebar);
     }
   },
   setup() {
@@ -77,5 +63,3 @@ export default {
 }
 </script>
 
-<style>
-</style>

@@ -1,0 +1,13 @@
+/*
+ * 전역 스타일 진입점 (main.js에서 한 번만 불러온다)
+ *  base/   : 디자인 토큰, Vuetify 리셋 보정, html·body 기본값
+ *  common/ : 여러 화면이 함께 쓰는 sf-* 클래스
+ *  pages/  : 특정 화면 묶음 전용 (각 화면에서 <style scoped src>로 불러 씀, 여기서 import 하지 않음)
+ */
+@import './base/tokens.css';
+@import './base/vuetify-compat.css';
+@import './base/global.css';
+
+@import './common/page.css';
+@import './common/form.css';
+@import './common/brand.css';
