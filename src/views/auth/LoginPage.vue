@@ -1,8 +1,8 @@
 <template>
   <div class="login-page">
     <header class="brand">
-      <img src="@/assets/images/SFlogo/smartFridge_logo.png" alt="" class="brand-logo" />
-      <span class="brand-name">SmartFridge</span>
+      <img src="@/assets/images/SFlogo/smartFridge_logo.png" alt="" class="sf-brand-logo" />
+      <span class="sf-brand-name">SmartFridge</span>
     </header>
 
     <main class="login-layout">
@@ -323,19 +323,6 @@ export default {
   gap: 8px;
   max-width: 1120px;
   margin: 0 auto;
-}
-
-.brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-}
-
-.brand-name {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-primary);
 }
 
 .login-layout {

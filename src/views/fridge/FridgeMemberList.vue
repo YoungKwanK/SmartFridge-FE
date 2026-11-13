@@ -1,15 +1,15 @@
 <template>
   <div class="members-page">
     <header class="page-head">
-      <h1 class="page-title">멤버 관리</h1>
-      <p class="page-desc">멤버에게 1:1로 메시지를 보내고, 관리자 권한을 넘기거나 내보낼 수 있어요.</p>
+      <h1 class="sf-page-title">멤버 관리</h1>
+      <p class="sf-page-desc">멤버에게 1:1로 메시지를 보내고, 관리자 권한을 넘기거나 내보낼 수 있어요.</p>
     </header>
 
     <div class="members-grid">
       <!-- 멤버 목록 -->
       <section class="panel member-panel" aria-labelledby="member-list-title">
         <header class="panel-head">
-          <h2 id="member-list-title" class="panel-title">
+          <h2 id="member-list-title" class="sf-panel-title">
             멤버 <span class="count sf-num">{{ filteredUsers.length }}</span>
           </h2>
         </header>
@@ -85,12 +85,12 @@
       <!-- 1:1 대화 -->
       <section class="panel chat-panel" aria-label="1:1 대화">
         <header class="chat-head">
-          <h2 class="panel-title">{{ selectedUser ? `${selectedUser.name}님과 대화` : '1:1 대화' }}</h2>
+          <h2 class="sf-panel-title">{{ selectedUser ? `${selectedUser.name}님과 대화` : '1:1 대화' }}</h2>
         </header>
 
         <div v-if="!selectedUser" class="chat-empty">
           <v-icon size="40" color="medium-emphasis" aria-hidden="true">mdi-message-outline</v-icon>
-          <p class="empty-title">대화할 멤버를 고르세요</p>
+          <p class="sf-empty-title">대화할 멤버를 고르세요</p>
           <p>왼쪽 목록에서 멤버를 누르면 여기서 바로 메시지를 주고받을 수 있어요.</p>
         </div>
 
@@ -1041,18 +1041,8 @@ onUnmounted(() => {
   margin-bottom: 20px;
 }
 
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
-}
-
-.page-desc {
+.sf-page-desc {
   margin: 4px 0 0;
-  font-size: 15px;
-  color: var(--sf-text-sub);
 }
 
 .members-grid {
@@ -1069,13 +1059,6 @@ onUnmounted(() => {
   border-radius: var(--sf-radius-lg);
   background: var(--sf-surface);
   box-shadow: var(--sf-shadow);
-}
-
-.panel-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 .count {
@@ -1251,11 +1234,8 @@ onUnmounted(() => {
   margin: 0;
 }
 
-.empty-title {
+.sf-empty-title {
   margin-top: 8px !important;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 .chat-body {
@@ -1466,10 +1446,6 @@ onUnmounted(() => {
 @media (max-width: 600px) {
   .members-page {
     padding: 16px 12px 32px;
-  }
-
-  .page-title {
-    font-size: 22px;
   }
 
   .msg-line {

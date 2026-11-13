@@ -1,7 +1,7 @@
 <template>
   <div class="notification-page">
-    <header class="page-head">
-      <h1 class="page-title">알림</h1>
+    <header class="sf-page-head">
+      <h1 class="sf-page-title">알림</h1>
       <v-btn variant="text" color="primary" prepend-icon="mdi-check-all" @click="readAll()">모두 읽음으로 표시</v-btn>
     </header>
 
@@ -20,7 +20,7 @@
       </button>
     </div>
 
-    <section class="list-panel" aria-label="알림 목록">
+    <section class="sf-list-panel" aria-label="알림 목록">
       <ul v-if="sortedNotifications.length" class="noti-list">
         <li
           v-for="notification in sortedNotifications"
@@ -59,17 +59,17 @@
         </li>
       </ul>
 
-      <div v-if="isLoading" class="state-box">
+      <div v-if="isLoading" class="sf-state-box">
         <v-progress-circular indeterminate color="primary" size="32" />
         <p>알림을 불러오는 중이에요</p>
       </div>
 
-      <div v-else-if="!sortedNotifications.length" class="state-box">
-        <p class="empty-title">새 알림이 없어요</p>
+      <div v-else-if="!sortedNotifications.length" class="sf-state-box">
+        <p class="sf-empty-title">새 알림이 없어요</p>
         <p>유통기한이 다가오거나 댓글이 달리면 여기에 알려드려요.</p>
       </div>
 
-      <div v-if="isLoadingMore" class="state-box is-small">
+      <div v-if="isLoadingMore" class="sf-state-box is-small">
         <v-progress-circular indeterminate color="primary" size="24" />
       </div>
       <p v-if="!hasMoreData && !isLoadingMore && sortedNotifications.length" class="list-end">
@@ -80,7 +80,7 @@
     <!-- 삭제 확인 -->
     <v-dialog v-model="deleteDialog" max-width="400">
       <v-card class="pa-2">
-        <v-card-title class="dialog-title">알림을 삭제할까요?</v-card-title>
+        <v-card-title class="sf-dialog-title">알림을 삭제할까요?</v-card-title>
         <v-card-text class="dialog-body">삭제한 알림은 다시 볼 수 없어요.</v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -421,20 +421,9 @@ onBeforeUnmount(() => {
   background: var(--sf-bg);
 }
 
-.page-head {
-  display: flex;
+.sf-page-head {
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   margin-bottom: 16px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
 }
 
 .type-filters {
@@ -464,13 +453,6 @@ onBeforeUnmount(() => {
   background: var(--sf-text);
   font-weight: 600;
   color: #fff;
-}
-
-.list-panel {
-  border-radius: var(--sf-radius-lg);
-  background: var(--sf-surface);
-  box-shadow: var(--sf-shadow);
-  overflow: hidden;
 }
 
 .noti-list {
@@ -596,29 +578,8 @@ onBeforeUnmount(() => {
   color: var(--sf-text-faint);
 }
 
-.state-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 56px 24px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--sf-text-sub);
-}
-
-.state-box.is-small {
+.sf-state-box.is-small {
   padding: 16px;
-}
-
-.state-box p {
-  margin: 0;
-}
-
-.empty-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 .list-end {
@@ -629,11 +590,6 @@ onBeforeUnmount(() => {
   color: var(--sf-text-faint);
 }
 
-.dialog-title {
-  font-size: 19px;
-  font-weight: 800;
-}
-
 .dialog-body {
   font-size: 15px;
   color: var(--sf-text-sub);
@@ -642,10 +598,6 @@ onBeforeUnmount(() => {
 @media (max-width: 600px) {
   .notification-page {
     padding: 16px 12px 32px;
-  }
-
-  .page-title {
-    font-size: 22px;
   }
 
   .noti-main {

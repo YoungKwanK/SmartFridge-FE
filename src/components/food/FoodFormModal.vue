@@ -3,7 +3,7 @@
     <v-card class="food-form">
       <header class="form-head">
         <div>
-          <h2 class="form-title">{{ getModalTitle() }}</h2>
+          <h2 class="sf-form-title">{{ getModalTitle() }}</h2>
           <p class="form-desc">{{ getModalSubtitle() }}</p>
         </div>
         <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeModal" />
@@ -11,7 +11,7 @@
 
       <v-card-text class="form-body">
         <div class="field">
-          <label class="field-label" for="food-name">식품 이름</label>
+          <label class="sf-field-label" for="food-name">식품 이름</label>
           <v-text-field
             id="food-name"
             v-model="formData.name"
@@ -25,7 +25,7 @@
         </div>
 
         <div class="field">
-          <span id="food-category-label" class="field-label">종류</span>
+          <span id="food-category-label" class="sf-field-label">종류</span>
           <div class="chip-group" role="radiogroup" aria-labelledby="food-category-label">
             <button
               v-for="category in categories"
@@ -45,7 +45,7 @@
 
         <div class="field-row">
           <div class="field">
-            <span id="food-storage-label" class="field-label">보관</span>
+            <span id="food-storage-label" class="sf-field-label">보관</span>
             <div class="segmented" role="radiogroup" aria-labelledby="food-storage-label">
               <button
                 v-for="storage in storageTypes"
@@ -63,7 +63,7 @@
           </div>
 
           <div class="field">
-            <span id="food-qty-label" class="field-label">수량</span>
+            <span id="food-qty-label" class="sf-field-label">수량</span>
             <div class="stepper" role="group" aria-labelledby="food-qty-label">
               <button type="button" aria-label="하나 줄이기" :disabled="readOnly || formData.quantity <= 1" @click="decreaseQuantity">
                 <v-icon size="18">mdi-minus</v-icon>
@@ -84,7 +84,7 @@
         </div>
 
         <div class="field">
-          <label class="field-label" for="food-exp-date">유통기한</label>
+          <label class="sf-field-label" for="food-exp-date">유통기한</label>
           <div v-if="!readOnly" class="quick-dates">
             <button v-for="d in quickDays" :key="d.days" type="button" class="quick-chip" @click="setExpiryInDays(d.days)">
               {{ d.label }}
@@ -116,7 +116,7 @@
         </div>
 
         <div class="field">
-          <label class="field-label" for="food-memo">메모 <span class="optional">선택</span></label>
+          <label class="sf-field-label" for="food-memo">메모 <span class="sf-optional">선택</span></label>
           <v-textarea
             id="food-memo"
             v-model="formData.memo"
@@ -560,12 +560,8 @@ export default {
   padding: 24px 16px 8px 24px;
 }
 
-.form-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
+.sf-form-title {
   letter-spacing: -0.01em;
-  color: var(--sf-text);
 }
 
 .form-desc {
@@ -581,20 +577,6 @@ export default {
 .field {
   margin-bottom: 20px;
   min-width: 0;
-}
-
-.field-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--sf-text);
-}
-
-.optional {
-  margin-left: 4px;
-  font-weight: 400;
-  color: var(--sf-text-faint);
 }
 
 .field-hint {

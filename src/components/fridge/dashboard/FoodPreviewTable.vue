@@ -7,7 +7,7 @@
       :aria-labelledby="`recent-${group.key}`"
     >
       <header class="panel-head">
-        <h2 :id="`recent-${group.key}`" class="panel-title">{{ group.title }}</h2>
+        <h2 :id="`recent-${group.key}`" class="sf-panel-title">{{ group.title }}</h2>
         <div class="panel-actions">
           <v-btn
             variant="text"
@@ -162,13 +162,6 @@ const handleFoodSave = async (foodData) => {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 4px;
-}
-
-.panel-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 .panel-actions {

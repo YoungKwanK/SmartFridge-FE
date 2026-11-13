@@ -1,0 +1,14 @@
+/* 상단 로고 + 서비스 이름 */
+
+.sf-brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.sf-brand-name {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--sf-primary);
+}

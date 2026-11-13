@@ -1,9 +1,9 @@
 <template>
   <div class="food-page">
-    <header class="page-head">
+    <header class="sf-page-head">
       <div>
-        <h1 class="page-title">식품 목록</h1>
-        <p class="page-desc">
+        <h1 class="sf-page-title">식품 목록</h1>
+        <p class="sf-page-desc">
           {{ isSharedView ? '멤버 모두가 먹을 수 있는 식품이에요.' : '내가 등록한 개인식품이에요.' }}
         </p>
       </div>
@@ -28,7 +28,7 @@
       </button>
     </div>
 
-    <section class="list-panel" aria-label="식품 목록">
+    <section class="sf-list-panel" aria-label="식품 목록">
       <!-- 유통기한 필터 -->
       <div class="filter-bar">
         <div class="status-filters" role="radiogroup" aria-label="유통기한으로 거르기">
@@ -83,7 +83,7 @@
         </div>
       </div>
 
-      <div v-if="isLoading" class="state-box">
+      <div v-if="isLoading" class="sf-state-box">
         <v-progress-circular indeterminate color="primary" size="36" />
         <p>식품을 불러오는 중이에요</p>
       </div>
@@ -134,8 +134,8 @@
         </footer>
       </template>
 
-      <div v-else class="state-box">
-        <p class="empty-title">{{ emptyTitle }}</p>
+      <div v-else class="sf-state-box">
+        <p class="sf-empty-title">{{ emptyTitle }}</p>
         <p>{{ emptyHint }}</p>
         <v-btn
           v-if="!isFiltered"
@@ -510,27 +510,8 @@ export default {
   background: var(--sf-bg);
 }
 
-.page-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.sf-page-title {
   line-height: 1.25;
-  color: var(--sf-text);
-}
-
-.page-desc {
-  margin: 6px 0 0;
-  font-size: 15px;
-  color: var(--sf-text-sub);
 }
 
 /* 공유 / 개인 전환 */
@@ -560,14 +541,6 @@ export default {
   background: var(--sf-surface);
   color: var(--sf-text);
   box-shadow: 0 1px 3px rgba(34, 34, 34, 0.08);
-}
-
-/* 목록 패널 */
-.list-panel {
-  background: var(--sf-surface);
-  border-radius: var(--sf-radius-lg);
-  box-shadow: var(--sf-shadow);
-  overflow: hidden;
 }
 
 .filter-bar {
@@ -778,25 +751,8 @@ export default {
   white-space: nowrap;
 }
 
-.state-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+.sf-state-box {
   padding: 64px 24px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--sf-text-sub);
-}
-
-.state-box p {
-  margin: 0;
-}
-
-.empty-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 @media (max-width: 960px) {
@@ -832,10 +788,6 @@ export default {
 @media (max-width: 600px) {
   .food-page {
     padding: 16px 12px 32px;
-  }
-
-  .page-title {
-    font-size: 22px;
   }
 
   .filter-bar {

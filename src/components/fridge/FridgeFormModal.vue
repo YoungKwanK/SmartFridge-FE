@@ -2,14 +2,14 @@
   <v-dialog v-model="dialog" max-width="480px" persistent>
     <v-card class="fridge-form">
       <header class="form-head">
-        <h2 class="form-title">{{ isEditMode ? '냉장고 정보 수정' : '새 냉장고 만들기' }}</h2>
+        <h2 class="sf-form-title">{{ isEditMode ? '냉장고 정보 수정' : '새 냉장고 만들기' }}</h2>
         <p class="form-desc">
           {{ isEditMode ? '이름과 설명은 멤버 모두에게 보여요.' : '만든 사람이 관리자가 돼요. 다 만들면 초대 링크로 멤버를 부를 수 있어요.' }}
         </p>
       </header>
 
       <div class="form-body">
-        <label class="field-label" for="fridge-name">냉장고 이름</label>
+        <label class="sf-field-label" for="fridge-name">냉장고 이름</label>
         <v-text-field
           id="fridge-name"
           v-model="formData.fridgeName"
@@ -20,7 +20,7 @@
           autofocus
         />
 
-        <label class="field-label" for="fridge-desc">설명 <span class="optional">선택</span></label>
+        <label class="sf-field-label" for="fridge-desc">설명 <span class="sf-optional">선택</span></label>
         <v-textarea
           id="fridge-desc"
           v-model="formData.description"
@@ -100,13 +100,6 @@ export default {
   padding: 24px;
 }
 
-.form-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--sf-text);
-}
-
 .form-desc {
   margin: 6px 0 0;
   font-size: 14px;
@@ -118,22 +111,12 @@ export default {
   margin-top: 20px;
 }
 
-.field-label {
-  display: block;
+.sf-field-label {
   margin: 16px 0 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--sf-text);
 }
 
-.field-label:first-child {
+.sf-field-label:first-child {
   margin-top: 0;
-}
-
-.optional {
-  margin-left: 4px;
-  font-weight: 400;
-  color: var(--sf-text-faint);
 }
 
 .form-actions {

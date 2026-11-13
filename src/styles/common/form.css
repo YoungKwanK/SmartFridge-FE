@@ -1,0 +1,28 @@
+/* 입력 폼 · 다이얼로그 공통 */
+
+.sf-form-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--sf-text);
+}
+
+.sf-field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sf-text);
+}
+
+/* 라벨 옆 "(선택)" 표시 */
+.sf-optional {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--sf-text-faint);
+}
+
+.sf-dialog-title {
+  font-size: 19px;
+  font-weight: 800;
+}

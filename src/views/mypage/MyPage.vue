@@ -1,7 +1,7 @@
 <template>
   <div class="mypage">
     <header class="page-head">
-      <h1 class="page-title">내 정보</h1>
+      <h1 class="sf-page-title">내 정보</h1>
     </header>
 
     <div class="mypage-grid">
@@ -53,7 +53,7 @@
       <!-- 내가 쓴 글 -->
       <section class="panel posts" aria-labelledby="my-posts-title">
         <header class="panel-head">
-          <h2 id="my-posts-title" class="panel-title">내가 쓴 글</h2>
+          <h2 id="my-posts-title" class="sf-panel-title">내가 쓴 글</h2>
           <v-btn icon="mdi-refresh" size="small" variant="text" aria-label="새로 고침" @click="fetchMyPosts" />
         </header>
 
@@ -85,7 +85,7 @@
       <!-- 알림 설정 -->
       <section class="panel settings" aria-labelledby="settings-title">
         <header class="panel-head">
-          <h2 id="settings-title" class="panel-title">받을 알림</h2>
+          <h2 id="settings-title" class="sf-panel-title">받을 알림</h2>
         </header>
         <ul class="setting-list">
           <li v-for="setting in notificationSettings" :key="setting.type" class="setting-row">
@@ -124,7 +124,7 @@
     <!-- 회원 탈퇴 확인 다이얼로그 -->
     <v-dialog v-model="showDeleteAccountDialog" max-width="440">
       <v-card class="pa-2">
-        <v-card-title class="dialog-title">정말 탈퇴할까요?</v-card-title>
+        <v-card-title class="sf-dialog-title">정말 탈퇴할까요?</v-card-title>
         <v-card-text class="dialog-body">
           <p>탈퇴하면 아래 정보가 모두 지워지고 되돌릴 수 없어요.</p>
           <ul>
@@ -654,14 +654,6 @@ export default {
   margin-bottom: 20px;
 }
 
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
-}
-
 .mypage-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
@@ -802,13 +794,6 @@ export default {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 4px;
-}
-
-.panel-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 /* 내가 쓴 글 */
@@ -970,11 +955,6 @@ export default {
   color: var(--sf-text-sub);
 }
 
-.dialog-title {
-  font-size: 19px;
-  font-weight: 800;
-}
-
 .dialog-body {
   font-size: 15px;
   line-height: 1.6;
@@ -996,10 +976,6 @@ export default {
 @media (max-width: 600px) {
   .mypage {
     padding: 16px 12px 32px;
-  }
-
-  .page-title {
-    font-size: 22px;
   }
 
   .panel {

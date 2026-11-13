@@ -2,8 +2,8 @@
   <div class="landing">
     <header class="top-bar">
       <span class="brand">
-        <img :src="logoUrl" alt="" class="brand-logo" />
-        <span class="brand-name">SmartFridge</span>
+        <img :src="logoUrl" alt="" class="sf-brand-logo" />
+        <span class="sf-brand-name">SmartFridge</span>
       </span>
       <v-btn to="/login" variant="text">로그인</v-btn>
     </header>
@@ -155,19 +155,6 @@ const steps = [
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-}
-
-.brand-name {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-primary);
 }
 
 /* 첫 화면 */

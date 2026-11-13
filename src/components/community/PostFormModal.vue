@@ -2,7 +2,7 @@
   <v-dialog v-model="dialog" max-width="1080" persistent scrollable>
     <v-card class="post-form">
       <header class="form-head">
-        <h2 class="form-title">{{ editingPost.id ? '글 수정' : (isPurchase ? '공동구매 모집하기' : '글쓰기') }}</h2>
+        <h2 class="sf-form-title">{{ editingPost.id ? '글 수정' : (isPurchase ? '공동구매 모집하기' : '글쓰기') }}</h2>
         <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeModal" />
       </header>
 
@@ -11,7 +11,7 @@
           <div class="form-layout">
             <div class="write-col">
               <div class="field">
-                <label class="field-label" for="post-board">게시판</label>
+                <label class="sf-field-label" for="post-board">게시판</label>
                 <v-select
                   id="post-board"
                   v-model="formData.category"
@@ -26,7 +26,7 @@
               <div v-if="isPurchase && !editingPost.id" class="purchase-fields">
                 <div class="field-row">
                   <div class="field">
-                    <label class="field-label" for="post-max">모집 인원</label>
+                    <label class="sf-field-label" for="post-max">모집 인원</label>
                     <v-text-field
                       id="post-max"
                       v-model.number="formData.maxParticipants"
@@ -41,7 +41,7 @@
                     />
                   </div>
                   <div class="field">
-                    <label class="field-label" for="post-url">상품 링크 <span class="optional">선택</span></label>
+                    <label class="sf-field-label" for="post-url">상품 링크 <span class="sf-optional">선택</span></label>
                     <v-text-field
                       id="post-url"
                       v-model="formData.productUrl"
@@ -60,7 +60,7 @@
               </p>
 
               <div class="field">
-                <label class="field-label" for="post-title">제목</label>
+                <label class="sf-field-label" for="post-title">제목</label>
                 <v-text-field
                   id="post-title"
                   v-model="formData.title"
@@ -73,7 +73,7 @@
               </div>
 
               <div class="field">
-                <label class="field-label" for="post-content">내용</label>
+                <label class="sf-field-label" for="post-content">내용</label>
                 <v-textarea
                   id="post-content"
                   ref="contentTextarea"
@@ -89,7 +89,7 @@
               </div>
 
               <div class="field">
-                <label class="field-label" for="post-images">사진 <span class="optional">선택</span></label>
+                <label class="sf-field-label" for="post-images">사진 <span class="sf-optional">선택</span></label>
                 <v-file-input
                   id="post-images"
                   :key="fileInputKey"
@@ -581,13 +581,6 @@ export default {
   padding: 20px 16px 8px 24px;
 }
 
-.form-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--sf-text);
-}
-
 .form-body {
   padding: 8px 24px 16px !important;
 }
@@ -612,20 +605,6 @@ export default {
 
 .field-row .field {
   margin-bottom: 0;
-}
-
-.field-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--sf-text);
-}
-
-.optional {
-  margin-left: 4px;
-  font-weight: 400;
-  color: var(--sf-text-faint);
 }
 
 .field-hint {

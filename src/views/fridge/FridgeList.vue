@@ -1,15 +1,15 @@
 <template>
   <div class="fridge-list-page">
     <header class="top-bar">
-      <span class="brand-name">SmartFridge</span>
+      <span class="sf-brand-name">SmartFridge</span>
       <v-btn variant="text" size="small" prepend-icon="mdi-logout" @click="doLogout">로그아웃</v-btn>
     </header>
 
     <main class="picker">
       <div class="picker-head">
         <div>
-          <h1 class="page-title">내 냉장고</h1>
-          <p class="page-desc">들어갈 냉장고를 고르세요.</p>
+          <h1 class="sf-page-title">내 냉장고</h1>
+          <p class="sf-page-desc">들어갈 냉장고를 고르세요.</p>
         </div>
         <v-btn color="primary" variant="flat" prepend-icon="mdi-plus" @click="openCreateModal">
           냉장고 만들기
@@ -18,7 +18,7 @@
 
       <div v-if="!fridgeList.length" class="empty-state">
         <v-icon size="40" class="empty-icon" aria-hidden="true">mdi-fridge-outline</v-icon>
-        <p class="empty-title">아직 참여한 냉장고가 없어요</p>
+        <p class="sf-empty-title">아직 참여한 냉장고가 없어요</p>
         <p class="empty-desc">
           냉장고를 새로 만들거나, 초대 링크를 받았다면 그 링크를 열어 바로 참여하세요.
         </p>
@@ -130,13 +130,6 @@
   margin: 0 auto;
 }
 
-.brand-name {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-primary);
-}
-
 .picker {
   max-width: 760px;
   margin: clamp(24px, 6vh, 64px) auto 0;
@@ -148,20 +141,6 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
-}
-
-.page-desc {
-  margin: 6px 0 0;
-  font-size: 15px;
-  color: var(--sf-text-sub);
 }
 
 .fridge-list {
@@ -288,11 +267,9 @@
   color: var(--sf-text-faint);
 }
 
-.empty-title {
+.sf-empty-title {
   margin: 4px 0 0;
   font-size: 18px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 .empty-desc {
@@ -309,7 +286,7 @@
     align-items: stretch;
   }
 
-  .page-title {
+  .sf-page-title {
     font-size: 24px;
   }
 

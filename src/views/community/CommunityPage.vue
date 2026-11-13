@@ -1,9 +1,9 @@
 <template>
   <div class="community-page">
-    <header class="page-head">
+    <header class="sf-page-head">
       <div>
-        <h1 class="page-title">커뮤니티</h1>
-        <p class="page-desc">{{ boardDescription }}</p>
+        <h1 class="sf-page-title">커뮤니티</h1>
+        <p class="sf-page-desc">{{ boardDescription }}</p>
       </div>
       <v-btn
         v-if="canWrite"
@@ -32,7 +32,7 @@
       </button>
     </div>
 
-    <section class="list-panel" aria-label="게시글 목록">
+    <section class="sf-list-panel" aria-label="게시글 목록">
       <div class="search-bar">
         <v-text-field
           v-model="searchQuery"
@@ -47,7 +47,7 @@
         />
       </div>
 
-      <div v-if="isLoading" class="state-box">
+      <div v-if="isLoading" class="sf-state-box">
         <v-progress-circular indeterminate color="primary" size="36" />
         <p>게시글을 불러오는 중이에요</p>
       </div>
@@ -82,8 +82,8 @@
         </li>
       </ul>
 
-      <div v-else class="state-box">
-        <p class="empty-title">{{ emptyTitle }}</p>
+      <div v-else class="sf-state-box">
+        <p class="sf-empty-title">{{ emptyTitle }}</p>
         <p>{{ emptyHint }}</p>
         <v-btn
           v-if="canWrite && !searchQuery"
@@ -433,27 +433,8 @@ export default {
   background: var(--sf-bg);
 }
 
-.page-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.sf-page-title {
   line-height: 1.25;
-  color: var(--sf-text);
-}
-
-.page-desc {
-  margin: 6px 0 0;
-  font-size: 15px;
-  color: var(--sf-text-sub);
 }
 
 /* 게시판 탭: 밑줄형 */
@@ -489,13 +470,6 @@ export default {
   border-bottom-color: var(--sf-text);
   color: var(--sf-text);
   font-weight: 700;
-}
-
-.list-panel {
-  background: var(--sf-surface);
-  border-radius: var(--sf-radius-lg);
-  box-shadow: var(--sf-shadow);
-  overflow: hidden;
 }
 
 .search-bar {
@@ -622,25 +596,8 @@ export default {
   white-space: nowrap;
 }
 
-.state-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+.sf-state-box {
   padding: 64px 24px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--sf-text-sub);
-}
-
-.state-box p {
-  margin: 0;
-}
-
-.empty-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
 }
 
 @media (max-width: 600px) {
@@ -648,13 +605,9 @@ export default {
     padding: 16px 12px 32px;
   }
 
-  .page-head {
+  .sf-page-head {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .page-title {
-    font-size: 22px;
   }
 
   .search-bar {

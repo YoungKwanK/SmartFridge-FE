@@ -1,9 +1,9 @@
 <template>
   <div class="inquiry-page">
-    <header class="page-head">
+    <header class="sf-page-head">
       <div>
-        <h1 class="page-title">{{ role === 'ADMIN' ? '문의 관리' : '문의하기' }}</h1>
-        <p class="page-desc">
+        <h1 class="sf-page-title">{{ role === 'ADMIN' ? '문의 관리' : '문의하기' }}</h1>
+        <p class="sf-page-desc">
           {{ role === 'ADMIN' ? '사용자 문의를 확인하고 답변을 남겨 주세요.' : '불편한 점이나 바라는 기능을 알려 주세요. 답변이 달리면 알림으로 알려드려요.' }}
         </p>
       </div>
@@ -28,8 +28,8 @@
       <div v-if="statusCounts.CANCELLED"><dt>취소</dt><dd class="sf-num">{{ statusCounts.CANCELLED }}</dd></div>
     </dl>
 
-    <section v-if="allInquiries.length > 0" class="list-panel" aria-label="문의 목록">
-      <div v-if="isLoading" class="state-box">
+    <section v-if="allInquiries.length > 0" class="sf-list-panel" aria-label="문의 목록">
+      <div v-if="isLoading" class="sf-state-box">
         <v-progress-circular indeterminate color="primary" size="32" />
         <p>문의를 불러오는 중이에요</p>
       </div>
@@ -138,8 +138,8 @@
       </footer>
     </section>
 
-    <section v-else-if="!isLoading" class="list-panel empty-state">
-      <p class="empty-title">{{ role === 'ADMIN' ? '들어온 문의가 없어요' : '남긴 문의가 없어요' }}</p>
+    <section v-else-if="!isLoading" class="sf-list-panel sf-state-box">
+      <p class="sf-empty-title">{{ role === 'ADMIN' ? '들어온 문의가 없어요' : '남긴 문의가 없어요' }}</p>
       <p class="empty-desc">
         {{ role === 'ADMIN' ? '새 문의가 들어오면 여기에 보여요.' : '쓰다가 막히거나 고쳤으면 하는 점이 있으면 알려 주세요.' }}
       </p>
@@ -148,7 +148,7 @@
       </v-btn>
     </section>
 
-    <section v-else class="list-panel state-box">
+    <section v-else class="sf-list-panel sf-state-box">
       <v-progress-circular indeterminate color="primary" size="32" />
       <p>문의를 불러오는 중이에요</p>
     </section>
@@ -157,7 +157,7 @@
     <v-dialog v-model="showCreateModal" max-width="560" persistent>
       <v-card class="form-card">
         <header class="dialog-head">
-          <h2 class="dialog-title">문의 남기기</h2>
+          <h2 class="sf-dialog-title">문의 남기기</h2>
           <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeCreateModal" />
         </header>
         <v-card-text class="dialog-body">
@@ -215,7 +215,7 @@
     <v-dialog v-model="showEditModal" max-width="560" persistent>
       <v-card class="form-card">
         <header class="dialog-head">
-          <h2 class="dialog-title">문의 수정</h2>
+          <h2 class="sf-dialog-title">문의 수정</h2>
           <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeEditModal" />
         </header>
         <v-card-text class="dialog-body">
@@ -288,7 +288,7 @@
     <!-- 삭제 확인 -->
     <v-dialog v-model="showDeleteConfirmModal" max-width="400" persistent>
       <v-card class="pa-2">
-        <v-card-title class="dialog-title">문의를 삭제할까요?</v-card-title>
+        <v-card-title class="sf-dialog-title">문의를 삭제할까요?</v-card-title>
         <v-card-text class="confirm-text">삭제한 문의와 답변은 되돌릴 수 없어요.</v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -302,7 +302,7 @@
     <v-dialog v-model="showAnswerModal" max-width="600" persistent>
       <v-card class="form-card">
         <header class="dialog-head">
-          <h2 class="dialog-title">답변 남기기</h2>
+          <h2 class="sf-dialog-title">답변 남기기</h2>
           <v-btn icon="mdi-close" variant="text" size="small" aria-label="닫기" @click="closeAnswerModal" />
         </header>
         <v-card-text class="dialog-body">
@@ -1112,28 +1112,14 @@ export default {
   background: var(--sf-bg);
 }
 
-.page-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.sf-page-head {
   margin-bottom: 16px;
 }
 
-.page-title {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
-}
-
-.page-desc {
+.sf-page-desc {
   max-width: 52ch;
   margin: 4px 0 0;
-  font-size: 15px;
   line-height: 1.6;
-  color: var(--sf-text-sub);
 }
 
 .head-actions {
@@ -1164,13 +1150,6 @@ export default {
   margin: 0;
   font-weight: 700;
   color: var(--sf-text);
-}
-
-.list-panel {
-  border-radius: var(--sf-radius-lg);
-  background: var(--sf-surface);
-  box-shadow: var(--sf-shadow);
-  overflow: hidden;
 }
 
 .inquiry-list {
@@ -1398,29 +1377,6 @@ export default {
   border-top: 1px solid var(--sf-line);
 }
 
-.state-box,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 56px 24px;
-  text-align: center;
-  font-size: 14px;
-  color: var(--sf-text-sub);
-}
-
-.state-box p,
-.empty-state p {
-  margin: 0;
-}
-
-.empty-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--sf-text);
-}
-
 .empty-desc {
   margin-bottom: 8px !important;
 }
@@ -1437,10 +1393,8 @@ export default {
   padding: 12px 8px 4px 16px;
 }
 
-.dialog-title {
+.sf-dialog-title {
   margin: 0;
-  font-size: 19px;
-  font-weight: 800;
   color: var(--sf-text);
 }
 
@@ -1501,11 +1455,7 @@ export default {
     padding: 16px 12px 32px;
   }
 
-  .page-title {
-    font-size: 22px;
-  }
-
-  .page-head {
+  .sf-page-head {
     flex-direction: column;
   }
 
