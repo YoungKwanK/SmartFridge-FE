@@ -17,7 +17,18 @@
           >
             전체 보기
           </v-btn>
+          <!-- 폰 폭에서는 제목이 한 줄에 들어가도록 아이콘 버튼으로 줄인다 -->
           <v-btn
+            v-if="isPhone"
+            color="primary"
+            variant="flat"
+            size="small"
+            icon="mdi-plus"
+            :aria-label="group.isShared ? '공유식품 등록' : '개인식품 등록'"
+            @click="openFoodModal(group.isShared)"
+          />
+          <v-btn
+            v-else
             color="primary"
             variant="flat"
             size="small"
@@ -50,6 +61,7 @@
 <script setup>
 import axios from 'axios';
 import { computed, ref } from 'vue';
+import { useDisplay } from 'vuetify';
 import router from '@/router';
 import FoodFormModal from '@/components/food/FoodFormModal.vue';
 import FoodRow from '@/components/food/FoodRow.vue';
@@ -66,6 +78,9 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['food-saved']);
+
+// 600px 미만(xs)
+const { xs: isPhone } = useDisplay();
 
 const isFoodModalOpen = ref(false);
 const selectedFood = ref({});
@@ -160,8 +175,17 @@ const handleFoodSave = async (foodData) => {
   margin-bottom: 4px;
 }
 
+/* 제목은 한 줄로 두고, 그래도 좁으면 말줄임 */
+.panel-head .sf-panel-title {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .panel-actions {
   display: flex;
+  align-items: center;
   gap: 4px;
   flex-shrink: 0;
 }

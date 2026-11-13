@@ -1,6 +1,6 @@
 <template>
   <div class="login-page">
-    <header class="brand">
+    <header class="brand sf-brand">
       <img src="@/assets/images/SFlogo/smartFridge_logo.png" alt="" class="sf-brand-logo" />
       <span class="sf-brand-name">SmartFridge</span>
     </header>
@@ -319,8 +319,6 @@ export default {
 
 .brand {
   display: flex;
-  align-items: center;
-  gap: 8px;
   max-width: 1120px;
   margin: 0 auto;
 }

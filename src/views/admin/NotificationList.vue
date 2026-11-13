@@ -1,124 +1,112 @@
 <template>
-  <div class="admin-layout">
-    <div class="notification-list">
-      <div class="header">
-        <h1>알림 목록</h1>
-        <button @click="logout" class="logout-btn">로그아웃</button>
+  <PageLayout title="알림 목록" width="wide" class="notification-list">
+    <div class="filters">
+      <select v-model="typeFilter" @change="filterNotifications">
+        <option value="">전체 타입</option>
+        <option value="새 문의">새 문의</option>
+        <option value="문의등록">문의등록</option>
+        <option value="답변완료">답변완료</option>
+        <option value="시스템">시스템</option>
+        <option value="사용자">사용자</option>
+        <option value="식품만료알림">식품만료알림</option>
+        <option value="냉장고초대">냉장고초대</option>
+      </select>
+      <select v-model="readFilter" @change="filterNotifications">
+        <option value="">전체 상태</option>
+        <option value="읽지않음">읽지않음</option>
+        <option value="읽음">읽음</option>
+      </select>
+      <button @click="markAllAsRead" class="mark-read-btn">모두 읽음 처리</button>
+    </div>
+
+    <div class="notification-table">
+      <!-- 디버깅 정보 -->
+      <div v-if="loading" class="loading-message">로딩 중...</div>
+      <div v-else-if="notifications.length === 0" class="no-data-message">
+        알림 데이터가 없습니다. (총 알림 수: {{ notifications.length }})
+      </div>
+      <div v-else-if="filteredNotifications.length === 0" class="no-data-message">
+        필터링된 알림이 없습니다. (원본: {{ notifications.length }}, 필터된: {{ filteredNotifications.length }})
       </div>
       
-      <div class="navigation-menu">
-        <router-link to="/admin" class="nav-item">대시보드</router-link>
-        <router-link to="/admin/inquiry" class="nav-item">문의 목록</router-link>
-        <router-link to="/admin/notification" class="nav-item active">알림 목록</router-link>
-        <router-link to="/admin/users" class="nav-item">사용자 관리</router-link>
-      </div>
+      <table v-if="filteredNotifications.length > 0">
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>타입</th>
+            <th>제목</th>
+            <th>내용</th>
+            <th>상태</th>
+            <th>생성일</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="notification in filteredNotifications" :key="notification.id" 
+              :class="{ unread: notification.status === '읽지않음' }">
+            <td>{{ notification.id }}</td>
+            <td>
+              <span :class="getTypeClass(notification.type)">
+                {{ notification.type }}
+              </span>
+            </td>
+            <td>{{ notification.title }}</td>
+            <td>{{ notification.content }}</td>
+            <td>
+              <span :class="notification.status === '읽음' ? 'read' : 'unread'">
+                {{ notification.status }}
+              </span>
+            </td>
+            <td>{{ notification.createdAt }}</td>
+            <td>
+              <button @click="viewNotification(notification)" class="view-btn">보기</button>
+              <button v-if="notification.status === '읽지않음'" @click="markAsRead(notification)" class="read-btn">읽음</button>
+              <button @click="deleteNotification(notification)" class="delete-btn">삭제</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <div class="filters">
-        <select v-model="typeFilter" @change="filterNotifications">
-          <option value="">전체 타입</option>
-          <option value="새 문의">새 문의</option>
-          <option value="문의등록">문의등록</option>
-          <option value="답변완료">답변완료</option>
-          <option value="시스템">시스템</option>
-          <option value="사용자">사용자</option>
-          <option value="식품만료알림">식품만료알림</option>
-          <option value="냉장고초대">냉장고초대</option>
-        </select>
-        <select v-model="readFilter" @change="filterNotifications">
-          <option value="">전체 상태</option>
-          <option value="읽지않음">읽지않음</option>
-          <option value="읽음">읽음</option>
-        </select>
-        <button @click="markAllAsRead" class="mark-read-btn">모두 읽음 처리</button>
-      </div>
-
-      <div class="notification-table">
-        <!-- 디버깅 정보 -->
-        <div v-if="loading" class="loading-message">로딩 중...</div>
-        <div v-else-if="notifications.length === 0" class="no-data-message">
-          알림 데이터가 없습니다. (총 알림 수: {{ notifications.length }})
+    <!-- 알림 상세 보기 모달 -->
+    <div v-if="selectedNotification" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>{{ selectedNotification.title }}</h2>
+          <button @click="closeModal" class="close-btn">×</button>
         </div>
-        <div v-else-if="filteredNotifications.length === 0" class="no-data-message">
-          필터링된 알림이 없습니다. (원본: {{ notifications.length }}, 필터된: {{ filteredNotifications.length }})
-        </div>
-        
-        <table v-if="filteredNotifications.length > 0">
-          <thead>
-            <tr>
-              <th>번호</th>
-              <th>타입</th>
-              <th>제목</th>
-              <th>내용</th>
-              <th>상태</th>
-              <th>생성일</th>
-              <th>작업</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="notification in filteredNotifications" :key="notification.id" 
-                :class="{ unread: notification.status === '읽지않음' }">
-              <td>{{ notification.id }}</td>
-              <td>
-                <span :class="getTypeClass(notification.type)">
-                  {{ notification.type }}
-                </span>
-              </td>
-              <td>{{ notification.title }}</td>
-              <td>{{ notification.content }}</td>
-              <td>
-                <span :class="notification.status === '읽음' ? 'read' : 'unread'">
-                  {{ notification.status }}
-                </span>
-              </td>
-              <td>{{ notification.createdAt }}</td>
-              <td>
-                <button @click="viewNotification(notification)" class="view-btn">보기</button>
-                <button v-if="notification.status === '읽지않음'" @click="markAsRead(notification)" class="read-btn">읽음</button>
-                <button @click="deleteNotification(notification)" class="delete-btn">삭제</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 알림 상세 보기 모달 -->
-      <div v-if="selectedNotification" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>{{ selectedNotification.title }}</h2>
-            <button @click="closeModal" class="close-btn">×</button>
-          </div>
-          <div class="modal-body">
-            <div class="notification-detail">
-              <p><strong>타입:</strong> {{ selectedNotification.type }}</p>
-              <p><strong>냉장고 번호:</strong> {{ selectedNotification.fridgeId }}</p>
-              <p><strong>생성일:</strong> {{ selectedNotification.createdAt }}</p>
-              <p><strong>상태:</strong> {{ selectedNotification.status }}</p>
-              <p><strong>내용:</strong></p>
-              <div class="content">{{ selectedNotification.content }}</div>
-              
-              <div v-if="selectedNotification.relatedData" class="related-data">
-                <h3>관련 정보</h3>
-                <pre>{{ JSON.stringify(selectedNotification.relatedData, null, 2) }}</pre>
-              </div>
-            </div>
+        <div class="modal-body">
+          <div class="notification-detail">
+            <p><strong>타입:</strong> {{ selectedNotification.type }}</p>
+            <p><strong>냉장고 번호:</strong> {{ selectedNotification.fridgeId }}</p>
+            <p><strong>생성일:</strong> {{ selectedNotification.createdAt }}</p>
+            <p><strong>상태:</strong> {{ selectedNotification.status }}</p>
+            <p><strong>내용:</strong></p>
+            <div class="content">{{ selectedNotification.content }}</div>
             
-            <div class="modal-actions">
-              <button v-if="selectedNotification.status === '읽지않음'" @click="markAsRead(selectedNotification)" class="read-btn">읽음 처리</button>
-              <button @click="closeModal" class="close-modal-btn">닫기</button>
+            <div v-if="selectedNotification.relatedData" class="related-data">
+              <h3>관련 정보</h3>
+              <pre>{{ JSON.stringify(selectedNotification.relatedData, null, 2) }}</pre>
             </div>
+          </div>
+          
+          <div class="modal-actions">
+            <button v-if="selectedNotification.status === '읽지않음'" @click="markAsRead(selectedNotification)" class="read-btn">읽음 처리</button>
+            <button @click="closeModal" class="close-modal-btn">닫기</button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script>
 import axios from 'axios';
+import PageLayout from '@/components/layout/PageLayout.vue';
 
 export default {
   name: 'NotificationList',
+  components: { PageLayout },
   data() {
     return {
       notifications: [],
@@ -363,12 +351,6 @@ export default {
     
     closeModal() {
       this.selectedNotification = null;
-    },
-    
-    logout() {
-      localStorage.clear();
-      this.$store.dispatch('user/logout');
-      this.$router.push('/');
     }
   }
 }

@@ -12,3 +12,10 @@
   letter-spacing: -0.02em;
   color: var(--sf-primary);
 }
+
+/* 로고와 이름을 나란히 (사이드바 없는 화면의 위쪽 막대) */
+.sf-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

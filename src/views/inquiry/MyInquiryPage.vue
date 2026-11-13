@@ -1,25 +1,21 @@
 <template>
-  <div class="inquiry-page">
-    <header class="sf-page-head">
-      <div>
-        <h1 class="sf-page-title">{{ role === 'ADMIN' ? '문의 관리' : '문의하기' }}</h1>
-        <p class="sf-page-desc">
-          {{ role === 'ADMIN' ? '사용자 문의를 확인하고 답변을 남겨 주세요.' : '불편한 점이나 바라는 기능을 알려 주세요. 답변이 달리면 알림으로 알려드려요.' }}
-        </p>
-      </div>
-      <div class="head-actions">
-        <v-btn
-          icon="mdi-refresh"
-          variant="text"
-          aria-label="새로 고침"
-          :loading="isLoading"
-          @click="refreshInquiries"
-        />
-        <v-btn v-if="role !== 'ADMIN'" color="primary" variant="flat" prepend-icon="mdi-plus" @click="showCreateModal = true">
-          문의 남기기
-        </v-btn>
-      </div>
-    </header>
+  <PageLayout
+    :title="role === 'ADMIN' ? '문의 관리' : '문의하기'"
+    :description="role === 'ADMIN' ? '사용자 문의를 확인하고 답변을 남겨 주세요.' : '불편한 점이나 바라는 기능을 알려 주세요. 답변이 달리면 알림으로 알려드려요.'"
+    width="narrow"
+  >
+    <template #actions>
+      <v-btn
+        icon="mdi-refresh"
+        variant="text"
+        aria-label="새로 고침"
+        :loading="isLoading"
+        @click="refreshInquiries"
+      />
+      <v-btn v-if="role !== 'ADMIN'" color="primary" variant="flat" prepend-icon="mdi-plus" @click="showCreateModal = true">
+        문의 남기기
+      </v-btn>
+    </template>
 
     <dl v-if="allInquiries.length > 0" class="status-summary">
       <div><dt>답변 대기</dt><dd class="sf-num">{{ statusCounts.PENDING }}</dd></div>
@@ -338,16 +334,18 @@
       :start-index="selectedImageIndex"
       @update:model-value="closeImageModal"
     />
-  </div>
+  </PageLayout>
 </template>
 
 <script>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import axios from 'axios'
 import ImageModal from '@/components/chat/ImageModal.vue'
 import { snackbar } from '@/composables/snackbar'
 
 export default {
   components: {
+    PageLayout,
     ImageModal
   },
   data() {
@@ -1103,35 +1101,11 @@ export default {
 </script>
 
 <style scoped>
-.inquiry-page {
-  max-width: 880px;
-  min-height: 100%;
-  padding: 32px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-}
-
-.sf-page-head {
-  margin-bottom: 16px;
-}
-
-.sf-page-desc {
-  max-width: 52ch;
-  margin: 4px 0 0;
-  line-height: 1.6;
-}
-
-.head-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
 .status-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 24px;
-  margin: 0 0 16px;
+  margin: 0;
   font-size: 14px;
 }
 
@@ -1449,14 +1423,6 @@ export default {
 }
 
 @media (max-width: 600px) {
-  .inquiry-page {
-    padding: 16px 12px 32px;
-  }
-
-  .sf-page-head {
-    flex-direction: column;
-  }
-
   .inquiry-summary {
     padding: 16px;
   }

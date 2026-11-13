@@ -42,4 +42,14 @@
   --sf-radius-md: 12px;  /* 카드·입력 */
   --sf-radius-sm: 8px;   /* 뱃지·작은 버튼 */
   --sf-shadow: 0 1px 2px rgba(34, 34, 34, 0.04), 0 4px 16px rgba(34, 34, 34, 0.05);
+
+  /* 레이아웃 (PageLayout이 쓰는 본문 폭·여백) */
+  --sf-sidebar-width: 248px;
+  --sf-page-narrow: 880px;   /* 글·목록을 읽는 화면 */
+  --sf-page-default: 1080px; /* 패널 2단 화면 */
+  --sf-page-wide: 1280px;    /* 표·대시보드 */
+  --sf-page-pad-x: clamp(16px, 3vw, 40px);
+  --sf-page-pad-top: 32px;
+  --sf-page-pad-bottom: 56px;
+  --sf-section-gap: 20px;    /* 본문 블록 사이 간격 */
 }

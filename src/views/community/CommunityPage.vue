@@ -1,10 +1,6 @@
 <template>
-  <div class="community-page">
-    <header class="sf-page-head">
-      <div>
-        <h1 class="sf-page-title">커뮤니티</h1>
-        <p class="sf-page-desc">{{ boardDescription }}</p>
-      </div>
+  <PageLayout title="커뮤니티" :description="boardDescription" width="narrow">
+    <template #actions>
       <v-btn
         v-if="canWrite"
         :color="isGroupBuyBoard ? 'cta' : 'primary'"
@@ -14,7 +10,7 @@
       >
         {{ isGroupBuyBoard ? '공동구매 모집하기' : '글쓰기' }}
       </v-btn>
-    </header>
+    </template>
 
     <!-- 게시판 고르기 -->
     <div class="board-tabs" role="tablist" aria-label="게시판">
@@ -116,10 +112,11 @@
     <!-- 게시글 작성 모달 -->
     <PostFormModal v-model="isModalOpen" :board-type="activeBoard" @save="handleSave" />
 
-  </div>
+  </PageLayout>
 </template>
 
 <script>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import axios from 'axios';
 import { getFridgeId } from '@/utils/commonDataHandler';
 import PostFormModal from '@/components/community/PostFormModal.vue';
@@ -129,6 +126,7 @@ import { snackbar } from '@/composables/snackbar';
 
 export default {
   components: {
+    PageLayout,
     PostFormModal,
   },
   setup() {
@@ -424,22 +422,10 @@ export default {
 </script>
 
 <style scoped>
-.community-page {
-  max-width: 960px;
-  min-height: 100%;
-  padding: 32px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-}
-
-.sf-page-title {
-  line-height: 1.25;
-}
-
 /* 게시판 탭: 밑줄형 */
 .board-tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 16px;
   border-bottom: 1px solid var(--sf-line-strong);
   overflow-x: auto;
   scrollbar-width: none;
@@ -599,15 +585,6 @@ export default {
 }
 
 @media (max-width: 600px) {
-  .community-page {
-    padding: 16px 12px 32px;
-  }
-
-  .sf-page-head {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .search-bar {
     padding: 12px 16px;
   }

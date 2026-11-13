@@ -1,6 +1,8 @@
 <template>
-  <div class="fridge-dashboard">
-    <DashboardHeader :fridgeId="currentFridgeId" />
+  <PageLayout width="wide">
+    <template #head>
+      <DashboardHeader :fridgeId="currentFridgeId" />
+    </template>
 
     <div class="dash-top">
       <ExpiringPanel :foods="expiringFoods" :loading="loading" />
@@ -14,10 +16,11 @@
       :loading="loading"
       @food-saved="handleFoodSaved"
     />
-  </div>
+  </PageLayout>
 </template>
 
 <script setup>
+import PageLayout from '@/components/layout/PageLayout.vue';
 import axios from 'axios'
 import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
@@ -104,36 +107,16 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.fridge-dashboard {
-  min-height: 100%;
-  padding: 32px clamp(16px, 3vw, 40px) 48px;
-  background: var(--sf-bg);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 1280px;
-}
-
 .dash-top {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
-  gap: 20px;
+  gap: var(--sf-section-gap);
   align-items: start;
 }
 
 @media (max-width: 960px) {
   .dash-top {
     grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 600px) {
-  .fridge-dashboard {
-    padding: 16px 12px 32px;
-    gap: 12px;
-  }
-  .dash-top {
-    gap: 12px;
   }
 }
 </style>

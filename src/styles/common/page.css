@@ -1,22 +1,62 @@
 /*
  * 화면 공통 레이아웃
- * 여러 화면이 같은 모양으로 쓰는 페이지 머리말·목록 패널·빈 상태.
- * 화면마다 다른 값은 각 화면의 <style scoped>에서 같은 클래스로 덮어쓴다.
+ * 사이드바 안쪽 화면은 모두 <PageLayout>(components/layout/PageLayout.vue)으로 감싼다.
+ *   .sf-page        : 본문 폭(narrow·default·wide)과 여백, 가운데 정렬
+ *   .sf-page-head   : 왼쪽 제목·설명, 오른쪽 버튼
+ *   .sf-page-body   : 본문 블록을 같은 간격(--sf-section-gap)으로 쌓는다
+ * 목록 패널·빈 상태도 여기서 함께 정의한다.
  */
+
+/* 본문 영역 */
+.sf-page {
+  width: 100%;
+  max-width: var(--sf-page-default);
+  margin-inline: auto;
+  padding: var(--sf-page-pad-top) var(--sf-page-pad-x) var(--sf-page-pad-bottom);
+}
+
+.sf-page--narrow {
+  max-width: var(--sf-page-narrow);
+}
+
+.sf-page--wide {
+  max-width: var(--sf-page-wide);
+}
+
+.sf-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-section-gap);
+  min-width: 0;
+}
 
 /* 페이지 머리말: 왼쪽 제목·설명, 오른쪽 버튼 */
 .sf-page-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-bottom: 24px;
+}
+
+.sf-page-head-text {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.sf-page-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .sf-page-title {
   margin: 0;
   font-size: 28px;
   font-weight: 800;
+  line-height: 1.25;
   letter-spacing: -0.02em;
   color: var(--sf-text);
 }
@@ -24,10 +64,11 @@
 .sf-page-desc {
   margin: 6px 0 0;
   font-size: 15px;
+  line-height: 1.5;
   color: var(--sf-text-sub);
 }
 
-/* 흰 카드 형태의 목록 패널 */
+/* 흰 카드 형태의 패널 */
 .sf-list-panel {
   background: var(--sf-surface);
   border-radius: var(--sf-radius-lg);
@@ -65,7 +106,21 @@
 }
 
 @media (max-width: 600px) {
+  :root {
+    --sf-page-pad-top: 20px;
+    --sf-page-pad-bottom: 32px;
+    --sf-section-gap: 12px;
+  }
+
+  .sf-page-head {
+    margin-bottom: 16px;
+  }
+
   .sf-page-title {
     font-size: 22px;
+  }
+
+  .sf-page-desc {
+    font-size: 14px;
   }
 }

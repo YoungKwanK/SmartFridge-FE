@@ -1,7 +1,7 @@
 <template>
   <div class="landing">
     <header class="top-bar">
-      <span class="brand">
+      <span class="sf-brand">
         <img :src="logoUrl" alt="" class="sf-brand-logo" />
         <span class="sf-brand-name">SmartFridge</span>
       </span>
@@ -149,12 +149,6 @@ const steps = [
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* 첫 화면 */
