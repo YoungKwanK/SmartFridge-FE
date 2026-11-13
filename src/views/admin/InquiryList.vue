@@ -1,163 +1,151 @@
 <template>
-  <div class="admin-layout">
-    <div class="inquiry-list">
-      <div class="header">
-        <h1>문의 목록</h1>
-        <button @click="logout" class="logout-btn">로그아웃</button>
-      </div>
-      
-      <div class="navigation-menu">
-        <router-link to="/admin" class="nav-item">대시보드</router-link>
-        <router-link to="/admin/inquiry" class="nav-item active">문의 목록</router-link>
-        <router-link to="/admin/notification" class="nav-item">알림 목록</router-link>
-        <router-link to="/admin/users" class="nav-item">사용자 관리</router-link>
-      </div>
+  <PageLayout title="문의 목록" width="wide" class="inquiry-list">
+    <div class="filters">
+      <select v-model="statusFilter" @change="filterInquiries">
+        <option value="">전체 상태</option>
+        <option value="답변대기">답변대기</option>
+        <option value="처리중">처리중</option>
+        <option value="답변완료">답변완료</option>
+        <option value="반려">반려</option>
+      </select>
+      <input type="text" v-model="searchQuery" placeholder="제목으로 검색..." @input="filterInquiries">
+    </div>
 
-      <div class="filters">
-        <select v-model="statusFilter" @change="filterInquiries">
-          <option value="">전체 상태</option>
-          <option value="답변대기">답변대기</option>
-          <option value="처리중">처리중</option>
-          <option value="답변완료">답변완료</option>
-          <option value="반려">반려</option>
-        </select>
-        <input type="text" v-model="searchQuery" placeholder="제목으로 검색..." @input="filterInquiries">
-      </div>
+    <div class="inquiry-table">
+      <table>
+        <thead>
+          <tr>
+            <th>번호</th>
+            <th>제목</th>
+            <th>작성자</th>
+            <th>상태</th>
+            <th>작성일</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="inquiry in filteredInquiries" :key="inquiry.id">
+            <td>{{ inquiry.id }}</td>
+            <td>{{ inquiry.title }}</td>
+            <td>{{ inquiry.author }}</td>
+            <td>
+              <span :class="getStatusClass(inquiry.status)">
+                {{ inquiry.status }}
+              </span>
+            </td>
+            <td>{{ inquiry.createdAt }}</td>
+            <td>
+              <div class="action-buttons">
+                <button @click="viewInquiry(inquiry)" class="view-btn">보기</button>
+                <button v-if="inquiry.status === '답변대기'" @click="replyInquiry(inquiry)" class="reply-btn">답변</button>
+                <select v-model="inquiry.newStatus" @change="updateStatus(inquiry)" class="status-select">
+                  <option value="">상태 변경</option>
+                  <option value="답변대기">답변대기</option>
+                  <option value="처리중">처리중</option>
+                  <option value="답변완료">답변완료</option>
+                  <option value="반려">반려</option>
+                </select>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-      <div class="inquiry-table">
-        <table>
-          <thead>
-            <tr>
-              <th>번호</th>
-              <th>제목</th>
-              <th>작성자</th>
-              <th>상태</th>
-              <th>작성일</th>
-              <th>작업</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="inquiry in filteredInquiries" :key="inquiry.id">
-              <td>{{ inquiry.id }}</td>
-              <td>{{ inquiry.title }}</td>
-              <td>{{ inquiry.author }}</td>
-              <td>
-                <span :class="getStatusClass(inquiry.status)">
-                  {{ inquiry.status }}
-                </span>
-              </td>
-              <td>{{ inquiry.createdAt }}</td>
-              <td>
-                <div class="action-buttons">
-                  <button @click="viewInquiry(inquiry)" class="view-btn">보기</button>
-                  <button v-if="inquiry.status === '답변대기'" @click="replyInquiry(inquiry)" class="reply-btn">답변</button>
-                  <select v-model="inquiry.newStatus" @change="updateStatus(inquiry)" class="status-select">
-                    <option value="">상태 변경</option>
-                    <option value="답변대기">답변대기</option>
-                    <option value="처리중">처리중</option>
-                    <option value="답변완료">답변완료</option>
-                    <option value="반려">반려</option>
-                  </select>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 문의 상세 보기 모달 -->
-      <div v-if="selectedInquiry" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>{{ selectedInquiry.title }}</h2>
-            <button @click="closeModal" class="close-btn">×</button>
-          </div>
-          <div class="modal-body">
-            <div class="inquiry-detail">
-              <p><strong>작성자:</strong> {{ selectedInquiry.author }}</p>
-              <p><strong>냉장고:</strong> {{ selectedInquiry.fridgeName }}</p>
-              <p><strong>작성일:</strong> {{ selectedInquiry.createdAt }}</p>
-              <p><strong>내용:</strong></p>
-              <div class="content">{{ selectedInquiry.content }}</div>
-              
-              <!-- 첨부 이미지 표시 -->
-              <div v-if="selectedInquiry.imageUrls && selectedInquiry.imageUrls.length > 0" class="inquiry-images">
-                <p><strong>첨부 이미지:</strong></p>
-                <div class="image-gallery">
-                  <div v-for="(imageUrl, index) in selectedInquiry.imageUrls" :key="index" class="image-item">
-                    <img 
-                      :src="imageUrl" 
-                      :alt="`문의 이미지 ${index + 1}`"
-                      @click="openImageModal(imageUrl)"
-                      @error="handleImageError"
-                      class="inquiry-image"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div v-if="selectedInquiry.reply" class="reply-detail">
-              <h3>답변</h3>
-              <div class="content">{{ selectedInquiry.reply }}</div>
-              <p><strong>답변일:</strong> {{ selectedInquiry.replyDate }}</p>
-              <div class="reply-actions">
-                <button @click="editReply" class="edit-reply-btn">답변 수정</button>
-              </div>
-            </div>
-            
-            <div v-else-if="isReplyMode" class="reply-form">
-              <h3>답변 작성</h3>
-              <div class="no-reply-info">
-                <p class="no-reply-message">답변이 아직 없습니다.</p>
-              </div>
-              <textarea v-model="replyContent" placeholder="답변을 입력하세요..." rows="5"></textarea>
-              <div class="form-actions">
-                <button @click="submitReply" class="submit-btn">답변 등록</button>
-                <button @click="closeModal" class="cancel-btn">취소</button>
-              </div>
-            </div>
-            
-            <div v-else class="no-reply-view">
-              <h3>답변</h3>
-              <div class="no-reply-info">
-                <p class="no-reply-message">답변이 아직 없습니다.</p>
-              </div>
-            </div>
-            
-            <!-- 답변 수정 모달 -->
-            <div v-if="isEditReplyMode" class="reply-form">
-              <h3>답변 수정</h3>
-              <div class="no-reply-info">
-                <p class="no-reply-message">기존 답변을 수정하세요.</p>
-              </div>
-              <textarea v-model="editReplyContent" placeholder="수정할 답변 내용을 입력하세요..." rows="5"></textarea>
-              <div class="form-actions">
-                <button @click="submitEditReply" class="submit-btn">수정 완료</button>
-                <button @click="cancelEditReply" class="cancel-btn">취소</button>
-              </div>
-            </div>
-          </div>
+    <!-- 문의 상세 보기 모달 -->
+    <div v-if="selectedInquiry" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>{{ selectedInquiry.title }}</h2>
+          <button @click="closeModal" class="close-btn">×</button>
         </div>
-      </div>
-      
-      <!-- 이미지 확대보기 모달 -->
-      <div v-if="selectedImage" class="image-modal" @click="closeImageModal">
-        <div class="image-modal-content" @click.stop>
-          <button @click="closeImageModal" class="image-close-btn">×</button>
-          <img :src="selectedImage" alt="확대 이미지" class="enlarged-image" />
+        <div class="modal-body">
+          <div class="inquiry-detail">
+            <p><strong>작성자:</strong> {{ selectedInquiry.author }}</p>
+            <p><strong>냉장고:</strong> {{ selectedInquiry.fridgeName }}</p>
+            <p><strong>작성일:</strong> {{ selectedInquiry.createdAt }}</p>
+            <p><strong>내용:</strong></p>
+            <div class="content">{{ selectedInquiry.content }}</div>
+            
+            <!-- 첨부 이미지 표시 -->
+            <div v-if="selectedInquiry.imageUrls && selectedInquiry.imageUrls.length > 0" class="inquiry-images">
+              <p><strong>첨부 이미지:</strong></p>
+              <div class="image-gallery">
+                <div v-for="(imageUrl, index) in selectedInquiry.imageUrls" :key="index" class="image-item">
+                  <img 
+                    :src="imageUrl" 
+                    :alt="`문의 이미지 ${index + 1}`"
+                    @click="openImageModal(imageUrl)"
+                    @error="handleImageError"
+                    class="inquiry-image"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="selectedInquiry.reply" class="reply-detail">
+            <h3>답변</h3>
+            <div class="content">{{ selectedInquiry.reply }}</div>
+            <p><strong>답변일:</strong> {{ selectedInquiry.replyDate }}</p>
+            <div class="reply-actions">
+              <button @click="editReply" class="edit-reply-btn">답변 수정</button>
+            </div>
+          </div>
+          
+          <div v-else-if="isReplyMode" class="reply-form">
+            <h3>답변 작성</h3>
+            <div class="no-reply-info">
+              <p class="no-reply-message">답변이 아직 없습니다.</p>
+            </div>
+            <textarea v-model="replyContent" placeholder="답변을 입력하세요..." rows="5"></textarea>
+            <div class="form-actions">
+              <button @click="submitReply" class="submit-btn">답변 등록</button>
+              <button @click="closeModal" class="cancel-btn">취소</button>
+            </div>
+          </div>
+          
+          <div v-else class="no-reply-view">
+            <h3>답변</h3>
+            <div class="no-reply-info">
+              <p class="no-reply-message">답변이 아직 없습니다.</p>
+            </div>
+          </div>
+          
+          <!-- 답변 수정 모달 -->
+          <div v-if="isEditReplyMode" class="reply-form">
+            <h3>답변 수정</h3>
+            <div class="no-reply-info">
+              <p class="no-reply-message">기존 답변을 수정하세요.</p>
+            </div>
+            <textarea v-model="editReplyContent" placeholder="수정할 답변 내용을 입력하세요..." rows="5"></textarea>
+            <div class="form-actions">
+              <button @click="submitEditReply" class="submit-btn">수정 완료</button>
+              <button @click="cancelEditReply" class="cancel-btn">취소</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+    
+    <!-- 이미지 확대보기 모달 -->
+    <div v-if="selectedImage" class="image-modal" @click="closeImageModal">
+      <div class="image-modal-content" @click.stop>
+        <button @click="closeImageModal" class="image-close-btn">×</button>
+        <img :src="selectedImage" alt="확대 이미지" class="enlarged-image" />
+      </div>
+    </div>
+  </PageLayout>
 </template>
 
 <script>
 import axios from 'axios';
+import PageLayout from '@/components/layout/PageLayout.vue';
 import { snackbar } from '@/composables/snackbar';
 
 export default {
   name: 'InquiryList',
+  components: { PageLayout },
   data() {
     return {
       inquiries: [],
@@ -410,11 +398,6 @@ export default {
       event.target.style.display = 'none';
     },
     
-    logout() {
-      localStorage.clear();
-      this.$store.dispatch('user/logout');
-      this.$router.push('/');
-    },
     
     // 상태 매핑 메서드
     mapStatus(status) {

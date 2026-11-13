@@ -1,46 +1,35 @@
 <template>
-  <div class="admin-layout">
-    <div class="admin-dashboard">
-      <div class="header">
-        <h1>관리자 대시보드</h1>
-        <button @click="logout" class="logout-btn">로그아웃</button>
+  <PageLayout title="관리자 대시보드" width="wide" class="admin-dashboard">
+    
+    <div class="dashboard-stats">
+      <div class="stat-card">
+        <h3>총 문의 수</h3>
+        <p>{{ inquiryCount }}</p>
       </div>
-      
-      <div class="navigation-menu">
-        <router-link to="/admin" class="nav-item active">대시보드</router-link>
-        <router-link to="/admin/inquiry" class="nav-item">문의 목록</router-link>
-        <router-link to="/admin/notification" class="nav-item">알림 목록</router-link>
-        <router-link to="/admin/users" class="nav-item">사용자 관리</router-link>
+      <div class="stat-card">
+        <h3>미답변 문의</h3>
+        <p>{{ unansweredCount }}</p>
       </div>
-      
-      <div class="dashboard-stats">
-        <div class="stat-card">
-          <h3>총 문의 수</h3>
-          <p>{{ inquiryCount }}</p>
-        </div>
-        <div class="stat-card">
-          <h3>미답변 문의</h3>
-          <p>{{ unansweredCount }}</p>
-        </div>
-        <div class="stat-card">
-          <h3>총 사용자 수</h3>
-          <p>{{ userCount }}</p>
-        </div>
-        <div class="stat-card">
-          <h3>새 알림</h3>
-          <p>{{ newNotificationCount }}</p>
-        </div>
+      <div class="stat-card">
+        <h3>총 사용자 수</h3>
+        <p>{{ userCount }}</p>
+      </div>
+      <div class="stat-card">
+        <h3>새 알림</h3>
+        <p>{{ newNotificationCount }}</p>
       </div>
     </div>
-  </div>
+  </PageLayout>
 </template>
 
 <script>
 import axios from 'axios';
+import PageLayout from '@/components/layout/PageLayout.vue';
 import { snackbar } from '@/composables/snackbar';
 
 export default {
   name: 'AdminDashboard',
+  components: { PageLayout },
   data() {
     return {
       inquiryCount: 0,
@@ -80,11 +69,6 @@ export default {
       }
     },
     
-    logout() {
-      localStorage.clear();
-      this.$store.dispatch('user/logout');
-      this.$router.push('/');
-    },
 
     // 읽지 않은 알림 개수 로드
     async loadUnreadNotificationCount() {

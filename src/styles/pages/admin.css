@@ -1,81 +1,5 @@
 /* 관리자 화면 공통 스타일 (views/admin/*.vue 에서 <style scoped src>로 불러 씀) */
 
-.admin-layout {
-  min-height: 100vh;
-  background: var(--sf-bg);
-}
-
-.admin-layout > div {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 28px clamp(16px, 3vw, 40px) 48px;
-}
-
-/* 머리글 */
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.header h1 {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--sf-text);
-}
-
-.logout-btn {
-  height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--sf-line-strong);
-  border-radius: 8px;
-  background: var(--sf-surface);
-  font: inherit;
-  font-size: 14px;
-  color: var(--sf-text-sub);
-  cursor: pointer;
-}
-
-.logout-btn:hover {
-  color: var(--sf-text);
-  border-color: var(--sf-text-faint);
-}
-
-/* 탭 */
-.navigation-menu {
-  display: flex;
-  gap: 4px;
-  margin: 20px 0 24px;
-  border-bottom: 1px solid var(--sf-line-strong);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
-
-.nav-item {
-  flex-shrink: 0;
-  margin-bottom: -1px;
-  padding: 10px 14px;
-  border-bottom: 2px solid transparent;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--sf-text-sub);
-  text-decoration: none;
-}
-
-.nav-item:hover {
-  color: var(--sf-text);
-}
-
-.nav-item.active {
-  border-bottom-color: var(--sf-text);
-  font-weight: 700;
-  color: var(--sf-text);
-}
-
 /* 대시보드 숫자 */
 .dashboard-stats {
   display: grid;
@@ -114,7 +38,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin: 0;
 }
 
 .filters select,
