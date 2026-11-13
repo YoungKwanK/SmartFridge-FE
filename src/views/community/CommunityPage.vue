@@ -472,7 +472,7 @@ export default {
 }
 
 .post-item.is-pinned {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .post-link {

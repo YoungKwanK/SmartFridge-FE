@@ -507,7 +507,7 @@ export default {
   align-self: flex-start;
   padding: 4px;
   border-radius: var(--sf-radius-md);
-  background: #ECEEF2;
+  background: var(--sf-line);
 }
 
 .segment {
@@ -632,7 +632,7 @@ export default {
 }
 
 .food-item:hover {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .item-main {

@@ -1120,7 +1120,7 @@ onUnmounted(() => {
 }
 
 .member-row:not(.is-selected) .member-main:not(:disabled):hover {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .member-avatar {

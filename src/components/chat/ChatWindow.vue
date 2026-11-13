@@ -980,7 +980,7 @@ onUnmounted(() => {
   opacity: 0.9;
   font-weight: 600;
   letter-spacing: 0.025em;
-  color: #5f6368;
+  color: var(--sf-text-sub);
   margin-bottom: 4px;
   align-self: flex-start;
 }
@@ -991,7 +991,7 @@ onUnmounted(() => {
   opacity: 0.7;
   font-weight: 500;
   letter-spacing: 0.025em;
-  color: #5f6368;
+  color: var(--sf-text-sub);
   background: rgba(95, 99, 104, 0.1);
   padding: 1px 6px;
   border-radius: 8px;
@@ -1017,10 +1017,10 @@ onUnmounted(() => {
 /* 받은 메시지 버블 스타일 */
 .received-message-layout .message-bubble { 
   background: var(--sf-surface);
-  color: #2c2c2c;
+  color: var(--sf-text);
   border-bottom-left-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e8eaed;
+  border: 1px solid var(--sf-line);
 }
 
 .received-message-layout .message-bubble:hover {
@@ -1045,7 +1045,7 @@ onUnmounted(() => {
 }
 
 .received-message-layout .message-text {
-  color: #2c2c2c;
+  color: var(--sf-text);
   font-weight: 400;
 }
 
@@ -1153,7 +1153,7 @@ onUnmounted(() => {
   width: 20px;
   height: 20px;
   min-width: 20px;
-  background-color: #ff4444;
+  background-color: var(--sf-expired);
 }
 .image-preview-item .remove-image-btn .v-icon {
   font-size: 16px;
@@ -1346,7 +1346,7 @@ onUnmounted(() => {
 .empty-chat-title {
   font-size: var(--sf-fs-2xl);
   font-weight: 600;
-  color: #374151;
+  color: var(--sf-text);
   margin-bottom: 12px;
   line-height: 1.4;
 }

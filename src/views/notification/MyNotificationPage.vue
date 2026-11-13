@@ -471,7 +471,7 @@ onBeforeUnmount(() => {
 }
 
 .noti-main:hover {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .noti-icon {

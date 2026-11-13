@@ -1149,7 +1149,7 @@ export default {
 }
 
 .inquiry-summary:hover {
-  background: #FAFBFC;
+  background: var(--sf-bg);
 }
 
 .inquiry-main {
