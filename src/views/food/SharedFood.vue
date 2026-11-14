@@ -165,6 +165,17 @@
       @cancel="deleteDialog = false"
     />
 
+    <!-- 수정에서 수량을 줄였을 때: 줄어든 만큼을 먹었는지 버렸는지 묻기 -->
+    <FoodReduceDialog
+      v-model="reduceDialog"
+      :food-name="pendingUpdate?.name || ''"
+      :from-count="selectedFood.quantity || 0"
+      :to-count="pendingUpdate?.quantity || 0"
+      :loading="reducingType"
+      @select="handleReduce"
+      @cancel="cancelReduce"
+    />
+
   </PageLayout>
 </template>
 
@@ -173,6 +184,7 @@ import PageLayout from '@/components/layout/PageLayout.vue';
 import axios from 'axios';
 import FoodFormModal from '@/components/food/FoodFormModal.vue';
 import FoodFinishDialog from '@/components/food/FoodFinishDialog.vue';
+import FoodReduceDialog from '@/components/food/FoodReduceDialog.vue';
 import { getFridgeId } from '@/utils/commonDataHandler';
 import DdayBadge from '@/components/food/DdayBadge.vue';
 import { categoryEmoji, freshnessStatus } from '@/utils/foodFreshness';
@@ -190,6 +202,7 @@ export default {
     PageLayout,
     FoodFormModal,
     FoodFinishDialog,
+    FoodReduceDialog,
     DdayBadge
   },
   data() {
@@ -200,6 +213,9 @@ export default {
       isReadOnly: false,
       deleteDialog: false,
       finishingType: '', // 처리 요청 중인 선택지 ('소비' | '폐기' | '잘못등록')
+      reduceDialog: false,
+      pendingUpdate: null, // 수량을 줄인 수정 내용 (줄어든 만큼을 어떻게 했는지 고르기 전까지 보관)
+      reducingType: '', // 저장 중인 선택지 ('소비' | '폐기' | '수량정정')
       isLoading: false,
       activeTab: 'ALL', // 필터 탭 상태
       selectedCategory: 'ALL', // 카테고리 필터 상태
@@ -368,6 +384,12 @@ export default {
         let response;
         // 수정은 식품 하나(객체), 등록은 식품 목록(배열)으로 들어옴
         if (!Array.isArray(foodData) && foodData.id) {
+          // 수량을 줄였으면 줄어든 만큼을 먹었는지 버렸는지 먼저 묻는다 (selectedFood는 수정 전 값)
+          if (foodData.quantity < (this.selectedFood.quantity || 0)) {
+            this.pendingUpdate = foodData;
+            this.reduceDialog = true;
+            return;
+          }
           response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/update/${foodData.id}`, foodData);
           console.log('식품 수정 성공:', response.data);
           snackbar.success('식품이 성공적으로 수정되었습니다.');
@@ -381,6 +403,47 @@ export default {
         console.error('식품 저장 실패:', error);
         snackbar.error('식품 저장에 실패했습니다: ' + this.getErrorMessage(error));
       }
+    },
+    // result: '소비' | '폐기' → 줄어든 수량만큼 기록, null → 수량만 고침 (기록 없음)
+    async handleReduce(result) {
+      if (this.reducingType || !this.pendingUpdate) return;
+      const fridgeId = getFridgeId(this.$store);
+      if (!fridgeId) {
+        console.error('Vuex store에서 냉장고 ID를 찾을 수 없습니다.');
+        return;
+      }
+      const reducedCount = (this.selectedFood.quantity || 0) - this.pendingUpdate.quantity;
+      this.reducingType = result || '수량정정';
+      try {
+        await axios.put(
+          `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/food/update/${this.pendingUpdate.id}`,
+          { ...this.pendingUpdate, reducedResult: result }
+        );
+        this.closeReduceDialog();
+        await this.fetchFoodList();
+        if (result) {
+          this.showSnackbar(
+            `${reducedCount}개를 ${result === '소비' ? '먹은' : '버린'} 식품으로 기록했어요.`,
+            FINISH_MESSAGES[result].color
+          );
+        } else {
+          snackbar.success('수량을 고쳤어요.');
+        }
+      } catch (error) {
+        console.error('식품 수정 실패:', error);
+        snackbar.error('식품 저장에 실패했습니다: ' + this.getErrorMessage(error));
+      } finally {
+        this.reducingType = '';
+      }
+    },
+    // 취소하면 수정 내용을 저장하지 않는다
+    cancelReduce() {
+      this.closeReduceDialog();
+      snackbar.info('수정을 취소했어요.');
+    },
+    closeReduceDialog() {
+      this.reduceDialog = false;
+      this.pendingUpdate = null;
     },
     async deleteFood(food) {
       this.selectedFood = food;
