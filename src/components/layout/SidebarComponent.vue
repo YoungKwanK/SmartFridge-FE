@@ -124,20 +124,16 @@ const selectedItem = ref(['dashboard']);
 
 
 // 라우트 경로를 사이드바 value로 매핑하는 함수
-const getSidebarValueFromRoute = (path, query = {}) => {
-  // 공동구매 게시판은 커뮤니티와 같은 화면이지만 메뉴는 따로 둔다 (모바일 하단 탭과 같게)
-  if (path.startsWith('/fridge/community') && query.board === '공동구매') {
-    return 'groupbuy';
-  }
-
+const getSidebarValueFromRoute = (path) => {
   const routeMapping = {
     '/fridge/dashboard': 'dashboard',
     '/fridge/food/shared': 'sharedfoodlist',
     '/fridge/food/nonshared': 'sharedfoodlist',
     '/fridge/food/report': 'foodreport',
     '/notification/list': 'notifications',
-    '/fridge/community': 'community',
-    '/fridge/post': 'community', // 게시글 상세보기 페이지도 커뮤니티로 매핑
+    '/fridge/groupbuy': 'groupbuy',
+    '/fridge/notice': 'dashboard', // 공지 목록은 대시보드 배너에서 들어온다
+    '/fridge/post': 'groupbuy', // 게시글 상세보기 페이지는 공동구매로 매핑
 
     '/chatpage': 'chat',
     '/mypage': 'mypage',
@@ -162,7 +158,7 @@ const getSidebarValueFromRoute = (path, query = {}) => {
 
 // 현재 라우트에 따라 selectedItem 업데이트
 const updateSelectedItem = () => {
-  const currentValue = getSidebarValueFromRoute(route.path, route.query);
+  const currentValue = getSidebarValueFromRoute(route.path);
   selectedItem.value = [currentValue];
 };
 
@@ -330,7 +326,7 @@ const bottomTabs = computed(() => {
   const chatItem = menuItems.value.find(item => item.value === 'chat');
   return [
     { title: '냉장고', value: 'fridge', icon: 'mdi-fridge-outline', to: '/fridge/dashboard' },
-    { title: '공동구매', value: 'groupbuy', icon: 'mdi-cart-outline', to: { path: '/fridge/community', query: { board: '공동구매' } } },
+    { title: '공동구매', value: 'groupbuy', icon: 'mdi-cart-outline', to: '/fridge/groupbuy' },
     { title: '채팅', value: 'chat', icon: 'mdi-chat-outline', to: '/chatpage', badge: (chatItem?.badgeCount || 0) > 0 },
     { title: '내 정보', value: 'me', icon: 'mdi-account-outline', to: '/mypage' }
   ];
@@ -338,12 +334,10 @@ const bottomTabs = computed(() => {
 
 const activeTab = computed(() => {
   const path = route.path;
-  if (path.startsWith('/fridge/community') || path.startsWith('/fridge/post')) {
-    return route.query.board === '공동구매' ? 'groupbuy' : null;
-  }
+  if (path.startsWith('/fridge/groupbuy') || path.startsWith('/fridge/post')) return 'groupbuy';
   if (path.startsWith('/chatpage')) return 'chat';
   if (path.startsWith('/mypage')) return 'me';
-  if (path.startsWith('/fridge/dashboard') || path.startsWith('/fridge/food')) return 'fridge';
+  if (path.startsWith('/fridge/dashboard') || path.startsWith('/fridge/food') || path.startsWith('/fridge/notice')) return 'fridge';
   return null;
 });
 
@@ -407,8 +401,7 @@ const menuItems = computed(() => {
     { title: '식품 목록', icon: 'mdi-food-fork-drink', value: 'sharedfoodlist', to: '/fridge/food/shared', badgeCount: 0 },
     { title: '리포트', icon: 'mdi-chart-box-outline', value: 'foodreport', to: '/fridge/food/report' },
     { title: '알림', icon: 'mdi-bell-outline', value: 'notifications', to: '/notification/list' },
-    { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', to: '/fridge/community' },
-    { title: '공동구매', icon: 'mdi-cart-outline', value: 'groupbuy', to: { path: '/fridge/community', query: { board: '공동구매' } } },
+    { title: '공동구매', icon: 'mdi-cart-outline', value: 'groupbuy', to: '/fridge/groupbuy' },
     { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', to: '/chatpage', badgeCount: finalChatBadgeCount },
     { title: '내 정보', icon: 'mdi-account', value: 'mypage', to: '/mypage' },
     {

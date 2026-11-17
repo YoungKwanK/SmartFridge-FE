@@ -10,19 +10,6 @@
         <v-form ref="form" v-model="isValid">
           <div class="form-layout">
             <div class="write-col">
-              <div class="field">
-                <label class="sf-field-label" for="post-board">게시판</label>
-                <v-select
-                  id="post-board"
-                  v-model="formData.category"
-                  :items="filteredBoardTypeOptions"
-                  variant="outlined"
-                  density="comfortable"
-                  hide-details
-                  :disabled="!!editingPost.id"
-                />
-              </div>
-
               <div v-if="isPurchase && !editingPost.id" class="purchase-fields">
                 <div class="field-row">
                   <div class="field">
@@ -151,8 +138,7 @@
 
 <script>
 import axios from 'axios';
-import { useStore } from 'vuex';
-import { fetchPostCategories, NOTICE_CATEGORY, DEFAULT_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
+import { PURCHASE_CATEGORY } from '@/utils/postCategory';
 import { snackbar } from '@/composables/snackbar';
 
 // 공동구매 모집 인원 범위 (백엔드 PurchasePost.MIN/MAX_PARTICIPANTS 와 같은 값)
@@ -172,22 +158,19 @@ export default {
       type: Object,
       default: () => ({})
     },
+    // 글을 쓰는 게시판의 카테고리 이름. 게시판 화면이 정해 주고, 작성 중에는 바꾸지 않는다
     boardType: {
       type: String,
-      default: '자유게시판'
+      default: PURCHASE_CATEGORY
     }
   },
   emits: ['update:modelValue', 'save'],
-  setup() {
-    const store = useStore();
-    return { store };
-  },
   data() {
     return {
       isValid: false,
       isSaving: false,
       formData: {
-        category: null, // 카테고리 이름 (예: '자유게시판'). fetchCategories에서 기본값 설정
+        category: null, // 카테고리 이름 (예: '공동구매'). boardType으로 정한다
         title: '',
         content: '',
         imageFiles: [],
@@ -204,10 +187,7 @@ export default {
       urlRules: [
         v => !v || /^https?:\/\/.+/.test(v.trim()) || 'http(s)로 시작하는 주소를 입력해주세요.'
       ],
-      boardTypeOptions: [], // 카테고리 이름 목록 (예: ['공지사항', '자유게시판', '공동구매'])
-      fileInputKey: 0, // 파일 입력 컴포넌트의 키를 위한 변수
-      currentUserRole: 'COMMON', // 현재 사용자의 냉장고 역할
-      fridgeInfo: null // 현재 냉장고 정보
+      fileInputKey: 0 // 파일 입력 컴포넌트의 키를 위한 변수
     }
   },
   computed: {
@@ -222,24 +202,7 @@ export default {
     // 공동구매 글인지 (등록하면 채팅방이 같이 생김)
     isPurchase() {
       return this.formData.category === PURCHASE_CATEGORY;
-    },
-    // 현재 사용자가 관리자인지 확인
-    isManager() {
-      return this.currentUserRole === 'MANAGER';
-    },
-    // 공지사항을 제외한 카테고리 목록 (관리자가 아닌 경우)
-    filteredBoardTypeOptions() {
-      if (this.isManager) {
-        return this.boardTypeOptions;
-      } else {
-        // 관리자가 아닌 경우 공지사항 제외
-        return this.boardTypeOptions.filter(category => category !== NOTICE_CATEGORY);
-      }
     }
-  },
-  async created() {
-    await this.checkUserRole();
-    await this.fetchCategories();
   },
   watch: {
     editingPost: {
@@ -247,7 +210,7 @@ export default {
         if (newPost.id) {
           // 수정 모드
           this.formData = {
-            category: newPost.category || DEFAULT_CATEGORY,
+            category: newPost.category || this.boardType,
             title: newPost.title || '',
             content: newPost.content || '',
             imageFiles: [], // 수정 모드에서는 이미지 파일을 새로 선택하도록
@@ -263,62 +226,11 @@ export default {
     },
     boardType(newBoardType) {
       if (!this.editingPost.id) {
-        // 보고 있는 탭의 카테고리로 맞춤 (쓸 수 없는 카테고리면 자유게시판)
-        this.formData.category = this.getDefaultCategory(newBoardType);
+        this.formData.category = newBoardType;
       }
     }
   },
   methods: {
-    // 현재 사용자의 냉장고 역할 확인
-    async checkUserRole() {
-      try {
-        // 현재 냉장고 ID 가져오기
-        const currentFridgeId = this.store.state.currentFridgeId;
-        if (!currentFridgeId) {
-          console.warn('현재 냉장고 ID가 없습니다.');
-          this.currentUserRole = 'COMMON';
-          return;
-        }
-
-        // 현재 사용자 이메일 가져오기
-        const userEmail = this.store.getters.getUserEmail || localStorage.getItem('email');
-        if (!userEmail) {
-          console.warn('사용자 이메일이 없습니다.');
-          this.currentUserRole = 'COMMON';
-          return;
-        }
-
-        // 냉장고 멤버 목록에서 현재 사용자의 역할 확인
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/fridge/${currentFridgeId}/members`,
-          {
-            headers: { 
-              'Authorization': `Bearer ${localStorage.getItem('accessToken')}` 
-            }
-          }
-        );
-
-        if (response.data && response.data.result) {
-          const members = response.data.result;
-          const currentUser = members.find(member => member.memberEmail === userEmail);
-          
-          if (currentUser) {
-            this.currentUserRole = currentUser.type || 'COMMON';
-            console.log('현재 사용자 냉장고 역할:', this.currentUserRole);
-          } else {
-            console.warn('현재 사용자를 냉장고 멤버 목록에서 찾을 수 없습니다.');
-            this.currentUserRole = 'COMMON';
-          }
-        } else {
-          console.warn('냉장고 멤버 목록을 가져올 수 없습니다.');
-          this.currentUserRole = 'COMMON';
-        }
-      } catch (error) {
-        console.error('사용자 역할 확인 실패:', error);
-        this.currentUserRole = 'COMMON';
-      }
-    },
-
     // 이미지 업로드 메서드 추가
     async uploadImages(files) {
       try {
@@ -354,16 +266,9 @@ export default {
 
 
 
-    // 카테고리 이름 목록 가져오기 (커뮤니티 화면과 같은 결과를 공유해서 요청은 한 번만 나감)
-    async fetchCategories() {
-      this.boardTypeOptions = await fetchPostCategories();
-      if (!this.editingPost.id) {
-        this.formData.category = this.getDefaultCategory(this.boardType);
-      }
-    },
     resetForm() {
       this.formData = {
-        category: this.getDefaultCategory(this.boardType),
+        category: this.boardType,
         title: '',
         content: '',
         imageFiles: [],
@@ -374,11 +279,6 @@ export default {
       this.$refs.form?.resetValidation();
     },
 
-    // 새 글의 기본 카테고리: 보고 있는 탭의 카테고리. 쓸 수 없는 카테고리(전체, 일반 멤버의 공지사항)면 자유게시판
-    getDefaultCategory(boardType) {
-      return this.filteredBoardTypeOptions.includes(boardType) ? boardType : DEFAULT_CATEGORY;
-    },
-    
     closeModal() {
       this.dialog = false;
       this.resetForm();
@@ -407,7 +307,7 @@ export default {
         const postData = {
           title: this.formData.title,
           content: this.formData.content,
-          category: this.formData.category,  // 카테고리 이름 (예: '자유게시판')
+          category: this.formData.category,  // 카테고리 이름 (예: '공동구매')
           imageUrls: contentImageUrls  // 내용에 실제로 삽입된 이미지 URL만
         };
         

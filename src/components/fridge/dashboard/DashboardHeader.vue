@@ -11,6 +11,17 @@
       <p v-if="fridge.description" class="sf-page-desc fridge-subtitle">{{ fridge.description }}</p>
     </div>
     <div class="header-actions">
+      <!-- 공지가 하나도 없을 때 관리자에게만 보인다 (공지가 있으면 대시보드 공지 배너에서 들어가 쓴다) -->
+      <v-btn
+        v-if="showNoticeWrite"
+        :to="{ path: '/fridge/notice', query: { write: 1 } }"
+        variant="outlined"
+        prepend-icon="mdi-bullhorn-outline"
+        height="44"
+        class="notice-write-btn"
+      >
+        공지 쓰기
+      </v-btn>
       <button
         type="button"
         class="notification-icon"
@@ -117,12 +128,18 @@ import { onMounted, onUnmounted, computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { boardRouteOf, NOTICE_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
 
 // Props 정의
 const props = defineProps({
   fridgeId: {
     type: String,
     required: true
+  },
+  // 관리자에게 '공지 쓰기' 버튼을 보여줄지 (대시보드가 공지 개수를 보고 정한다)
+  showNoticeWrite: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -390,7 +407,7 @@ const handleNotificationClick = async (notification) => {
         router.push(`/fridge/post/${postId}`);
       }
     } else {
-      router.push('/fridge/community');
+      router.push(boardRouteOf(type === 'NEW_ANNOUNCEMENT' ? NOTICE_CATEGORY : PURCHASE_CATEGORY));
     }
     showNotificationModal.value = false;
     return;
@@ -399,7 +416,7 @@ const handleNotificationClick = async (notification) => {
   // 기존 fallbacks
   if (notification.targetType === 'ANNOUNCE') {
     if (postId) router.push(`/fridge/post/${postId}`);
-    else router.push('/fridge/community');
+    else router.push(boardRouteOf(NOTICE_CATEGORY));
     showNotificationModal.value = false;
     return;
   }
@@ -512,6 +529,14 @@ const getNotificationColor = (type) => {
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.notice-write-btn {
+  border-color: var(--sf-line);
+  border-radius: var(--sf-radius-md);
+  color: var(--sf-text);
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .notification-icon {

@@ -87,7 +87,7 @@
     </ul>
 
     <p v-if="!isLoading && sortedMyPurchaseRooms.length === 0" class="empty-hint">
-      공동구매 채팅은 커뮤니티의 공동구매 글에서 참여할 수 있어요.
+      공동구매 채팅은 공동구매 게시판의 글에서 참여할 수 있어요.
     </p>
 
     <RoomInfoModal
