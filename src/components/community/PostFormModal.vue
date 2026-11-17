@@ -122,7 +122,7 @@
         <v-spacer />
         <v-btn variant="text" @click="closeModal">취소</v-btn>
         <v-btn
-          :color="isPurchase && !editingPost.id ? 'cta' : 'primary'"
+          color="primary"
           variant="flat"
           :loading="isSaving"
           :disabled="!isValid"
@@ -523,9 +523,9 @@ export default {
 .purchase-fields {
   margin-bottom: 18px;
   padding: 14px;
-  border: 1px solid #FFD9C2;
+  border: 1px solid var(--sf-line);
   border-radius: var(--sf-radius-md);
-  background: #FFF7F2;
+  background: var(--sf-bg);
 }
 
 .image-list {

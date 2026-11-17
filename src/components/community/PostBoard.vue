@@ -18,7 +18,7 @@
       />
       <v-btn
         v-if="canWrite"
-        :color="isGroupBuyBoard ? 'cta' : 'primary'"
+        color="primary"
         variant="flat"
         prepend-icon="mdi-plus"
         class="write-btn"
@@ -72,7 +72,7 @@
       <p>{{ emptyHint }}</p>
       <v-btn
         v-if="canWrite && !searchQuery"
-        :color="isGroupBuyBoard ? 'cta' : 'primary'"
+        color="primary"
         variant="flat"
         prepend-icon="mdi-plus"
         class="mt-2"
