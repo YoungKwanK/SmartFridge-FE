@@ -21,6 +21,11 @@ export const fridgeRoutes = [
     component: () => import('@/views/food/FoodReport.vue')
   },
   {
+    path: '/fridge/recipes',
+    name: 'RecipeRecommend',
+    component: () => import('@/views/recipe/RecipeRecommendPage.vue')
+  },
+  {
     path: '/fridge/member/list',
     name: 'FridgeMemberList',
     component: () => import('@/views/fridge/FridgeMemberList.vue')
