@@ -13,7 +13,12 @@
 
     <div class="recipe-body">
       <div class="recipe-head">
-        <h3 class="recipe-name">{{ recipe.name }}</h3>
+        <h3 class="recipe-name">
+          <!-- 줄 전체가 눌리도록 링크의 ::after 를 줄 크기로 펼친다 -->
+          <router-link :to="{ name: 'RecipeDetail', params: { recipeId: recipe.recipeId } }" class="recipe-link">
+            {{ recipe.name }}
+          </router-link>
+        </h3>
         <span v-if="metaText" class="recipe-meta">{{ metaText }}</span>
       </div>
 
@@ -101,11 +106,41 @@ const cells = computed(() => {
 
 <style scoped>
 .recipe-row {
+  position: relative;
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
   gap: 18px;
   padding: 20px 24px;
   border-top: 1px solid var(--sf-line);
+  transition: background-color 0.15s ease;
+}
+
+.recipe-row:hover {
+  background: var(--sf-bg);
+}
+
+.recipe-row:has(.recipe-link:focus-visible) {
+  outline: 2px solid var(--sf-primary);
+  outline-offset: -2px;
+}
+
+.recipe-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.recipe-link:focus-visible {
+  outline: none;
+}
+
+.recipe-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.recipe-row:hover .recipe-link {
+  color: var(--sf-primary);
 }
 
 .recipe-row:first-child {
