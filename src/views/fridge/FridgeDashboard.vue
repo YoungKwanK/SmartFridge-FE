@@ -1,10 +1,10 @@
 <template>
   <PageLayout width="wide">
     <template #head>
-      <DashboardHeader :fridgeId="currentFridgeId" :show-notice-write="showNoticeWrite" />
+      <DashboardHeader :fridgeId="currentFridgeId" />
     </template>
 
-    <NoticeBanner :notices="notices" :total="noticeTotal" />
+    <NoticeBanner :notices="notices" :total="noticeTotal" :loaded="noticesLoaded" :is-manager="isManager" />
 
     <div class="dash-top">
       <ExpiringPanel :foods="expiringFoods" :loading="loading" />
@@ -55,9 +55,8 @@ const noticeTotal = ref(0)
 const noticesLoaded = ref(false)
 const NOTICE_SIZE = 10
 
-// 공지가 하나도 없을 때만 관리자 머리말에 '공지 쓰기'를 보여준다 (있으면 배너에서 들어가 쓴다)
+// 공지가 하나도 없을 때 배너에서 관리자에게만 '공지 쓰기'를 보여준다
 const isManager = computed(() => store.getters.getCurrentFridgeInfo?.type === 'MANAGER')
-const showNoticeWrite = computed(() => isManager.value && noticesLoaded.value && noticeTotal.value === 0)
 
 const fetchNotices = async () => {
   try {
