@@ -108,6 +108,21 @@
         </div>
       </section>
 
+      <!-- 탈퇴 전에 먼저 닿는 곳: 불편한 점은 문의로 풀 수 있게 탈퇴 바로 위에 둔다 -->
+      <section class="inquiry-banner" aria-labelledby="inquiry-title">
+        <span class="inquiry-icon" aria-hidden="true">
+          <v-icon size="22">mdi-message-question-outline</v-icon>
+        </span>
+        <div class="inquiry-body">
+          <h2 id="inquiry-title" class="inquiry-title">
+            불편한 점이 있나요?
+            <span v-if="hasInquiryUpdate" class="inquiry-new">새 답변</span>
+          </h2>
+          <p class="inquiry-desc">바라는 기능이나 막힌 곳을 알려 주세요. 답변이 달리면 알림으로 알려드려요.</p>
+        </div>
+        <v-btn color="primary" variant="tonal" to="/inquiry" class="inquiry-action">문의하기</v-btn>
+      </section>
+
       <!-- 계정 삭제는 맨 아래, 눈에 덜 띄게 -->
       <section class="danger" aria-labelledby="danger-title">
         <div>
@@ -198,6 +213,10 @@ export default {
     ...mapGetters(['getUserInfo', 'getUserName', 'getUserProfileImage', 'getUserInitial']),
     userInfo() {
       return this.getUserInfo || {}
+    },
+    // 내 문의에 새 답변이 있으면 문의하기 배너에 '새 답변'을 띄운다
+    hasInquiryUpdate() {
+      return this.$store.getters['notification/inquiryBadgeCount'] > 0
     },
     userInitial() {
       return this.getUserInitial || 'U'
@@ -648,6 +667,7 @@ export default {
   grid-template-areas:
     'profile settings'
     'posts settings'
+    'inquiry inquiry'
     'danger danger';
   gap: var(--sf-section-gap);
   align-items: start;
@@ -919,6 +939,63 @@ export default {
   color: var(--sf-soon-ink);
 }
 
+/* 문의하기 배너: 패널과 같은 바탕에 민트 아이콘, 탈퇴(테두리만)보다 한 단계 앞에 보이게 */
+.inquiry-banner {
+  grid-area: inquiry;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
+}
+
+.inquiry-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-mint-soft);
+  color: var(--sf-primary);
+}
+
+.inquiry-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.inquiry-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--sf-fs-md);
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.inquiry-new {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--sf-primary);
+  font-size: var(--sf-fs-xs);
+  font-weight: 700;
+  color: #fff;
+}
+
+.inquiry-desc {
+  margin: 4px 0 0;
+  font-size: var(--sf-fs-sm);
+  color: var(--sf-text-sub);
+}
+
+.inquiry-action {
+  flex-shrink: 0;
+}
+
 /* 탈퇴 */
 .danger {
   display: flex;
@@ -957,7 +1034,7 @@ export default {
 @media (max-width: 960px) {
   .mypage-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'profile' 'posts' 'settings' 'danger';
+    grid-template-areas: 'profile' 'posts' 'settings' 'inquiry' 'danger';
   }
 }
 
@@ -974,6 +1051,19 @@ export default {
   .danger {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .inquiry-banner {
+    flex-wrap: wrap;
+    padding: 20px 16px;
+  }
+
+  .inquiry-body {
+    flex-basis: calc(100% - 60px);
+  }
+
+  .inquiry-action {
+    width: 100%;
   }
 
   .post-counts {

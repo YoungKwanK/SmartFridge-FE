@@ -57,16 +57,17 @@
     </v-list>
 
     <template v-slot:append>
+      <!-- 아바타와 이름을 누르면 마이페이지로 간다. 문의하기는 마이페이지 배너에서 -->
       <div class="sidebar-user">
-        <router-link to="/mypage" class="user-link" aria-label="내 정보로 가기">
+        <router-link to="/mypage" class="user-link" aria-label="마이페이지로 가기">
           <span v-if="!userProfileImage" class="user-avatar user-avatar-initial" aria-hidden="true">{{ userInitial }}</span>
           <v-img
             v-else
             :src="userProfileImage"
             alt=""
             class="user-avatar"
-            width="36"
-            height="36"
+            width="40"
+            height="40"
             cover
           />
           <span class="user-name">{{ displayUserName }}</span>
@@ -342,7 +343,6 @@ const activeTab = computed(() => {
 });
 
 const menuItems = computed(() => {
-  const inquiryBadgeCount = store.getters['notification/inquiryBadgeCount'];
   const chatBadgeCount = store.getters['notification/chatBadgeCount'];
 
   const fridgeInfo = store.getters.getCurrentFridgeInfo;
@@ -402,18 +402,12 @@ const menuItems = computed(() => {
     { title: '리포트', icon: 'mdi-chart-box-outline', value: 'foodreport', to: '/fridge/food/report' },
     { title: '알림', icon: 'mdi-bell-outline', value: 'notifications', to: '/notification/list' },
     { title: '공동구매', icon: 'mdi-cart-outline', value: 'groupbuy', to: '/fridge/groupbuy' },
-    { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', to: '/chatpage', badgeCount: finalChatBadgeCount },
-    { title: '내 정보', icon: 'mdi-account', value: 'mypage', to: '/mypage' },
-    {
-      title: '문의하기', icon: 'mdi-email-outline', value: 'inquiry',
-      to: '/inquiry',
-      badgeCount: inquiryBadgeCount > 0 ? 1 : 0
-    }
+    { title: '채팅', icon: 'mdi-chat-outline', value: 'chat', to: '/chatpage', badgeCount: finalChatBadgeCount }
   ];
 
   // 관리자(MANAGER)인 경우에만 멤버 관리 메뉴 추가
   if (isManager) {
-    baseMenuItems.splice(-1, 0, {
+    baseMenuItems.push({
       title: '멤버 관리', icon: 'mdi-account-cog-outline', value: 'usermanagement', to: '/fridge/member/list',
       badgeCount: userManagementBadgeCount
     });
@@ -584,11 +578,16 @@ const menuItems = computed(() => {
   background: var(--sf-bg);
 }
 
+.user-link:focus-visible {
+  outline: 2px solid var(--sf-primary);
+  outline-offset: 2px;
+}
+
 .user-avatar {
   /* v-img(.v-responsive)는 기본이 flex: 1이라 옆으로 늘어난다 */
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   overflow: hidden;
 }
@@ -597,7 +596,7 @@ const menuItems = computed(() => {
   display: grid;
   place-items: center;
   background: var(--sf-mint-soft);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--sf-primary);
 }
