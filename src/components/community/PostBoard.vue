@@ -33,6 +33,11 @@
       <p>게시글을 불러오는 중이에요</p>
     </div>
 
+    <!-- 공동구매는 모집 현황(남은 자리)을 함께 보여준다 -->
+    <ul v-else-if="isGroupBuyBoard && postList && postList.length > 0" class="post-list">
+      <GroupBuyRow v-for="post in postList" :key="post.id" :post="post" @open="viewPost" />
+    </ul>
+
     <ul v-else-if="postList && postList.length > 0" class="post-list">
       <li
         v-for="post in postList"
@@ -101,6 +106,7 @@
 import axios from 'axios';
 import { getFridgeId } from '@/utils/commonDataHandler';
 import PostFormModal from '@/components/community/PostFormModal.vue';
+import GroupBuyRow from '@/components/community/GroupBuyRow.vue';
 import { useStore } from 'vuex';
 import { NOTICE_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
 import { snackbar } from '@/composables/snackbar';
@@ -109,6 +115,7 @@ export default {
   name: 'PostBoard',
   components: {
     PostFormModal,
+    GroupBuyRow,
   },
   props: {
     // 이 게시판의 카테고리 이름 (예: '공동구매', '공지사항')
@@ -154,15 +161,11 @@ export default {
       return '글쓰기';
     },
     iconName() {
-      if (this.isGroupBuyBoard) return 'mdi-cart-outline';
       if (this.isNoticeBoard) return 'mdi-bullhorn-outline';
       return 'mdi-message-text-outline';
     },
     iconClass() {
-      return {
-        'is-groupbuy': this.isGroupBuyBoard,
-        'is-notice': this.isNoticeBoard
-      };
+      return { 'is-notice': this.isNoticeBoard };
     },
     emptyTitle() {
       if (this.searchQuery) return `'${this.searchQuery}'에 맞는 글이 없어요`;
@@ -370,12 +373,6 @@ export default {
   border-radius: 10px;
   background: var(--sf-bg);
   color: var(--sf-text-sub);
-}
-
-/* 공동구매 글만 주황으로 구분 */
-.post-icon.is-groupbuy {
-  background: #FFF0E6;
-  color: #C2501A;
 }
 
 .post-icon.is-notice {
