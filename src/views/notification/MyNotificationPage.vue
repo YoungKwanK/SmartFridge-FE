@@ -98,6 +98,7 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import axios from "axios";
 import { getFridgeId } from '@/utils/commonDataHandler';
+import { boardRouteOf, NOTICE_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
 
 // Vue Router와 Vuex Store 인스턴스 가져오기
 const store = useStore();
@@ -283,7 +284,7 @@ const goToDetail = (notification) => {
         router.push(`/fridge/post/${postId}`);
       }
     } else {
-      router.push('/fridge/community');
+      router.push(boardRouteOf(type === 'NEW_ANNOUNCEMENT' ? NOTICE_CATEGORY : PURCHASE_CATEGORY));
     }
     return;
   }
@@ -291,7 +292,7 @@ const goToDetail = (notification) => {
   // 기존 fallbacks (예방적 유지)
   if (notification.targetType === 'ANNOUNCE') {
     if (postId) router.push(`/fridge/post/${postId}`);
-    else router.push('/fridge/community');
+    else router.push(boardRouteOf(NOTICE_CATEGORY));
     return;
   }
   if (notification.targetType === 'FOOD') {

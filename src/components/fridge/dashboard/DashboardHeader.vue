@@ -117,6 +117,7 @@ import { onMounted, onUnmounted, computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { boardRouteOf, NOTICE_CATEGORY, PURCHASE_CATEGORY } from '@/utils/postCategory';
 
 // Props 정의
 const props = defineProps({
@@ -390,7 +391,7 @@ const handleNotificationClick = async (notification) => {
         router.push(`/fridge/post/${postId}`);
       }
     } else {
-      router.push('/fridge/community');
+      router.push(boardRouteOf(type === 'NEW_ANNOUNCEMENT' ? NOTICE_CATEGORY : PURCHASE_CATEGORY));
     }
     showNotificationModal.value = false;
     return;
@@ -399,7 +400,7 @@ const handleNotificationClick = async (notification) => {
   // 기존 fallbacks
   if (notification.targetType === 'ANNOUNCE') {
     if (postId) router.push(`/fridge/post/${postId}`);
-    else router.push('/fridge/community');
+    else router.push(boardRouteOf(NOTICE_CATEGORY));
     showNotificationModal.value = false;
     return;
   }

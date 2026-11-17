@@ -169,7 +169,7 @@
     <PostFormModal
       v-model="showEditModal"
       :editing-post="editingPost"
-      :board-type="postDetail?.categoryName || '자유게시판'"
+      :board-type="postDetail?.categoryName"
       @save="handlePostUpdate"
     />
 
@@ -196,7 +196,7 @@ import { mapGetters } from 'vuex';
 import PostFormModal from '@/components/community/PostFormModal.vue';
 import DeleteConfirmDialog from '@/components/common/DeleteConfirmDialog.vue';
 import { getErrorMessage, getFridgeId } from '@/utils/commonDataHandler';
-import { NOTICE_CATEGORY } from '@/utils/postCategory';
+import { NOTICE_CATEGORY, boardRouteOf } from '@/utils/postCategory';
 import { snackbar } from '@/composables/snackbar';
 
 export default {
@@ -708,7 +708,7 @@ export default {
         
         // 삭제 완료 상태를 localStorage에 저장하고 게시글 목록 페이지로 이동
         localStorage.setItem('postDeleted', 'true');
-        this.$router.push('/fridge/community');
+        this.$router.push(boardRouteOf(this.postDetail?.categoryName));
         
       } catch (error) {
         console.error('게시글 삭제 실패:', error);
@@ -798,7 +798,7 @@ export default {
   color: var(--sf-text-sub);
 }
 
-/* 공동구매 */
+/* 공동구매: 상자는 무채색으로 두고, 주황은 참여 버튼에만 쓴다 (목록의 자리 표시와 같은 색) */
 .purchase {
   display: flex;
   align-items: center;
@@ -806,9 +806,9 @@ export default {
   gap: 20px;
   margin-top: 20px;
   padding: 18px 20px;
-  border: 1px solid #FFD9C2;
+  border: 1px solid var(--sf-line);
   border-radius: var(--sf-radius-md);
-  background: #FFF7F2;
+  background: var(--sf-bg);
 }
 
 .purchase-info {
@@ -824,7 +824,7 @@ export default {
 }
 
 .purchase-state.is-open {
-  color: #B4461A;
+  color: var(--sf-text);
 }
 
 .purchase-count {
@@ -843,7 +843,7 @@ export default {
   height: 6px;
   max-width: 280px;
   border-radius: 999px;
-  background: #FBE3D5;
+  background: var(--sf-line);
   overflow: hidden;
 }
 
@@ -851,7 +851,7 @@ export default {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--sf-cta);
+  background: var(--sf-text);
 }
 
 .purchase-link {

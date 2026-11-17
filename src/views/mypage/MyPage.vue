@@ -76,7 +76,7 @@
             </button>
           </li>
         </ul>
-        <p v-else class="empty-text">아직 쓴 글이 없어요. 커뮤니티에서 첫 글을 남겨 보세요.</p>
+        <p v-else class="empty-text">아직 쓴 글이 없어요. 공동구매 게시판에서 첫 글을 남겨 보세요.</p>
       </section>
 
       <!-- 알림 설정 -->

@@ -4,6 +4,8 @@
       <DashboardHeader :fridgeId="currentFridgeId" />
     </template>
 
+    <NoticeBanner :notices="notices" :total="noticeTotal" :loaded="noticesLoaded" :is-manager="isManager" />
+
     <div class="dash-top">
       <ExpiringPanel :foods="expiringFoods" :loading="loading" />
       <DashboardStats :fridgeId="currentFridgeId" :key="refreshKey" />
@@ -24,15 +26,16 @@ import PageLayout from '@/components/layout/PageLayout.vue';
 import axios from 'axios'
 import { computed, onMounted, ref } from 'vue'
 import { useStore } from 'vuex'
+import { NOTICE_CATEGORY } from '@/utils/postCategory'
 import { getFridgeId } from '@/utils/commonDataHandler'
 import { freshnessStatus } from '@/utils/foodFreshness'
 import DashboardHeader from '@/components/fridge/dashboard/DashboardHeader.vue'
 import DashboardStats from '@/components/fridge/dashboard/DashboardStats.vue'
 import ExpiringPanel from '@/components/fridge/dashboard/ExpiringPanel.vue'
 import FoodPreviewTable from '@/components/fridge/dashboard/FoodPreviewTable.vue'
+import NoticeBanner from '@/components/fridge/dashboard/NoticeBanner.vue'
 
 const store = useStore()
-
 // 현재 선택된 냉장고 ID를 Vuex store에서 가져오기
 const currentFridgeId = computed(() => getFridgeId(store))
 
@@ -45,6 +48,29 @@ const recentShared = ref([])
 const expiringFoods = ref([])
 
 const RECENT_SIZE = 5
+
+// 공지 배너용 공지 목록 (고정 글이 먼저, 그다음 최신순)
+const notices = ref([])
+const noticeTotal = ref(0)
+const noticesLoaded = ref(false)
+const NOTICE_SIZE = 10
+
+// 공지가 하나도 없을 때 배너에서 관리자에게만 '공지 쓰기'를 보여준다
+const isManager = computed(() => store.getters.getCurrentFridgeInfo?.type === 'MANAGER')
+
+const fetchNotices = async () => {
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/fridge/${currentFridgeId.value}/post/list`,
+      { params: { page: 0, size: NOTICE_SIZE, category: NOTICE_CATEGORY } }
+    )
+    notices.value = response.data?.result?.content || []
+    noticeTotal.value = response.data?.result?.totalElements || 0
+    noticesLoaded.value = true
+  } catch (error) {
+    console.error('공지사항을 불러오는데 실패했습니다:', error)
+  }
+}
 
 // 식품 목록 API는 페이징 없이 전부(유통기한이 가까운 순) 돌려준다
 const fetchFoodList = async (isShared) => {
@@ -94,6 +120,7 @@ onMounted(async () => {
   }
 
   fetchFoods()
+  fetchNotices()
 
   // SSE 연결이 없으면 초기화
   const isSSEConnected = store.getters['notification/isSSEConnected'];
