@@ -134,6 +134,7 @@ const getSidebarValueFromRoute = (path, query = {}) => {
     '/fridge/dashboard': 'dashboard',
     '/fridge/food/shared': 'sharedfoodlist',
     '/fridge/food/nonshared': 'sharedfoodlist',
+    '/fridge/food/report': 'foodreport',
     '/notification/list': 'notifications',
     '/fridge/community': 'community',
     '/fridge/post': 'community', // 게시글 상세보기 페이지도 커뮤니티로 매핑
@@ -404,6 +405,7 @@ const menuItems = computed(() => {
   const baseMenuItems = [
     { title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', to: '/fridge/dashboard' },
     { title: '식품 목록', icon: 'mdi-food-fork-drink', value: 'sharedfoodlist', to: '/fridge/food/shared', badgeCount: 0 },
+    { title: '리포트', icon: 'mdi-chart-box-outline', value: 'foodreport', to: '/fridge/food/report' },
     { title: '알림', icon: 'mdi-bell-outline', value: 'notifications', to: '/notification/list' },
     { title: '커뮤니티', icon: 'mdi-account-group-outline', value: 'community', to: '/fridge/community' },
     { title: '공동구매', icon: 'mdi-cart-outline', value: 'groupbuy', to: { path: '/fridge/community', query: { board: '공동구매' } } },
