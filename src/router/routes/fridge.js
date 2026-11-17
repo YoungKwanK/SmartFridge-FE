@@ -26,6 +26,11 @@ export const fridgeRoutes = [
     component: () => import('@/views/recipe/RecipeRecommendPage.vue')
   },
   {
+    path: '/fridge/recipes/:recipeId(\\d+)',
+    name: 'RecipeDetail',
+    component: () => import('@/views/recipe/RecipeDetailPage.vue')
+  },
+  {
     path: '/fridge/member/list',
     name: 'FridgeMemberList',
     component: () => import('@/views/fridge/FridgeMemberList.vue')

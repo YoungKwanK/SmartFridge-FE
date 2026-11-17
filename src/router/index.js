@@ -23,7 +23,13 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  // 뒤로 가기면 보던 위치로, 새 화면이면 맨 위에서 시작한다 (같은 화면에서 쿼리만 바뀌면 그대로)
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition;
+    if (to.path === from.path) return false;
+    return { top: 0 };
+  }
 });
 
 router.beforeEach(authGuard);

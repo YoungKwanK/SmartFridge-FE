@@ -65,13 +65,14 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import PageLayout from '@/components/layout/PageLayout.vue';
 import RecipeRow from '@/components/recipe/RecipeRow.vue';
 import { getErrorMessage, getFridgeId, getResultData } from '@/utils/commonDataHandler';
+import { getRecommendCache, setRecommendCache } from '@/composables/recipeRecommendCache';
 
 const store = useStore();
 const route = useRoute();
@@ -85,20 +86,21 @@ const modeOptions = [
 const mode = ref(route.query.mode === 'ai' ? 'ai' : 'match');
 const isLoading = ref(false);
 const errorMessage = ref('');
-// 방식별로 한 번 받은 결과는 탭을 오가도 다시 부르지 않는다 (AI 호출은 느리고 비용이 든다)
-const cache = reactive({ match: null, ai: null });
+// 방식별로 한 번 받은 결과는 탭을 오가거나 상세를 보고 돌아와도 다시 부르지 않는다 (AI 호출은 느리고 비용이 든다)
+const fridgeId = computed(() => getFridgeId(store));
+const cached = (target) => getRecommendCache(target, fridgeId.value);
 
 const currentLabel = computed(() => modeOptions.find(option => option.value === mode.value).label);
-const items = computed(() => cache[mode.value]?.items || []);
-const aiRanked = computed(() => cache.ai?.aiRanked ?? false);
+const items = computed(() => cached(mode.value)?.items || []);
+const aiRanked = computed(() => cached('ai')?.aiRanked ?? false);
 
 // 받는 중인 방식 (탭을 오가도 같은 요청을 두 번 보내지 않는다)
 const pending = new Set();
 
 const load = async (target, force = false) => {
-  if (cache[target] && !force) return;
-  const fridgeId = getFridgeId(store);
-  if (!fridgeId) return;
+  if (cached(target) && !force) return;
+  const currentFridgeId = fridgeId.value;
+  if (!currentFridgeId) return;
 
   isLoading.value = true;
   errorMessage.value = '';
@@ -106,15 +108,15 @@ const load = async (target, force = false) => {
   pending.add(target);
   try {
     const path = target === 'ai' ? 'recommend/ai' : 'recommend';
-    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId}/recipes/${path}`);
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/fridge/${currentFridgeId}/recipes/${path}`);
     const result = getResultData(response);
     // 두 응답을 { recipe, reason } 목록 하나로 맞춘다
-    cache[target] = target === 'ai'
+    setRecommendCache(target, currentFridgeId, target === 'ai'
       ? { aiRanked: !!result.aiRanked, items: result.recipes || [] }
-      : { items: (result || []).map(recipe => ({ recipe, reason: null })) };
+      : { items: (result || []).map(recipe => ({ recipe, reason: null })) });
   } catch (error) {
     // 다른 탭으로 옮겼다가 돌아와도 다시 시도할 수 있게 캐시는 비워 둔다
-    cache[target] = null;
+    setRecommendCache(target, currentFridgeId, null);
     if (mode.value === target) {
       errorMessage.value = getErrorMessage(error);
     }
@@ -137,6 +139,12 @@ watch(() => route.query.mode, (value) => {
   isLoading.value = false;
   load(mode.value);
 }, { immediate: true });
+
+// 다른 냉장고로 바꾸면 그 냉장고 기준으로 다시 받는다
+watch(fridgeId, () => {
+  errorMessage.value = '';
+  load(mode.value);
+});
 </script>
 
 <style scoped>
