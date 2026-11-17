@@ -131,6 +131,7 @@ const getSidebarValueFromRoute = (path) => {
     '/fridge/food/shared': 'sharedfoodlist',
     '/fridge/food/nonshared': 'sharedfoodlist',
     '/fridge/food/report': 'foodreport',
+    '/fridge/recipes': 'recipes',
     '/notification/list': 'notifications',
     '/fridge/groupbuy': 'groupbuy',
     '/fridge/notice': 'dashboard', // 공지 목록은 대시보드 배너에서 들어온다
@@ -399,6 +400,7 @@ const menuItems = computed(() => {
   const baseMenuItems = [
     { title: '대시보드', icon: 'mdi-view-dashboard-outline', value: 'dashboard', to: '/fridge/dashboard' },
     { title: '식품 목록', icon: 'mdi-food-fork-drink', value: 'sharedfoodlist', to: '/fridge/food/shared', badgeCount: 0 },
+    { title: '레시피 추천', icon: 'mdi-chef-hat', value: 'recipes', to: '/fridge/recipes' },
     { title: '리포트', icon: 'mdi-chart-box-outline', value: 'foodreport', to: '/fridge/food/report' },
     { title: '알림', icon: 'mdi-bell-outline', value: 'notifications', to: '/notification/list' },
     { title: '공동구매', icon: 'mdi-cart-outline', value: 'groupbuy', to: '/fridge/groupbuy' },
