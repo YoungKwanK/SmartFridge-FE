@@ -43,15 +43,22 @@
               v-for="name in recipe.matchedIngredients"
               :key="name"
               class="ing"
-              :class="{ 'is-expiring': expiringSet.has(name) }"
-            >{{ name }}<span v-if="expiringSet.has(name)" class="sr-only"> (곧 상해요)</span></span>
+              :class="{ 'is-expiring': expiringSet.has(name), 'is-selected': selectedSet.has(name) }"
+            >{{ name }}<span v-if="expiringSet.has(name)" class="sr-only"> (곧 상해요)</span><span
+              v-if="selectedSet.has(name)" class="sr-only"> (고른 재료)</span></span>
           </dd>
         </div>
         <div v-if="recipe.missingIngredients?.length" class="ingredient-line">
           <dt>더 필요한 재료</dt>
           <dd>
-            <span v-for="item in recipe.missingIngredients" :key="item.name" class="ing is-missing">
-              {{ item.name }}<span v-if="item.amount" class="ing-amount">{{ item.amount }}</span>
+            <span
+              v-for="item in recipe.missingIngredients"
+              :key="item.name"
+              class="ing is-missing"
+              :class="{ 'is-selected': selectedSet.has(item.name) }"
+            >
+              {{ item.name }}<span v-if="selectedSet.has(item.name)" class="sr-only"> (고른 재료)</span><span
+                v-if="item.amount" class="ing-amount">{{ item.amount }}</span>
             </span>
           </dd>
         </div>
@@ -66,12 +73,15 @@ import { computed, ref } from 'vue';
 const props = defineProps({
   recipe: { type: Object, required: true },
   // AI가 쓴 추천 이유 (겹침 순으로 볼 때와 AI가 고르지 않은 레시피는 없음)
-  reason: { type: String, default: '' }
+  reason: { type: String, default: '' },
+  // 재료 골라서 추천일 때 사용자가 고른 재료 이름 (밑줄로 표시)
+  selectedIngredients: { type: Array, default: () => [] }
 });
 
 const imageFailed = ref(false);
 
 const expiringSet = computed(() => new Set(props.recipe.expiringIngredients || []));
+const selectedSet = computed(() => new Set(props.selectedIngredients));
 
 const metaText = computed(() => {
   const parts = [props.recipe.dishType, props.recipe.cookingMethod].filter(Boolean);
@@ -297,6 +307,15 @@ const cells = computed(() => {
 
 .ing.is-missing {
   color: var(--sf-text-sub);
+}
+
+.ing.is-selected {
+  font-weight: 700;
+  color: var(--sf-text);
+  text-decoration: underline;
+  text-decoration-color: var(--sf-primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .ing-amount {
