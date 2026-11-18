@@ -4,6 +4,7 @@
     <v-main>
       <router-view/>
     </v-main>
+    <AgentChatPanel v-if="showAgent" />
     <CommonSnackbar />
   </v-app>
 </template>
@@ -11,6 +12,7 @@
 <script>
 import SidebarComponent from '@/components/layout/SidebarComponent.vue'
 import CommonSnackbar from '@/components/layout/CommonSnackbar.vue'
+import AgentChatPanel from '@/components/agent/AgentChatPanel.vue'
 import { useStore } from 'vuex';
 import { onMounted, onUnmounted, watch } from 'vue';
 
@@ -18,9 +20,15 @@ export default {
   name: 'App',
   components: {
     SidebarComponent,
-    CommonSnackbar
+    CommonSnackbar,
+    AgentChatPanel
   },
   computed: {
+    // AI 도우미 버튼: 냉장고 안 화면에서만 (관리자 화면, 입력칸이 아래에 있는 채팅 화면은 제외)
+    showAgent() {
+      if (this.hideSidebar || !this.$store.getters.getCurrentFridgeId) return false;
+      return !this.$route.path.startsWith('/admin') && this.$route.name !== 'ChatPage';
+    },
     hideSidebar() {
       // 사이드바를 숨길 화면은 라우트의 meta.hideSidebar 로 지정한다 (src/router/routes/*)
       // 첫 진입 시 라우트가 아직 정해지지 않았으면(matched 비어 있음) 숨겨 둔다

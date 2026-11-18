@@ -29,6 +29,7 @@ import { useStore } from 'vuex'
 import { NOTICE_CATEGORY } from '@/utils/postCategory'
 import { getFridgeId } from '@/utils/commonDataHandler'
 import { freshnessStatus } from '@/utils/foodFreshness'
+import { useFoodsChanged } from '@/composables/foodEvents'
 import DashboardHeader from '@/components/fridge/dashboard/DashboardHeader.vue'
 import DashboardStats from '@/components/fridge/dashboard/DashboardStats.vue'
 import ExpiringPanel from '@/components/fridge/dashboard/ExpiringPanel.vue'
@@ -112,6 +113,9 @@ const handleFoodSaved = () => {
   refreshKey.value++
   fetchFoods()
 }
+
+// AI 도우미에서 식품을 정리해도 같은 방식으로 새로 고친다
+useFoodsChanged(handleFoodSaved)
 
 onMounted(async () => {
   if (!currentFridgeId.value) {
