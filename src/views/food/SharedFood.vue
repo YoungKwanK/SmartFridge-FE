@@ -189,6 +189,7 @@ import { getFridgeId } from '@/utils/commonDataHandler';
 import DdayBadge from '@/components/food/DdayBadge.vue';
 import { categoryEmoji, freshnessStatus } from '@/utils/foodFreshness';
 import { snackbar } from '@/composables/snackbar';
+import { FOODS_CHANGED_EVENT } from '@/composables/foodEvents';
 
 // 처리 선택지별 완료 메시지와 스낵바 색
 const FINISH_MESSAGES = {
@@ -238,6 +239,13 @@ export default {
     
     await this.fetchEnums();
     await this.fetchFoodList();
+  },
+  mounted() {
+    // AI 도우미에서 식품을 정리하면 목록을 다시 불러온다
+    window.addEventListener(FOODS_CHANGED_EVENT, this.fetchFoodList);
+  },
+  beforeUnmount() {
+    window.removeEventListener(FOODS_CHANGED_EVENT, this.fetchFoodList);
   },
   computed: {
     isManager() {

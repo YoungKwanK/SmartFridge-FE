@@ -10,6 +10,35 @@
       </header>
 
       <v-card-text class="form-body">
+        <!-- 영수증·주문내역 사진으로 담은 식품 목록 채우기. 폰에서는 카메라가 바로 열린다 -->
+        <div v-if="isCreateMode" class="receipt-bar">
+          <div class="receipt-text">
+            <p class="receipt-title">영수증으로 한 번에 담기</p>
+            <p class="receipt-desc">
+              {{ isRecognizing ? '영수증을 읽고 있어요. 몇 초 걸려요.' : '영수증이나 쇼핑앱 주문내역을 찍으면 아래 목록에 담아 드려요.' }}
+            </p>
+          </div>
+          <v-btn
+            color="primary"
+            variant="tonal"
+            prepend-icon="mdi-camera-outline"
+            :loading="isRecognizing"
+            :disabled="pendingFoods.length >= maxCount"
+            @click="openReceiptPicker"
+          >
+            영수증 찍기
+          </v-btn>
+          <input
+            ref="receiptInput"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            class="receipt-input"
+            aria-label="영수증 사진 선택"
+            @change="onReceiptSelected"
+          />
+        </div>
+
         <div class="field">
           <label class="sf-field-label" for="food-name">식품 이름</label>
           <v-text-field
@@ -187,6 +216,7 @@
                   {{ getMissingFields(item).join(', ') }} 입력이 필요해요
                 </span>
                 <span v-else class="pending-meta">{{ getItemSummary(item) }}</span>
+                <span v-if="item.receipt" class="pending-receipt">{{ getReceiptHint(item) }}</span>
               </span>
               <v-btn icon="mdi-pencil-outline" size="small" variant="text" :aria-label="`${item.name} 고치기`" @click="editListItem(index)" />
               <v-btn icon="mdi-close" size="small" variant="text" :aria-label="`${item.name} 빼기`" @click="removeListItem(index)" />
@@ -211,6 +241,8 @@
 import axios from 'axios';
 import { categoryEmoji } from '@/utils/foodFreshness';
 import { snackbar } from '@/composables/snackbar';
+import { getFridgeId } from '@/utils/commonDataHandler';
+import { receiptService } from '@/services/receiptService';
 
 export default {
   components: {
@@ -252,7 +284,8 @@ export default {
       // 여러 개 등록: 담은 식품 목록과 수정 중인 항목 위치
       pendingFoods: [],
       editingIndex: null,
-      maxCount: 30
+      maxCount: 30,
+      isRecognizing: false
     }
   },
   created() {
@@ -431,8 +464,85 @@ export default {
         quantity: 1,
         expirationDate: '',
         expirationTime: '',
-        memo: ''
+        memo: '',
+        receipt: undefined
       };
+    },
+    openReceiptPicker() {
+      this.$refs.receiptInput.click();
+    },
+    // 사진을 인식해 담은 식품 목록에 넣는다. 저장은 사용자가 확인하고 등록 버튼을 눌렀을 때 한다
+    async onReceiptSelected(event) {
+      const file = event.target.files[0];
+      event.target.value = ''; // 같은 사진을 다시 골라도 change 가 일어나게
+      if (!file) return;
+
+      const fridgeId = getFridgeId(this.$store);
+      if (!fridgeId) {
+        snackbar.error('냉장고를 먼저 선택해 주세요.');
+        return;
+      }
+
+      this.isRecognizing = true;
+      try {
+        const result = await receiptService.recognize(fridgeId, file);
+        const room = this.maxCount - this.pendingFoods.length;
+        const items = result.foods.slice(0, room).map(food => this.toPendingItem(food));
+        this.pendingFoods.push(...items);
+
+        if (items.length === 0) {
+          snackbar.warning(result.note || '사진에서 식품을 찾지 못했어요. 영수증이 잘 보이게 다시 찍어 주세요.');
+        } else if (result.foods.length > room) {
+          snackbar.warning(`최대 ${this.maxCount}개까지만 담을 수 있어 ${items.length}개만 담았어요.`);
+        } else {
+          snackbar.success(`${items.length}개를 담았어요. 수량과 유통기한을 확인해 주세요.`);
+        }
+      } catch (error) {
+        console.error('영수증 인식 실패:', error);
+        snackbar.error(error.response?.data?.status_message
+          || '영수증을 읽지 못했어요. 잠시 후 다시 시도해 주세요.');
+      } finally {
+        this.isRecognizing = false;
+      }
+    },
+    // 인식 결과 한 개를 담은 식품 형식으로 바꾼다. 공유 여부는 지금 입력칸 설정을 따른다
+    toPendingItem(food) {
+      // 오래된 영수증이라 추천 유통기한이 이미 지났으면 비워서 직접 고르게 한다
+      const expirationDate = food.expirationDate && food.expirationDate >= this.getTodayDate()
+        ? food.expirationDate
+        : '';
+      return {
+        name: food.name,
+        quantity: food.quantity,
+        expirationDate,
+        expirationTime: '',
+        storageType: food.storageType,
+        category: food.category,
+        memo: '',
+        shareable: this.formData.shareable,
+        receipt: {
+          purchaseDate: food.purchaseDate,
+          packCount: food.packCount,
+          orderQuantity: food.orderQuantity,
+          // 추천값이 이미 지나 비운 경우, 왜 비었는지 알려주려고 남긴다
+          expiredSuggestion: expirationDate ? null : food.expirationDate
+        }
+      };
+    },
+    // 영수증으로 담은 식품 아래에 보여줄 확인 안내
+    getReceiptHint(item) {
+      const { purchaseDate, packCount, orderQuantity, expiredSuggestion } = item.receipt;
+      const expirationHint = item.expirationDate
+        ? '유통기한은 추천값'
+        : expiredSuggestion
+          ? `추천 유통기한 ${this.formatShortDate(expiredSuggestion)}이 지나 직접 입력`
+          : null;
+      return [
+        '영수증',
+        packCount ? `${packCount}개입 × ${orderQuantity}` : null,
+        purchaseDate ? `${this.formatShortDate(purchaseDate)} 구매` : '구매일을 몰라 오늘 기준',
+        expirationHint
+      ].filter(Boolean).join(' · ');
     },
     // 목록에 담을 때는 식품명만 필수. 나머지는 등록 전에 채우면 됨
     validateForListItem() {
@@ -492,6 +602,7 @@ export default {
       }
       const saveData = { ...item, expirationHour, expirationMinute };
       delete saveData.expirationTime;
+      delete saveData.receipt;
       return saveData;
     },
     async save() {
@@ -570,6 +681,44 @@ export default {
 
 .form-body {
   padding: 12px 24px 8px !important;
+}
+
+/* 영수증으로 담기 */
+.receipt-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-radius: var(--sf-radius-md);
+  background: var(--sf-mint-soft);
+}
+
+.receipt-text {
+  min-width: 0;
+}
+
+.receipt-title {
+  margin: 0;
+  font-size: var(--sf-fs-md);
+  font-weight: 600;
+  color: var(--sf-text);
+}
+
+.receipt-desc {
+  margin: 2px 0 0;
+  font-size: var(--sf-fs-sm);
+  color: var(--sf-text-sub);
+}
+
+.receipt-input {
+  display: none;
+}
+
+.pending-receipt {
+  font-size: var(--sf-fs-xs);
+  color: var(--sf-primary);
 }
 
 .field {
@@ -863,6 +1012,12 @@ export default {
 
   .form-body {
     padding: 8px 16px !important;
+  }
+
+  /* 폰에서는 안내 아래로 버튼을 내려 꽉 차게 */
+  .receipt-bar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .field-row {
