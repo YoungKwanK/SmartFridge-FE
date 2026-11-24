@@ -27,9 +27,9 @@
         <ul class="member-list">
           <li
             v-for="user in filteredUsers"
-            :key="user.email"
+            :key="user.memberId"
             class="member-row"
-            :class="{ 'is-selected': selectedUser && selectedUser.email === user.email }"
+            :class="{ 'is-selected': selectedUser && selectedUser.memberId === user.memberId }"
           >
             <button
               type="button"
@@ -52,7 +52,6 @@
                   {{ user.name }}
                   <span v-if="user.role === 'MANAGER'" class="role-tag">관리자</span>
                 </span>
-                <span class="member-email">{{ user.email }}</span>
               </span>
               <span v-if="user.unReadCount > 0" class="unread-pill sf-num" :aria-label="`안 읽은 메시지 ${user.unReadCount}개`">
                 {{ user.unReadCount > 99 ? '99+' : user.unReadCount }}
@@ -109,17 +108,17 @@
               </div>
 
               <div
-                v-if="message.senderEmail === senderEmail || message.senderEmail !== message.receiverEmail"
+                v-if="message.senderId === myMemberId || message.senderId !== message.receiverId"
                 class="msg is-mine"
               >
                 <div
-                  v-if="message.senderEmail !== senderEmail && shouldShowSenderName(chatMessages, index, senderEmail)"
+                  v-if="message.senderId !== myMemberId && shouldShowSenderName(chatMessages, index, myMemberId)"
                   class="msg-sender"
                 >
                   {{ message.senderName }}
                 </div>
                 <div class="msg-line">
-                  <span v-if="shouldShowSentMessageTime(chatMessages, index, senderEmail)" class="msg-time">
+                  <span v-if="shouldShowSentMessageTime(chatMessages, index, myMemberId)" class="msg-time">
                     {{ formatTime(message.timestamp) }}
                   </span>
                   <div class="msg-content">
@@ -141,7 +140,7 @@
               </div>
 
               <div v-else class="msg is-theirs">
-                <div v-if="shouldShowSenderName(chatMessages, index, senderEmail)" class="msg-sender">
+                <div v-if="shouldShowSenderName(chatMessages, index, myMemberId)" class="msg-sender">
                   {{ message.senderName }}
                 </div>
                 <div class="msg-line">
@@ -160,7 +159,7 @@
                     </div>
                     <p v-if="message.message && message.message.trim()" class="bubble">{{ message.message }}</p>
                   </div>
-                  <span v-if="shouldShowMessageTime(chatMessages, index, senderEmail)" class="msg-time">
+                  <span v-if="shouldShowMessageTime(chatMessages, index, myMemberId)" class="msg-time">
                     {{ formatTime(message.timestamp) }}
                   </span>
                 </div>
@@ -258,7 +257,7 @@ const chatContainerRef = ref(null);
 const stompClient = ref(null);
 const subscription = ref(null); // 구독 객체 저장
 const token = ref(localStorage.getItem("accessToken"));
-const senderEmail = ref(localStorage.getItem("email"));
+const myMemberId = ref(localStorage.getItem("memberId"));
 const senderName = ref(localStorage.getItem("name"));
 
 // 전역 SSE 이벤트 리스너를 위한 참조
@@ -317,7 +316,7 @@ const fetchUsers = async () => {
       
       return {
         name: userName,
-        email: user.memberEmail,
+        memberId: user.memberId,
         role: user.type,
         initial: userName.charAt(0),
         roomId: user.roomId,
@@ -344,8 +343,7 @@ const filteredUsers = computed(() => {
   const filtered = searchQuery.value
     ? users.value.filter(
         (user) =>
-          user.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
+          user.name.toLowerCase().includes(searchQuery.value.toLowerCase())
       )
     : users.value; // 2. 정렬 기능 추가 // MANAGER 역할을 가진 사용자를 먼저 정렬
 
@@ -433,12 +431,12 @@ const loadChatHistory = async (user, isLoadMore = false) => {
     if (isLoadMore) {
       // 더 많은 메시지를 로드할 때는 기존 메시지 앞에 추가 (DESC로 받은 데이터를 역순으로 정렬)
       const newMessages = safeNewMessages.map((msg) => ({
-        senderEmail: msg.senderEmail,
+        senderId: msg.senderId,
         senderName: msg.senderName,
         message: msg.message,
         timestamp: msg.timestamp,
         imageUrls: msg.imageUrls || [],
-        receiverEmail: msg.receiverEmail,
+        receiverId: msg.receiverId,
       }));
       // DESC로 받은 데이터를 ASC로 정렬 (오래된 것부터 최신 순)
       const reversedMessages = newMessages.reverse();
@@ -446,12 +444,12 @@ const loadChatHistory = async (user, isLoadMore = false) => {
     } else {
       // 초기 로드일 때는 메시지 교체 (백엔드에서 DESC로 정렬해서 보내주므로 역순으로 정렬)
       const messages = safeNewMessages.map((msg) => ({
-        senderEmail: msg.senderEmail,
+        senderId: msg.senderId,
         senderName: msg.senderName,
         message: msg.message,
         timestamp: msg.timestamp,
         imageUrls: msg.imageUrls || [],
-        receiverEmail: msg.receiverEmail,
+        receiverId: msg.receiverId,
       }));
       // DESC로 받은 데이터를 ASC로 정렬 (오래된 것부터 최신 순)
       chatMessages.value = messages.reverse();
@@ -464,7 +462,7 @@ const loadChatHistory = async (user, isLoadMore = false) => {
       }
       
       // 선택된 사용자의 안읽은 메시지 개수 초기화
-      const userIndex = users.value.findIndex(u => u.email === user.email);
+      const userIndex = users.value.findIndex(u => u.memberId === user.memberId);
       if (userIndex !== -1) {
         users.value[userIndex].unReadCount = 0;
         
@@ -551,11 +549,11 @@ const getMessageMinute = (timestamp) => {
 };
 
 
-const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
+const shouldShowSenderName = (messages, currentIndex, currentUserId) => {
   const currentMsg = messages[currentIndex];
   
   // 현재 사용자가 보낸 메시지는 이름 표시 안함
-  if (currentMsg.senderEmail === currentUserEmail) return false;
+  if (currentMsg.senderId === currentUserId) return false;
   
   // 첫 번째 메시지는 항상 이름 표시
   if (currentIndex === 0) return true;
@@ -563,17 +561,17 @@ const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
   const prevMsg = messages[currentIndex - 1];
   
   // 이전 메시지 발신자가 다르면 이름 표시
-  if (currentMsg.senderEmail !== prevMsg.senderEmail) return true;
+  if (currentMsg.senderId !== prevMsg.senderId) return true;
   
   // 같은 발신자인 경우 시간이 다르면 이름 표시
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(prevMsg.timestamp);
 };
 
-const shouldShowMessageTime = (messages, currentIndex, currentUserEmail) => {
+const shouldShowMessageTime = (messages, currentIndex, currentUserId) => {
   const currentMsg = messages[currentIndex];
   
   // 현재 사용자가 보낸 메시지는 시간 표시 안함 (아래쪽에 별도로 표시)
-  if (currentMsg.senderEmail === currentUserEmail || currentMsg.senderEmail !== currentMsg.receiverEmail) return false;
+  if (currentMsg.senderId === currentUserId || currentMsg.senderId !== currentMsg.receiverId) return false;
   
   // 마지막 메시지는 항상 시간 표시
   if (currentIndex === messages.length - 1) return true;
@@ -581,17 +579,17 @@ const shouldShowMessageTime = (messages, currentIndex, currentUserEmail) => {
   const nextMsg = messages[currentIndex + 1];
   
   // 다음 메시지 발신자가 다르면 시간 표시
-  if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
+  if (currentMsg.senderId !== nextMsg.senderId) return true;
   
   // 같은 발신자인 경우 시간이 다르면 시간 표시
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
 };
 
-const shouldShowSentMessageTime = (messages, currentIndex, currentUserEmail) => {
+const shouldShowSentMessageTime = (messages, currentIndex, currentUserId) => {
   const currentMsg = messages[currentIndex];
   
   // 현재 사용자가 보낸 메시지가 아니면 시간 표시 안함
-  if (!(currentMsg.senderEmail === currentUserEmail || currentMsg.senderEmail !== currentMsg.receiverEmail)) return false;
+  if (!(currentMsg.senderId === currentUserId || currentMsg.senderId !== currentMsg.receiverId)) return false;
   
   // 마지막 메시지는 항상 시간 표시
   if (currentIndex === messages.length - 1) return true;
@@ -599,7 +597,7 @@ const shouldShowSentMessageTime = (messages, currentIndex, currentUserEmail) => 
   const nextMsg = messages[currentIndex + 1];
   
   // 다음 메시지 발신자가 다르면 시간 표시
-  if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
+  if (currentMsg.senderId !== nextMsg.senderId) return true;
   
   // 같은 발신자인 경우 시간이 다르면 시간 표시
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
@@ -645,16 +643,16 @@ const connectWebSocket = (roomId) => {
             const receivedMessage = JSON.parse(message.body);
             if (Array.isArray(chatMessages.value)) {
               chatMessages.value.push({
-                senderEmail: receivedMessage.senderEmail,
+                senderId: receivedMessage.senderId,
                 senderName: receivedMessage.senderName,
                 message: receivedMessage.message,
                 timestamp: receivedMessage.timestamp,
                 imageUrls: receivedMessage.imageUrls || [],
-                receiverEmail: receivedMessage.receiverEmail || selectedUser.value?.email,
+                receiverId: receivedMessage.receiverId || selectedUser.value?.memberId,
               });
               
               // 내가 보낸 메시지라면 무조건 스크롤을 아래로 이동
-              if (receivedMessage.senderEmail === senderEmail.value) {
+              if (receivedMessage.senderId === myMemberId.value) {
                 scrollToBottom();
                 return;
               }
@@ -761,7 +759,7 @@ const sendMessage = async () => {
 
     if (stompClient.value?.connected) {
       const message = {
-        senderEmail: senderEmail.value,
+        senderId: myMemberId.value,
         senderName: senderName.value,
         message: currentMessage,
         imageUrls: imageUrls,
@@ -852,7 +850,7 @@ const closeImageModal = () => {
 const promoteToAdmin = async (user) => {
   if (confirm(`${user.name}님을 관리자로 승격하시겠습니까?`)) {
     try {
-      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberEmail=${user.email}`);
+      await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/delegateManager?memberId=${user.memberId}`);
       alert(`${user.name}님을 관리자로 승격하였습니다.`);
       router.push('/fridge/list');
     } catch (error) {
@@ -866,10 +864,10 @@ const removeUser = async (user) => {
   if (confirm(`${user.name}님을 냉장고에서 제거하시겠습니까?`)) {
     try {
       await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/members/${user.email}`,
+        `${import.meta.env.VITE_API_BASE_URL}/fridge/${fridgeId.value}/members/${user.memberId}`,
       );
-      users.value = users.value.filter((u) => u.email !== user.email);
-      if (selectedUser.value && selectedUser.value.email === user.email) {
+      users.value = users.value.filter((u) => u.memberId !== user.memberId);
+      if (selectedUser.value && selectedUser.value.memberId === user.memberId) {
         selectedUser.value = null;
       }
     } catch (error) {
@@ -936,7 +934,7 @@ const updateAdminChatBadge = () => {
   console.log('🔔 유저 관리 배지 즉시 업데이트:', {
     hasUnreadMessages,
     newBadgeState,
-    selectedUser: selectedUser.value?.email,
+    selectedUser: selectedUser.value?.memberId,
     usersUnReadCounts: users.value.map(user => ({ 
       name: user.name, 
       unReadCount: user.unReadCount 
@@ -984,7 +982,7 @@ const handleAdminChatNotification = async (notification) => {
           updateAdminChatBadge();
         } else {
           console.log('📨 현재 선택된 사용자의 메시지이므로 unReadCount 증가하지 않음:', {
-            selectedUser: selectedUser.value?.email,
+            selectedUser: selectedUser.value?.memberId,
             roomId
           });
         }

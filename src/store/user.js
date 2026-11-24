@@ -28,17 +28,17 @@ const user = {
                     throw new Error('No access token found');
                 }
                 
-                // JWT 토큰에서 이메일 추출
+                // JWT 토큰에서 회원 id(UUID) 추출 (토큰에는 이메일을 싣지 않는다)
                 const decodedToken = jwtDecode(token);
-                const email = decodedToken.sub || localStorage.getItem('email');
-                
-                if (!email) {
-                    throw new Error('No email found in token or localStorage');
+                const memberId = decodedToken.sub || localStorage.getItem('memberId');
+
+                if (!memberId) {
+                    throw new Error('No member id found in token or localStorage');
                 }
-                
+
                 // 백엔드 API에서 사용자 정보를 가져오기 (JWT 토큰으로 인증)
                 try {
-                    console.log('🔍 Fetching user info for email:', email);
+                    console.log('🔍 Fetching user info');
                     
                     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/member/info`, {
                         headers: {
@@ -98,13 +98,11 @@ const user = {
                 }
                 
                 // API가 실패하면 JWT 토큰과 localStorage에서 기본 정보 생성
-                if (email) {
-                    // 이메일에서 사용자 이름 추출 (@ 앞 부분)
-                    const username = email.split('@')[0];
-                    
+                if (memberId) {
                     const fallbackUserInfo = {
-                        email: email,
-                        name: username,
+                        id: memberId,
+                        email: '',
+                        name: '사용자',
                         profileImage: null,
                         role: decodedToken.role || localStorage.getItem('role') || 'USER',
                         createdTime: null // 백엔드에서 createdTime 필드로 반환

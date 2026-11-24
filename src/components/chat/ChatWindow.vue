@@ -102,10 +102,10 @@
             <div
               v-for="(msg, msgIndex) in group.messages"
               :key="messageKey(msg)"
-              :class="['message-wrapper', msg.senderEmail === senderEmail ? 'sent' : 'received']"
+              :class="['message-wrapper', msg.senderId === myMemberId ? 'sent' : 'received']"
             >
               <!-- 보낸 메시지 레이아웃: [메시지] [시간] -->
-              <div v-if="msg.senderEmail === senderEmail" class="sent-message-layout">
+              <div v-if="msg.senderId === myMemberId" class="sent-message-layout">
                 <div class="sent-message-container">
                   <div class="message-content-container">
                     <!-- 이미지 -->
@@ -140,7 +140,7 @@
               <div v-else class="received-message-layout">
                 <div class="received-message-container">
                   <!-- 이름은 첫 번째 메시지이거나 이전 메시지와 발신자가 다를 때만 표시 -->
-                  <div v-if="shouldShowSenderName(group.messages, msgIndex, senderEmail)" class="sender-name-top">
+                  <div v-if="shouldShowSenderName(group.messages, msgIndex, myMemberId)" class="sender-name-top">
                     {{ msg.senderName }}
                   </div>
                   
@@ -254,7 +254,7 @@ const stompClient = shallowRef(null);
 const subscription = shallowRef(null);
 const isConnected = ref(false);
 const isSending = ref(false);
-const senderEmail = ref(localStorage.getItem("email"));
+const myMemberId = ref(localStorage.getItem("memberId"));
 const newImages = ref([]);
 const imagePreview = ref([]);
 const chatBox = ref(null);
@@ -294,7 +294,7 @@ const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 // 과거 메시지가 앞에 붙어도 기존 메시지의 key가 바뀌지 않도록 index를 쓰지 않는다
-const messageKey = (msg) => `${msg.senderEmail}-${msg.timestamp}`;
+const messageKey = (msg) => `${msg.senderId}-${msg.timestamp}`;
 
 const isRoomCreator = computed(() => {
   if (!props.selectedRoom || !props.selectedRoomType || props.selectedRoomType !== 'purchase') {
@@ -390,11 +390,11 @@ const getMessageMinute = (timestamp) => {
 };
 
 
-const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
+const shouldShowSenderName = (messages, currentIndex, currentUserId) => {
   const currentMsg = messages[currentIndex];
   
   // 현재 사용자가 보낸 메시지는 이름 표시 안함
-  if (currentMsg.senderEmail === currentUserEmail) return false;
+  if (currentMsg.senderId === currentUserId) return false;
   
   // 첫 번째 메시지는 항상 이름 표시
   if (currentIndex === 0) return true;
@@ -402,7 +402,7 @@ const shouldShowSenderName = (messages, currentIndex, currentUserEmail) => {
   const prevMsg = messages[currentIndex - 1];
   
   // 이전 메시지 발신자가 다르면 이름 표시
-  if (currentMsg.senderEmail !== prevMsg.senderEmail) return true;
+  if (currentMsg.senderId !== prevMsg.senderId) return true;
   
   // 같은 발신자인 경우 시간이 다르면 이름 표시
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(prevMsg.timestamp);
@@ -413,7 +413,7 @@ const shouldShowTime = (messages, currentIndex) => {
   if (currentIndex === messages.length - 1) return true;
   const currentMsg = messages[currentIndex];
   const nextMsg = messages[currentIndex + 1];
-  if (currentMsg.senderEmail !== nextMsg.senderEmail) return true;
+  if (currentMsg.senderId !== nextMsg.senderId) return true;
   return getMessageMinute(currentMsg.timestamp) !== getMessageMinute(nextMsg.timestamp);
 };
 
@@ -595,7 +595,7 @@ const handleIncomingMessage = (message) => {
   const incoming = JSON.parse(message.body);
   messages.value.push(incoming);
 
-  if (incoming.senderEmail === senderEmail.value) {
+  if (incoming.senderId === myMemberId.value) {
     scrollToBottom();
     return;
   }

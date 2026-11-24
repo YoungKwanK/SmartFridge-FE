@@ -126,7 +126,7 @@ const myPurchaseRooms = ref([]);     // 나머지 모든 채팅방
 const isLoading = ref(true); // 1. 로딩 상태를 관리할 ref 추가 (초기값 true)
 const fridgeId = computed(() => getFridgeId(store));
 
-const myEmail = ref(localStorage.getItem('email'));
+const myMemberId = ref(localStorage.getItem('memberId'));
 let isRefreshingUnread = false;
 
 // 닫힌 채팅방을 하단에 위치시키는 computed 속성
@@ -317,7 +317,7 @@ function handleRealtimeNotification(evt) {
   const n = evt?.detail;
   if (!n) return;
   // 내 메시지는 무시
-  if (n.senderEmail && n.senderEmail === myEmail.value) return;
+  if (n.senderId && n.senderId === myMemberId.value) return;
   const isChatType = n.type === 'MANAGER_CHAT' || n.type === 'GROUP_CHAT' || n.type === 'ROOM_FULL';
   if (!isChatType) return;
 

@@ -38,7 +38,7 @@
         <ul v-else class="people-list">
           <li
             v-for="(participant, index) in participants"
-            :key="participant.email || index"
+            :key="participant.memberId || index"
             class="person"
           >
             <span class="person-avatar" aria-hidden="true">
@@ -58,7 +58,6 @@
                   {{ participant.isCreator ? '방장' : '관리자' }}
                 </span>
               </span>
-              <span class="person-email">{{ participant.email }}</span>
             </span>
             <span class="person-status" :class="{ 'is-online': participant.isOnline }">
               {{ participant.isOnline ? '접속 중' : '' }}
@@ -133,7 +132,7 @@ const fetchParticipants = async () => {
         
         return {
           name: participant.memberName,
-          email: participant.memberEmail,
+          memberId: participant.memberId,
           isCreator: participant.isCreator,
           isOnline: participant.isOnline,
           profileImage: profileImage
