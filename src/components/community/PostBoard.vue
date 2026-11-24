@@ -46,8 +46,16 @@
         :class="{ 'is-pinned': post.pinned }"
       >
         <button type="button" class="post-link" @click="viewPost(post)">
+          <!-- 첨부 이미지가 있으면 첫 장을, 없거나 깨지면 게시판 아이콘을 보여준다 -->
           <span class="post-icon" :class="iconClass" aria-hidden="true">
-            <v-icon size="20">{{ iconName }}</v-icon>
+            <img
+              v-if="post.thumbnailUrl && !brokenThumbs[post.id]"
+              :src="post.thumbnailUrl"
+              alt=""
+              loading="lazy"
+              @error="brokenThumbs[post.id] = true"
+            />
+            <v-icon v-else size="20">{{ iconName }}</v-icon>
           </span>
           <span class="post-body">
             <span class="post-title">
@@ -132,6 +140,7 @@ export default {
     return {
       searchQuery: '',
       postList: [],
+      brokenThumbs: {}, // 불러오지 못한 대표 이미지 (글 id -> true)
       isModalOpen: false,
       isLoading: false,
       currentPage: 1,
@@ -373,6 +382,13 @@ export default {
   border-radius: 10px;
   background: var(--sf-bg);
   color: var(--sf-text-sub);
+  overflow: hidden;
+}
+
+.post-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .post-icon.is-notice {

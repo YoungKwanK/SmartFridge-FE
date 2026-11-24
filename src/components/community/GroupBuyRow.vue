@@ -1,11 +1,15 @@
 <template>
   <!--
     공동구매 목록의 한 줄.
-    왼쪽: 제목과 작성 정보 / 오른쪽: 자리 표시(찬 자리 ●, 빈자리 ○)와 남은 자리
+    왼쪽: 대표 이미지(없으면 장바구니 아이콘) / 가운데: 제목과 작성 정보 / 오른쪽: 자리 표시(찬 자리 ●, 빈자리 ○)와 남은 자리
     색은 쓰지 않는다: 주황은 참여 버튼, 노랑·빨강은 유통기한 상태에만 쓰는 색이라서.
   -->
   <li class="gb-row" :class="{ 'is-closed': !canJoin }">
     <button type="button" class="gb-link" @click="$emit('open', post)">
+      <span class="gb-thumb" aria-hidden="true">
+        <img v-if="showThumb" :src="post.thumbnailUrl" alt="" loading="lazy" @error="thumbFailed = true" />
+        <v-icon v-else size="24">mdi-cart-outline</v-icon>
+      </span>
       <span class="gb-body">
         <span class="gb-title">
           <span v-if="badge" class="gb-badge">{{ badge }}</span>
@@ -39,15 +43,20 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps({
-  // 게시판 목록의 글 하나. 공동구매 글이면 purchase(모집 현황)가 함께 온다
+  // 게시판 목록의 글 하나. 공동구매 글이면 purchase(모집 현황)가, 이미지가 있으면 thumbnailUrl(첫 장)이 함께 온다
   post: { type: Object, required: true }
 });
 defineEmits(['open']);
 
 const MAX_DOTS = 10;
+
+// 이미지 주소가 깨졌으면 아이콘으로 대신한다
+const thumbFailed = ref(false);
+watch(() => props.post.thumbnailUrl, () => { thumbFailed.value = false; });
+const showThumb = computed(() => !!props.post.thumbnailUrl && !thumbFailed.value);
 
 const purchase = computed(() => props.post.purchase || null);
 
@@ -91,9 +100,9 @@ const badge = computed(() => {
 
 .gb-link {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   width: 100%;
   padding: 16px 20px;
   border: none;
@@ -112,6 +121,28 @@ const badge = computed(() => {
 .gb-link:focus-visible {
   outline: 2px solid var(--sf-primary);
   outline-offset: -2px;
+}
+
+/* 대표 이미지: 정사각형으로 잘라 보여준다 */
+.gb-thumb {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  background: var(--sf-bg);
+  color: var(--sf-text-faint);
+  overflow: hidden;
+}
+
+.gb-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gb-row.is-closed .gb-thumb img {
+  opacity: 0.6;
 }
 
 .gb-body {
@@ -228,8 +259,14 @@ const badge = computed(() => {
 
 @media (max-width: 600px) {
   .gb-link {
+    grid-template-columns: 52px minmax(0, 1fr) auto;
     gap: 12px;
     padding: 14px 16px;
+  }
+
+  .gb-thumb {
+    width: 52px;
+    height: 52px;
   }
 
   /* 좁은 화면에서는 자리 점 대신 숫자와 남은 자리만 */
