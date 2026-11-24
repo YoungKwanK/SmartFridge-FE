@@ -212,8 +212,8 @@ export default {
     async checkUserRole() {
       try {
         const currentFridgeId = this.store.state.currentFridgeId;
-        const userEmail = this.store.getters.getUserEmail || localStorage.getItem('email');
-        if (!currentFridgeId || !userEmail) {
+        const myMemberId = this.store.state.user?.userInfo?.id || localStorage.getItem('memberId');
+        if (!currentFridgeId || !myMemberId) {
           this.currentUserRole = 'COMMON';
           return;
         }
@@ -228,7 +228,7 @@ export default {
         );
 
         const members = response.data?.result || [];
-        const currentUser = members.find(member => member.memberEmail === userEmail);
+        const currentUser = members.find(member => member.memberId === myMemberId);
         this.currentUserRole = currentUser?.type || 'COMMON';
       } catch (error) {
         console.error('사용자 역할 확인 실패:', error);

@@ -198,7 +198,7 @@ export default {
     
     async viewUser(user) {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/member/detail/${user.email}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/admin/member/detail/${user.id}`);
         
         console.log('Member Detail API Response:', response.data);
         
@@ -276,12 +276,7 @@ export default {
       try {
         this.deleting = true;
         
-        const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/member/delete/`, {
-          data: this.userToDelete.email,
-          headers: {
-            'Content-Type': 'text/plain'
-          }
-        });
+        const response = await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/admin/member/delete/${this.userToDelete.id}`);
 
         console.log('Delete Member API Response:', response.data);
 
@@ -289,8 +284,8 @@ export default {
           snackbar.show('사용자가 성공적으로 삭제되었습니다.', 'success');
 
           // 사용자 목록에서 제거
-          this.users = this.users.filter(user => user.email !== this.userToDelete.email);
-          this.filteredUsers = this.filteredUsers.filter(user => user.email !== this.userToDelete.email);
+          this.users = this.users.filter(user => user.id !== this.userToDelete.id);
+          this.filteredUsers = this.filteredUsers.filter(user => user.id !== this.userToDelete.id);
           
           this.closeDeleteModal();
         } else {

@@ -197,13 +197,13 @@ export default {
           // JWT 토큰에서 사용자 정보 추출
           const decodedToken = jwtDecode(accessToken);
           const role = decodedToken.role;
-          const email = decodedToken.sub;
+          const memberId = decodedToken.sub; // 회원 id(UUID)
           
           // 토큰과 사용자 정보를 localStorage에 저장
           localStorage.setItem("accessToken", accessToken);
           localStorage.setItem("refreshToken", refreshToken);
           localStorage.setItem("role", role);
-          localStorage.setItem("email", email);
+          localStorage.setItem("memberId", memberId);
           
           // 토큰 모니터링 시작
           if (window.tokenManager) {
@@ -298,7 +298,7 @@ export default {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");
           localStorage.removeItem("role");
-          localStorage.removeItem("email");
+          localStorage.removeItem("memberId");
         }
       } catch (error) {
         console.error('Token validation error:', error);

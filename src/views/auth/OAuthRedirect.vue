@@ -92,7 +92,7 @@ export default {
                     localStorage.setItem("accessToken", accessToken);
                     localStorage.setItem("refreshToken", refreshToken);
                     localStorage.setItem("role", decodedToken.role);
-                    localStorage.setItem("email", decodedToken.sub);
+                    localStorage.setItem("memberId", decodedToken.sub);
 
                     if (window.tokenManager) {
                         window.tokenManager.startMonitoring();
