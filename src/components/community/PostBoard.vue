@@ -270,7 +270,8 @@ export default {
       this.isModalOpen = true;
     },
 
-    async handleSave(postData) {
+    // done: 저장이 끝났다고 글쓰기 창에 알려 준다 (성공하든 실패하든 로딩 표시를 끈다)
+    async handleSave(postData, done) {
       try {
         const fridgeId = getFridgeId(this.$store);
         if (!fridgeId) {
@@ -286,6 +287,8 @@ export default {
       } catch (error) {
         console.error('게시글 등록 실패:', error);
         this.showSnackbar('게시글 등록에 실패했습니다: ' + (error.response?.data?.message || error.message), 'error');
+      } finally {
+        done?.();
       }
     },
 
