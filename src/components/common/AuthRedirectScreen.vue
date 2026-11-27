@@ -5,7 +5,24 @@
       <span>SmartFridge</span>
     </a>
 
-    <section class="auth-panel" aria-live="polite">
+    <!-- 같은 이메일이 다른 소셜 계정으로 가입돼 있을 때: 기존 제공자로 이어서 로그인 (구글·카카오·네이버 모두 모음으로 끝나 "로"를 쓴다) -->
+    <section v-if="conflict" class="auth-panel" role="alert">
+      <v-icon size="40" color="primary">mdi-account-check-outline</v-icon>
+      <h1 class="auth-title">이미 가입된 계정이 있어요</h1>
+      <p class="auth-status">
+        이 이메일은 <strong>{{ conflict.providerName }}</strong>로 가입되어 있어요.<br />
+        {{ conflict.providerName }}로 로그인하면 기존 냉장고와 기록을 그대로 쓸 수 있어요.
+      </p>
+
+      <div class="auth-actions">
+        <v-btn color="primary" size="large" block :loading="continuing" @click="onContinue">
+          {{ conflict.providerName }}로 계속하기
+        </v-btn>
+        <v-btn variant="text" size="large" block href="/">다른 방법으로 로그인</v-btn>
+      </div>
+    </section>
+
+    <section v-else class="auth-panel" aria-live="polite">
       <v-progress-circular indeterminate color="primary" size="40" width="3" />
       <h1 class="auth-title">{{ provider }}로 로그인하는 중이에요</h1>
       <p class="auth-status">{{ statusMessage }}</p>
@@ -38,12 +55,25 @@
 </template>
 
 <script setup>
+import { ref } from 'vue';
+
 defineProps({
   provider: { type: String, required: true },
   currentStep: { type: Number, default: 1 },
   progress: { type: Number, default: 0 },
-  statusMessage: { type: String, default: '' }
+  statusMessage: { type: String, default: '' },
+  // { providerName } 이 있으면 진행 화면 대신 기존 제공자 안내를 보여준다
+  conflict: { type: Object, default: null }
 });
+
+const emit = defineEmits(['continue']);
+
+// 인가 화면으로 넘어가는 동안 버튼을 다시 누르지 않게 한다
+const continuing = ref(false);
+const onContinue = () => {
+  continuing.value = true;
+  emit('continue');
+};
 
 const steps = ['로그인 정보 확인', '계정 연결', '냉장고로 이동'];
 </script>
@@ -100,6 +130,14 @@ const steps = ['로그인 정보 확인', '계정 연결', '냉장고로 이동'
   margin: 6px 0 0;
   font-size: var(--sf-fs-md);
   color: var(--sf-text-sub);
+}
+
+.auth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 24px;
 }
 
 .auth-steps {

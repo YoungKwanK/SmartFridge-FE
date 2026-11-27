@@ -4,6 +4,8 @@
     :current-step="currentStep"
     :progress="progressValue"
     :status-message="statusMessage"
+    :conflict="conflict"
+    @continue="continueWithRegisteredProvider"
   />
 </template>
 
@@ -12,6 +14,10 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { getPostLoginPath } from '@/utils/inviteHandler';
 import AuthRedirectScreen from '@/components/common/AuthRedirectScreen.vue';
+import { isSocialProvider, startSocialLogin } from '@/utils/socialLogin';
+
+// 같은 이메일이 다른 소셜 계정으로 가입돼 있을 때 서버가 409와 함께 보내는 코드
+const SOCIAL_ACCOUNT_EXISTS = 'SOCIAL_ACCOUNT_EXISTS';
 
 // 소셜 로그인 제공자별 화면 이름. 경로 /oauth/:provider/redirect 의 provider 값과 맞춘다
 const PROVIDER_LABELS = {
@@ -28,7 +34,9 @@ export default {
             currentStep: 1,
             progressValue: 0,
             statusMessage: '',
-            progressInterval: null
+            progressInterval: null,
+            // { provider: 'kakao', providerName: '카카오' }: 기존 제공자 안내를 보여줄 때만 채운다
+            conflict: null
         }
     },
     computed: {
@@ -51,9 +59,7 @@ export default {
         this.sendCodeToServer(payload);
     },
     beforeUnmount() {
-        if (this.progressInterval) {
-            clearInterval(this.progressInterval);
-        }
+        this.stopLoadingAnimation();
     },
     methods: {
         startLoadingAnimation() {
@@ -114,6 +120,14 @@ export default {
             } catch (error) {
                 console.error(`${this.provider} OAuth 에러:`, error);
 
+                // 다른 소셜 계정으로 가입된 이메일: 첫 화면으로 보내지 않고 기존 제공자로 이어서 로그인하게 안내
+                const conflict = this.toConflict(error.response?.data?.result);
+                if (conflict) {
+                    this.stopLoadingAnimation();
+                    this.conflict = conflict;
+                    return;
+                }
+
                 // 서버가 보낸 사유(이메일 미동의, 미인증 이메일 등)가 있으면 그대로 보여줌
                 this.statusMessage = error.response?.data?.status_message
                     || "로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
@@ -124,6 +138,29 @@ export default {
                     window.location.href = "/";
                 }, 3000);
             }
+        },
+
+        stopLoadingAnimation() {
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+                this.progressInterval = null;
+            }
+        },
+
+        // 서버 응답 result: { code, provider: 'KAKAO', providerName: '카카오' }
+        toConflict(result) {
+            if (result?.code !== SOCIAL_ACCOUNT_EXISTS) {
+                return null;
+            }
+            const provider = String(result.provider || '').toLowerCase();
+            if (!isSocialProvider(provider)) {
+                return null;
+            }
+            return { provider, providerName: result.providerName || PROVIDER_LABELS[provider] };
+        },
+
+        continueWithRegisteredProvider() {
+            startSocialLogin(this.conflict.provider);
         },
 
         moveToNextPage() {
