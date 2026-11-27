@@ -6,9 +6,9 @@ export const authGuard = (to) => {
   const isAuthenticated = localStorage.getItem('accessToken');
   const userRole = localStorage.getItem('role') || 'USER';
 
-  // 인증이 필요한 페이지인데 로그인하지 않은 경우
+  // 인증이 필요한 페이지인데 로그인하지 않은 경우: 로그인 화면으로 (관리자 페이지는 관리자 로그인으로)
   if (requiresAuth && !isAuthenticated) {
-    return '/';
+    return requiresAdmin ? '/admin/login' : '/login';
   }
   // 관리자 권한이 필요한 페이지인데 관리자가 아닌 경우
   if (requiresAdmin && userRole !== 'ADMIN') {

@@ -95,6 +95,11 @@
         <p v-if="!isAdminLogin" class="login-note">
           처음이면 로그인할 때 계정이 만들어져요. 냉장고는 로그인한 뒤 만들거나 초대 링크로 들어갈 수 있어요.
         </p>
+
+        <!-- 일반 로그인 ↔ 관리자 로그인 전환 (눈에 띄지 않게 작은 글자 링크) -->
+        <router-link :to="isAdminLogin ? '/login' : '/admin/login'" class="login-switch">
+          {{ isAdminLogin ? '일반 로그인으로 돌아가기' : '관리자 로그인' }}
+        </router-link>
       </section>
     </main>
   </div>
@@ -104,6 +109,7 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import FoodRow from '@/components/food/FoodRow.vue';
+import { startSocialLogin } from '@/utils/socialLogin';
 
 // 첫 화면에 보여줄 예시 식품 (오늘 기준으로 날짜를 만든다)
 const daysFromNow = (days, hour = 21) => {
@@ -139,21 +145,7 @@ export default {
         google: false,
         kakao: false,
         naver: false
-      },
-      
-      // OAuth 설정
-      googleUrl: "https://accounts.google.com/o/oauth2/auth",
-      googleClientId: "135548742889-hvh4kecrrcetaqv8dla9uggr483fukll.apps.googleusercontent.com",
-      googleRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/google/redirect`,
-      googleScope: "openid email profile",
-      
-      kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
-      kakaoClientId: "1db026f5c4d2e11d7e597cdd4488d193",
-      kakaoRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/kakao/redirect`,
-      
-      naverUrl: "https://nid.naver.com/oauth2.0/authorize",
-      naverClientId: "GbQ_01jKVCMgOVze1pio",
-      naverRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/naver/redirect`,
+      }
     }
   },
   
@@ -168,6 +160,13 @@ export default {
     // /admin/login 에서만 이메일/비밀번호 폼을 보여줌
     isAdminLogin() {
       return this.$route.path === '/admin/login';
+    }
+  },
+
+  watch: {
+    // 같은 화면을 다시 쓰므로 전환할 때 이전 오류 문구를 지운다
+    isAdminLogin() {
+      this.errorMessage = '';
     }
   },
 
@@ -238,20 +237,17 @@ export default {
     
     googleLogin() {
       this.socialLoading.google = true;
-      const auth_uri = `${this.googleUrl}?client_id=${this.googleClientId}&redirect_uri=${this.googleRedirectUrl}&response_type=code&scope=${this.googleScope}`;
-      window.location.href = auth_uri;
+      startSocialLogin('google');
     },
 
     kakaoLogin() {
       this.socialLoading.kakao = true;
-      const auth_uri = `${this.kakaoUrl}?client_id=${this.kakaoClientId}&redirect_uri=${this.kakaoRedirectUrl}&response_type=code`;
-      window.location.href = auth_uri;
+      startSocialLogin('kakao');
     },
 
     naverLogin() {
       this.socialLoading.naver = true;
-      const auth_uri = `${this.naverUrl}?client_id=${this.naverClientId}&redirect_uri=${this.naverRedirectUrl}&response_type=code`;
-      window.location.href = auth_uri;
+      startSocialLogin('naver');
     },
     
     async checkUserFridgeStatus() {
@@ -457,6 +453,21 @@ export default {
   font-size: var(--sf-fs-sm);
   line-height: 1.6;
   color: var(--sf-text-faint);
+}
+
+.login-switch {
+  display: block;
+  width: fit-content;
+  margin: 16px 0 0 auto;
+  font-size: var(--sf-fs-xs);
+  color: var(--sf-text-faint);
+  text-decoration: none;
+}
+
+.login-switch:hover,
+.login-switch:focus-visible {
+  color: var(--sf-text-sub);
+  text-decoration: underline;
 }
 
 @media (max-width: 900px) {

@@ -88,8 +88,9 @@ const user = {
                             console.error('❌ Token refresh failed:', refreshError);
                             // 토큰 갱신 실패 시 로그아웃 처리
                             commit('CLEAR_USER_INFO');
+                            const loginPath = localStorage.getItem('role') === 'ADMIN' ? '/admin/login' : '/login';
                             localStorage.clear();
-                            window.location.href = '/';
+                            window.location.href = loginPath;
                             throw refreshError;
                         }
                     }
