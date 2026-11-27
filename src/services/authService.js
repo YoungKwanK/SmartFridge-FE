@@ -57,8 +57,10 @@ export const authService = {
       window.tokenManager.stopMonitoring();
     }
     
+    // 다시 로그인해야 하므로 로그인 화면으로 보낸다 (관리자는 관리자 로그인 화면)
+    const loginPath = localStorage.getItem('role') === 'ADMIN' ? '/admin/login' : '/login';
     localStorage.clear();
-    window.location.href = '/';
+    window.location.href = loginPath;
   },
 
   /**

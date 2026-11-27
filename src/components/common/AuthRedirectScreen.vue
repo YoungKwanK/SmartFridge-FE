@@ -18,7 +18,7 @@
         <v-btn color="primary" size="large" block :loading="continuing" @click="onContinue">
           {{ conflict.providerName }}로 계속하기
         </v-btn>
-        <v-btn variant="text" size="large" block href="/">다른 방법으로 로그인</v-btn>
+        <v-btn variant="text" size="large" block href="/login">다른 방법으로 로그인</v-btn>
       </div>
     </section>
 

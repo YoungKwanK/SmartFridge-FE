@@ -133,9 +133,9 @@ export default {
                     || "로그인 처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
                 this.progressValue = 0;
 
-                // 3초 후 첫 화면으로 이동
+                // 3초 후 로그인 화면으로 이동
                 setTimeout(() => {
-                    window.location.href = "/";
+                    window.location.href = "/login";
                 }, 3000);
             }
         },
