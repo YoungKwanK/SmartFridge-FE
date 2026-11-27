@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" max-width="1080" persistent scrollable>
+  <v-dialog v-model="dialog" max-width="1080" persistent scrollable @after-leave="onClosed">
     <v-card class="post-form">
       <header class="form-head">
         <h2 class="sf-form-title">{{ editingPost.id ? '글 수정' : (isPurchase ? '공동구매 모집하기' : '글쓰기') }}</h2>
@@ -276,33 +276,42 @@ export default {
         productUrl: ''
       };
       this.fileInputKey = 0; // 파일 입력 키 초기화
-      this.$refs.form?.resetValidation();
+      // 입력값이 바뀌면 Vuetify가 곧바로 다시 검사해 빈칸 경고를 켠다.
+      // 그 검사가 끝난 다음(nextTick) 검사 결과를 지워야 다음에 창을 열 때 빨간 테두리가 남지 않는다
+      this.$nextTick(() => this.$refs.form?.resetValidation());
+    },
+
+    // 창을 닫는 애니메이션이 끝난 뒤에 비운다. 닫히는 중에 비우면 빈칸 경고가 잠깐 보인다.
+    // 저장 성공(부모가 창을 닫음)과 취소 모두 여기로 온다. 수정 글은 다음에 열 때 editingPost가 다시 채운다
+    onClosed() {
+      this.isSaving = false;
+      this.resetForm();
     },
 
     closeModal() {
       this.dialog = false;
-      this.resetForm();
-      this.fileInputKey = 0; // 파일 입력 키 초기화
     },
     
     // savePost 메서드 수정 - 이미지 업로드 로직 추가
+    // 저장은 부모(게시판·글 상세)가 서버에 보낸다. 부모가 끝나면 done(성공 여부)을 불러 준다.
+    // 입력칸은 저장에 성공해 창이 닫힐 때만 비운다 (응답 전에 비우면 열린 창에 빈칸 경고가 뜨고, 실패하면 쓴 글이 사라진다)
     async savePost() {
-      if (!this.$refs.form.validate()) return;
-      
+      if (this.isSaving) return;
+      // Vuetify 3부터 validate()는 Promise를 돌려준다
+      const { valid } = await this.$refs.form.validate();
+      if (!valid) return;
+
       if (!this.formData.category) {
         this.showSnackbar('카테고리를 선택해주세요.', 'warning');
         return;
       }
-      
+
       try {
         this.isSaving = true;
-        
+
         // 내용에서 실제로 사용되는 이미지 URL만 추출
         const contentImageUrls = this.extractImageUrlsFromContent(this.formData.content);
-        
-        console.log('=== 이미지 URL 디버깅 ===');
-        console.log('내용에서 추출된 이미지 URL:', contentImageUrls);
-        
+
         // 게시글 데이터 준비 (실제 사용되는 이미지 URL만 포함)
         const postData = {
           title: this.formData.title,
@@ -322,15 +331,12 @@ export default {
           postData.id = this.editingPost.id;
         }
         
-        console.log('전송할 게시글 데이터:', postData); // 디버깅용
-        this.$emit('save', postData);
-        
-        // 게시글 저장 성공 후 폼 초기화
-        this.resetForm();
-        this.fileInputKey = 0; // 파일 입력 키 초기화
+        // 부모가 저장을 마치면 done을 부른다. 실패하면 창과 입력 내용이 그대로 남아 다시 시도할 수 있다
+        this.$emit('save', postData, () => {
+          this.isSaving = false;
+        });
       } catch (error) {
         console.error('게시글 저장 실패:', error);
-      } finally {
         this.isSaving = false;
       }
     },

@@ -625,7 +625,8 @@ export default {
     },
     
     // 게시글 수정 처리
-    async handlePostUpdate(updatedPost) {
+    // done: 수정이 끝났다고 글쓰기 창에 알려 준다 (성공하든 실패하든 로딩 표시를 끈다)
+    async handlePostUpdate(updatedPost, done) {
       try {
         const fridgeId = getFridgeId(this.$store);
         const postId = this.$route.params.postId;
@@ -655,6 +656,8 @@ export default {
       } catch (error) {
         console.error('게시글 수정 실패:', error);
         this.showSnackbar('게시글 수정에 실패했습니다: ' + (error.response?.data?.message || error.message), 'error');
+      } finally {
+        done?.();
       }
     },
     
