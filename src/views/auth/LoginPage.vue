@@ -95,6 +95,11 @@
         <p v-if="!isAdminLogin" class="login-note">
           처음이면 로그인할 때 계정이 만들어져요. 냉장고는 로그인한 뒤 만들거나 초대 링크로 들어갈 수 있어요.
         </p>
+
+        <!-- 일반 로그인 ↔ 관리자 로그인 전환 (눈에 띄지 않게 작은 글자 링크) -->
+        <router-link :to="isAdminLogin ? '/login' : '/admin/login'" class="login-switch">
+          {{ isAdminLogin ? '일반 로그인으로 돌아가기' : '관리자 로그인' }}
+        </router-link>
       </section>
     </main>
   </div>
@@ -155,6 +160,13 @@ export default {
     // /admin/login 에서만 이메일/비밀번호 폼을 보여줌
     isAdminLogin() {
       return this.$route.path === '/admin/login';
+    }
+  },
+
+  watch: {
+    // 같은 화면을 다시 쓰므로 전환할 때 이전 오류 문구를 지운다
+    isAdminLogin() {
+      this.errorMessage = '';
     }
   },
 
@@ -441,6 +453,21 @@ export default {
   font-size: var(--sf-fs-sm);
   line-height: 1.6;
   color: var(--sf-text-faint);
+}
+
+.login-switch {
+  display: block;
+  width: fit-content;
+  margin: 16px 0 0 auto;
+  font-size: var(--sf-fs-xs);
+  color: var(--sf-text-faint);
+  text-decoration: none;
+}
+
+.login-switch:hover,
+.login-switch:focus-visible {
+  color: var(--sf-text-sub);
+  text-decoration: underline;
 }
 
 @media (max-width: 900px) {
