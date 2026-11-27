@@ -104,6 +104,7 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import FoodRow from '@/components/food/FoodRow.vue';
+import { startSocialLogin } from '@/utils/socialLogin';
 
 // 첫 화면에 보여줄 예시 식품 (오늘 기준으로 날짜를 만든다)
 const daysFromNow = (days, hour = 21) => {
@@ -139,21 +140,7 @@ export default {
         google: false,
         kakao: false,
         naver: false
-      },
-      
-      // OAuth 설정
-      googleUrl: "https://accounts.google.com/o/oauth2/auth",
-      googleClientId: "135548742889-hvh4kecrrcetaqv8dla9uggr483fukll.apps.googleusercontent.com",
-      googleRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/google/redirect`,
-      googleScope: "openid email profile",
-      
-      kakaoUrl: "https://kauth.kakao.com/oauth/authorize",
-      kakaoClientId: "1db026f5c4d2e11d7e597cdd4488d193",
-      kakaoRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/kakao/redirect`,
-      
-      naverUrl: "https://nid.naver.com/oauth2.0/authorize",
-      naverClientId: "GbQ_01jKVCMgOVze1pio",
-      naverRedirectUrl: `${import.meta.env.VITE_OAUTH_URL}/oauth/naver/redirect`,
+      }
     }
   },
   
@@ -238,20 +225,17 @@ export default {
     
     googleLogin() {
       this.socialLoading.google = true;
-      const auth_uri = `${this.googleUrl}?client_id=${this.googleClientId}&redirect_uri=${this.googleRedirectUrl}&response_type=code&scope=${this.googleScope}`;
-      window.location.href = auth_uri;
+      startSocialLogin('google');
     },
 
     kakaoLogin() {
       this.socialLoading.kakao = true;
-      const auth_uri = `${this.kakaoUrl}?client_id=${this.kakaoClientId}&redirect_uri=${this.kakaoRedirectUrl}&response_type=code`;
-      window.location.href = auth_uri;
+      startSocialLogin('kakao');
     },
 
     naverLogin() {
       this.socialLoading.naver = true;
-      const auth_uri = `${this.naverUrl}?client_id=${this.naverClientId}&redirect_uri=${this.naverRedirectUrl}&response_type=code`;
-      window.location.href = auth_uri;
+      startSocialLogin('naver');
     },
     
     async checkUserFridgeStatus() {
