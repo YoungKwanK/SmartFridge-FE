@@ -498,3 +498,55 @@ td .view-btn + .delete-btn {
     margin-left: 0;
   }
 }
+
+/* 레시피 가져오기 결과 */
+.import-result {
+  margin-top: 20px;
+  padding: 20px 24px;
+  border-radius: var(--sf-radius-lg);
+  background: var(--sf-surface);
+  box-shadow: var(--sf-shadow);
+}
+
+.import-result h3 {
+  margin: 0 0 12px;
+  font-size: var(--sf-fs-md);
+  font-weight: 700;
+  color: var(--sf-text);
+}
+
+.import-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--sf-text-sub);
+}
+
+.import-counts strong {
+  color: var(--sf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.import-warn {
+  margin: 0 0 12px;
+  color: var(--sf-expired-ink);
+  font-size: var(--sf-fs-sm);
+}
+
+.import-counts + .import-warn {
+  margin: 12px 0 0;
+}
+
+.import-result details {
+  margin-top: 12px;
+  font-size: var(--sf-fs-sm);
+  color: var(--sf-text-sub);
+}
+
+.import-unknown {
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
